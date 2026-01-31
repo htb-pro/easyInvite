@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <title>404 not found</title>
+</head>
+<body>
+
+<div class="col-lg-12">
+    <div class="empty-state d-flex flex-column  align-items-center justify-content-center text-muted "style="height: 100vh;">
+        <div class="empty-icon">👥</div>
+        <h2>Aucun invité pour le moment</h2>
+        <p>
+            Vous n’avez pas encore ajouté d’invité à cet événement.
+            Cliquez sur le bouton ci-dessous pour commencer.
+        </br> <center><b style="font-size: 25px;">{{Error}} </b></center>
+        </p>
+
+        <a href="/create/{{event.id}}/guest" class="btn btn-primary">
+            ➕ Ajouter un invité
+        </a>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/js/bootstrap.bundle.min.js" integrity="sha384-FKyoEForCGlyvwx9Hj09JcYn3nv7wiPVlz7YYwJrWVcXK/BmnVDxM+D2scQbITxI" crossorigin="anonymous"></script>
+</body>
+</html>

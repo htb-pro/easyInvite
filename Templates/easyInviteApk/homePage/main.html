@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>API d'Invitation</title>
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+  <style>
+    /* ===== BODY & RESET ===== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      min-height: 100vh;
+      background-color: #0b1c2d;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* ===== BACKGROUND GEOMETRIQUE ===== */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.03) 25%, transparent 25%) -60px 0,
+        linear-gradient(225deg, rgba(255,255,255,0.03) 25%, transparent 25%) -60px 0,
+        linear-gradient(315deg, rgba(255,255,255,0.03) 25%, transparent 25%),
+        linear-gradient(45deg, rgba(255,255,255,0.03) 25%, transparent 25%);
+      background-size: 120px 120px;
+      z-index: 0;
+    }
+
+    /* Overlay sombre pour contraste */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(to bottom, rgba(11,28,45,0.3), rgba(11,28,45,0.9));
+      z-index: 1;
+    }
+
+    /* ===== CONTENU ===== */
+    .content {
+      position: relative;
+      z-index: 2;
+      color: #ffffff;
+      padding-bottom: 80px; /* espace pour bottom nav */
+    }
+
+    /* Card style */
+    .card-easy {
+      background: rgba(15, 35, 60, 0.9);
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.06);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+    }
+
+    .easy-title {
+      color: #3fa9f5;
+      font-weight: 600;
+    }
+
+    .easy-subtitle {
+      color: #9fbad6;
+      font-size: 0.95rem;
+    }
+
+    .btn-easy {
+      background: linear-gradient(135deg, #3fa9f5, #1e88e5);
+      border: none;
+      color: #fff;
+      border-radius: 50px;
+      padding: 12px;
+      font-weight: 500;
+    }
+
+    .btn-easy:hover {
+      opacity: 0.9;
+    }
+
+    /* Navbar */
+    .api-header {
+     background: linear-gradient(135deg, #3fa9f5, #1e88e5);
+      color: white;
+      z-index: 2;
+      position: relative;
+    }
+
+    /* Bottom nav */
+    .bottom-nav {
+      position: fixed;
+      bottom: 0;
+      width: 100%;
+      background: linear-gradient(135deg, #3fa9f5, #1e88e5);
+      border-top: 1px solid #ddd;
+      z-index: 2;
+    }
+
+    /* Responsive spacing */
+    @media (min-width: 768px) {
+      .card-easy {
+        padding: 2.5rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- Overlay sombre -->
+  <div class="overlay"></div>
+
+  <div class="content">
+    <!-- Navbar -->
+    <nav class="api-header navbar navbar-expand-lg bg-body-tertiary">
+      <div class="container-fluid">
+        <div class="fw-bold">📩 EasyInvite</div>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNavDropdown">
+          <ul class="navbar-nav ">
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle text-light" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                Liste
+              </a>
+              <ul class="dropdown-menu">
+                <!-- <li><a class="dropdown-item" href="">Invité(s)</a></li> -->
+                <li><a class="dropdown-item" href="{{url_for('event_list')}}">Evenement(s)</a></li>
+              </ul>
+            </li>
+          </ul>
+        </div>
+      </div>
+    </nav>
+
+    <!-- Contenu principal -->
+    <div class="container py-4">
+      <div class="mb-4 text-center">
+        <h5 class="fw-bold mb-2">👋 Bienvenue</h5>
+        <p class="text-light small">
+          Vous êtes connecté à la plateforme <strong>EasyInvite</strong>
+        </p>
+      </div>
+
+      <div class="card border-0 shadow-sm mb-4 card-easy">
+        <div class="card-body text-center">
+          <p class="mb-2 text-light">
+            Gérez et contrôlez vos invitations facilement grâce aux
+            <strong>QR codes sécurisés</strong>.
+          </p>
+          <small class="text-light">
+            Utilisez le menu ci-dessus pour commencer.
+          </small>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-6">
+          <a href="{{url_for('event_form')}}" class="text-decoration-none">
+            <div class="card border-0 shadow-sm text-center h-100 card-easy">
+              <div class="card-body">
+                <i class="bi bi-plus-circle fs-2 text-light"></i>
+                <p class="mt-2 text-light mb-0 fw-semibold small">
+                  Créer<br>evenement
+                </p>
+              </div>
+            </div>
+          </a>
+        </div>
+
+        <div class="col-6">
+          <a href="{{url_for('scanning')}}" class="text-decoration-none">
+            <div class="card border-0 shadow-sm text-center h-100 card-easy">
+              <div class="card-body">
+                <i class="bi bi-qr-code-scan fs-2 text-success"></i>
+                <p class="mt-2 text-light mb-0 fw-semibold small">
+                  Vérifier<br>QR code
+                </p>
+              </div>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <div class="mt-4 text-center">
+        <small class="text-light">
+          Accès sécurisé · Rapide · Fiable
+        </small>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom nav -->
+  <div class="bottom-nav d-flex justify-content-around py-2 text-center">
+    <div class="text-primary invitation_icon">
+      <a href="{{url_for('event_form')}}">
+        📩<br><small class="text-light text-decoration-none">Créer</small>
+      </a>
+    </div>
+    <div class="scan">
+      <a href="{{url_for('scanning')}}">
+        ✅<br><small class="text-light text-decoration-none">Vérifier</small>
+      </a>
+    </div>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

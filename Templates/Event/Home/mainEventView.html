@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Détail Invitation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <!-- Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+</head>
+<body class="bg-light">
+
+<div class="container py-3">
+
+    <!-- Header -->
+    <div class="d-flex align-items-center mb-3">
+        <a href="{{url_for('event_list')}}" class="text-decoration-none me-2">
+            <i class="bi bi-arrow-left fs-4"></i>
+        </a>
+        <h5 class="mb-0">Retour</h5>
+    </div>
+
+    <!-- Title + Status -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4 class="fw-bold mb-0">{{eventName}}</h4>
+        <span class="badge rounded-pill text-bg-warning px-3 py-2">
+            Brouillon
+        </span>
+    </div>
+
+    <!-- Invitation info -->
+    <div class="card mb-3">
+        <div class="card-body">
+            <h6 class="fw-bold mb-3">Informations de l’événement</h6>
+            <h6 class="fw-bold mb-1">🎉 {{event.name}}</h6>
+            <p class="mb-2">
+                <i class="bi bi-calendar-event text-danger me-2"></i>
+                <strong>Date :</strong> {{event.date}}
+            </p>
+
+            <p class="mb-2">
+                <i class="bi bi-geo-alt-fill text-danger me-2"></i>
+                <strong>Address :</strong> {{event.address}}
+            </p>
+
+            <p class="mb-3">
+                <i class="bi bi-stars text-warning me-2"></i>
+                <strong>Description :</strong> {% if event.description%} {{event.description}}{%endif%}
+            </p>
+
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="fw-semibold">Invités : {{total}}</span>
+                <a href="/edit_event/{{event.id}}">
+                    <button class="btn btn-primary btn-sm">
+                        <i class="bi bi-pencil-square me-1"></i>
+                        Modifier l’événement
+                    </button>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="row g-2 mb-3">
+        <div class="col-6">
+            <a href="/guest_list/{{event.id}}">
+                <button class="btn btn-success w-100">
+                    <i class="bi bi-plus-circle me-1"></i>
+                    voir les invités
+                </button>
+            </a>
+        </div>
+        <div class="col-6">
+            <a href="{{url_for('invitation')}}">
+                <button class="btn btn-outline-dark w-100">
+                    <i class="bi bi-clock-history me-1"></i>
+                    Voir l’historique
+                </button>
+            </a>
+        </div>
+    </div>
+<div class="d-none d-md-block">
+        <nav class="navbar bg-primary text-white px-3">
+            <span class="navbar-brand mb-0 h5 text-white">
+                Liste des Invités
+            </span>
+            <a href="/create/{{event.id}}/guest" class="btn btn-light btn-sm">
+                <i class="bi bi-plus"></i> Ajouter
+            </a>
+        </nav>
+
+    <div class="table-view">{% if guests.guests %}
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Nom</th>
+                    <th>type</th> 
+                    <th>Téléphone</th>
+                    <th>Email</th>
+                    <th>Creation</th>
+                </tr>
+            </thead>   
+             {% for guest in guests.guests%}
+            <tbody>
+                <tr>
+                    <td>{{ guest.name }}</td>
+                    <td>{{ guest.guest_type }}</td>
+                    <td>{{guest.telephone}}</td>
+                    <td>{{guest.email}}</td>
+                    <td>  {{guest.created_date}}</td>
+                </tr>
+            </tbody>  {% endfor %}
+        </table>
+
+        {% else %}
+        <div class="col-md-12 text-center">
+            <div class="mb-3 ">
+                <i class="bi bi-clipboard-plus fs-1 text-secondary"></i>
+            </div>
+            
+                <h6 class="fw-bold">Aucun invité ajouté pour le moment</h6>
+                <p class="text-muted mb-0">
+                    Cliquez sur <strong>"Ajouter"</strong> pour commencer.
+                </p>
+            </div>
+            {%endif%}
+        </div>
+    </div>  
+</div>
+
+<div class="d-block d-md-none">
+    <!-- Guest list -->
+    <h6 class="fw-bold mt-4 mb-3">Liste des invités</h6>
+    <nav class="navbar bg-primary text-white px-3">
+    <span class="navbar-brand mb-0 h5 text-white">
+        Liste des Invités
+    </span>
+    <a href="/create/{{event.id}}/guest" class="btn btn-light btn-sm">
+        <i class="bi bi-plus"></i> Ajouter
+    </a>
+    </nav>
+
+        <div class="card text-left py-1 border-dashed">
+            {% for guest in guests.guests%}
+
+    <!-- liste invités -->
+            <div class="card guest-card mb-0 shadow-sm">
+                <div class="card-body">
+                    <h6 class="card-title mb-1">{{guest.name}}</h6>
+                    <p class="text-muted">{{guest.telephone}}</p>
+                    <p class="text-muted">{{guest.email}}</p>
+                </div>
+            </div>
+
+            {% else %}
+            <div class="mb-3">
+                <i class="bi bi-clipboard-plus fs-1 text-secondary"></i>
+            </div>
+            <h6 class="fw-bold">Aucun invité ajouté pour le moment</h6>
+            <p class="text-muted mb-0">
+                Cliquez sur <strong>"Ajouter des invités"</strong> pour commencer.
+            </p>
+            {% endfor %}
+        </div>
+
+    </div>
+</div>
+</body>
+</html>

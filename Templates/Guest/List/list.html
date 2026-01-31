@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Invités</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap 5 -->
+    <link rel="stylesheet" href="/static/Css/bootstrap.min.css">
+        <!-- Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        @media (min-width : 716px){
+            .mobile-list{
+                display: none;
+            }
+        }
+
+    </style>
+</head>
+<body class="bg-light">
+
+<div class="container py-3">
+    <!-- Header -->
+    <div class="mb-3">
+        <h5 class="fw-bold mb-0">📋 Invités</h5>
+        <small class="text-muted">Événement : {{event.name}}</small>
+    </div>
+
+    <!-- Stats compactes -->
+    <div class="row g-2 mb-3">
+        <div class="col-4 text-center">
+            <div class="bg-white rounded-3 p-2 shadow-sm">
+                <strong>{{totalGuest}}</strong><br>
+                <small>Total</small>
+            </div>
+        </div>
+        <div class="col-4 text-center">
+            <div class="bg-white rounded-3 p-2 shadow-sm">
+                <strong class="text-success">{{presentGuest}}</strong><br>
+                <small>Présents</small>
+            </div>
+        </div>
+        <div class="col-4 text-center">
+            <div class="bg-white rounded-3 p-2 shadow-sm">
+                <strong class="text-secondary">{{absentGuest}}</strong><br>
+                <small>Absent</small>
+            </div>
+        </div>
+    </div>
+
+    <!--barre de recherche-->
+    <form class="mb-3 d-flex" method="get" action="/telephone/{{event_id}}">
+        <input type="text" class="form-control me-2" placeholder="Rechercher un invité" name="telephone">
+        <button type="submit" class="btn btn-primary">🔍</button>
+    </form>
+    
+    <!-- Liste invités -->
+    <div class="d-none  d-md-block d-lg-block">
+            <nav class="navbar bg-primary text-white px-3">
+                <span class="navbar-brand mb-0 h5 text-white">
+                    Liste des Invités
+                </span>
+                <a href="/create/{{event.id}}/guest" class="btn btn-light btn-sm">
+                    <i class="bi bi-plus"></i>Ajouter
+                </a>
+            </nav>
+        <div class="table-view">
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Type</th>
+                        <th>Statut</th>
+                        <th>Téléphone</th>
+                        <th>Email</th>
+                        <th>Creation</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>   
+                {% if guests %}
+                    {% for guest in guests%}
+                <tbody>
+                    <tr>
+                        <td>{{ guest.name }}</td>
+                        <td>{{ guest.guest_type }}</td>
+                        <td> {% if guest.is_present %}Présent{%else%}Absent {%endif%}</td>
+                        <td>{{guest.telephone}}</td>
+                        <td>{{guest.email}}</td>
+                        <td>  {{guest.created_date.strftime('%d-%m-%y')}} {{guest.created_date.strftime('%H:%M')}}</td>
+                        <td class="d-flex justify-content-start  align-items-center">
+                            <a href="/invite/{{event_id}}/{{guest.id}}/create" class="btn btn-outline-primary"><i class="bi bi-envelope me-1"></i></a>
+                            <a href="/guest/{{guest.id}}/{{event_id}}/detail"  class="btn btn-outline-primary">👁</a>
+                            <a href="/edit_guest_form/{{event_id}}/{{guest.id}}" class="btn btn-outline-secondary">✏</a>
+                            <form action="/delete_guest/{{event_id}}/guest" method="post">
+                                <input type="hidden" name="guest_id" value="{{guest.id}}">
+                                <input type="hidden" name="inviteId" value="{{guest.invite.id}}">
+                                <button type="submit" onclick="return confirm('voulez-vous supprimer cet invité ???')" class="btn btn-outline-danger">🗑</button>
+                            </form>
+                        </td>
+                    </tr> {% endfor %}{%endif%}
+                </tbody> 
+                
+            </table>
+        </div>  
+    </div>
+</div>
+
+<div class="d-block d-md-none d-lg-none d-xl-none">
+    <div class="container mobile-list">
+        {% if guests %}
+        {% for guest in guests%}
+        <div class="card mb-2 shadow-sm rounded-4">
+            <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h6 class="fw-bold mb-1">{{guest.name}}</h6>
+                            <small class="text-muted">{{guest.type}}</small>
+                            <small class="text-muted">{{guest.telephone}}</small>
+                            <small class="text-muted">{{guest.email}}</small>
+                        </div>
+                    </div>
+
+                    <hr class="my-2">
+
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">⏳ Non scanné</small>
+
+                        <div class="btn-group btn-group-sm">
+                            <small class="d-flex justify-content-center ">
+                                <div class="col-6">
+                                    <button class="btn btn-outline-secondary w-100">
+                                        <i class="bi bi-envelope me-1"></i>
+                                        Envoyer
+                                    </button>
+                                </div>
+                                <a href="/guest/{{guest.id}}/{{event_id}}/detail"  class="btn btn-outline-primary">👁</a>
+                                <a href="/edit_guest_form/{{event_id}}/{{guest.id}}" class="btn btn-outline-secondary">✏</a>
+                                <form action="/delete_guest/{{event_id}}/guest" method="post">
+                                    <input type="hidden" name="guest_id" value="{{guest.id}}">
+                                    <button type="submit" onclick="return confirm('voulez-vous supprimer cet invité ???')" class="btn btn-outline-danger">🗑</button>
+                                </form>
+                            </small>
+                        </div>
+                    </div>
+            </div>
+        </div>
+        </div>
+                {% else %}
+                <div class="mb-3">
+                    <i class="bi bi-clipboard-plus fs-1 text-secondary"></i>
+                </div>
+                <h6 class="fw-bold">Aucun invité ajouté pour le moment</h6>
+                <p class="text-muted mb-0">
+                    Cliquez sur <strong>"Ajouter des invités"</strong> pour commencer.
+                </p>
+                    {%endfor%}
+                    {%endif%}
+            
+
+            <!-- Pagination -->
+            <nav class="mt-4 d-block d-md-none">
+                <ul class="pagination justify-content-center pagination-sm">
+                    <li class="page-item"><a class="page-link" href="#">←</a></li>
+                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                    <li class="page-item"><a class="page-link" href="#">2</a></li>
+                    <li class="page-item"><a class="page-link" href="#">3</a></li>
+                    <li class="page-item"><a class="page-link" href="#">→</a></li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
+
+
+
+
