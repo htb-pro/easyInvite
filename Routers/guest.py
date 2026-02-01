@@ -17,6 +17,7 @@ from pathlib import Path
 from utils.Qr_Utils.qrCodeUtils import createInviteQrCode,createQrCode
 
 
+
 models.Base.metadata.create_all(bind=engine)
 Root = APIRouter()
 templates = Jinja2Templates(directory="Templates")#ou sont stocker les templates
@@ -55,7 +56,7 @@ def guestDetail(request:Request,guest_id:str,event_id:str,db:Session = Depends(c
         raise HTTPException(404,"invite non trouvé")
     return templates.TemplateResponse("Guest/List/detail.html",{'request':request,"guest":guest,"event_id":event_id},status_code=303)
 
-@Root.get("/create/{event_id}/guest",name="guestForm") #get the guest form
+@Root.get("/create/{event_id}/guest",name="guestForm") #get the guest register form
 def get_invited(request:Request,event_id:str,db:Session = Depends(connecting)):
     db_event = db.query(Event).filter(Event.id==event_id).first() #recuperer l'evenement en fin d'y associer l'invite
     return templates.TemplateResponse("Guest/Forms/form.html",{'request':request,'event':db_event})
