@@ -84,7 +84,7 @@ def editEvent(request:Request,event_id : str,event:Session = Depends(connecting)
     return templates.TemplateResponse("Event/Forms/edit_form.html",{'request':request,"event":editEvent})
 
 @Root.post("/edit_event/{event_id}")#la root pour modifier un evenement
-def editEvent(request:Request,event_id : str,eventName:str = Form(...),eventType:str = Form(...),eventDate: str = Form(...),eventPlace:str = Form(...),eventDescription: Optional[str] = Form(None),eventState: str = Form(...),db:Session = Depends(connecting)):
+def editEvent(request:Request,event_id : str,eventName:str = Form(...),eventType:str = Form(...),eventDate: str = Form(...),eventAddress:str = Form(...),eventDescription: Optional[str] = Form(None),eventState: str = Form(...),db:Session = Depends(connecting)):
     editedEventData = db.query(Event).filter(Event.id == event_id).first()
     try:
         parsed_modified_date = datetime.fromisoformat(eventDate)
@@ -98,7 +98,7 @@ def editEvent(request:Request,event_id : str,eventName:str = Form(...),eventType
     editedEventData.name = eventName
     editedEventData.type = eventType
     editedEventData.date = parsed_modified_date
-    editedEventData.place = eventPlace
+    editedEventData.address = eventAddress
     editedEventData.description = eventDescription
     editedEventData.state = eventState
     db.commit()
