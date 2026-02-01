@@ -90,9 +90,10 @@ def newGuest(request:Request,event_id:str,guestName:str=Form(),guestType:str=For
         db.rollback()
         return templates.TemplateResponse('Guest/Forms/form.html',{'request':request,'event':db_event,'emailError':'un invité existe deja avec cet email', 'guestName':guestName, 'guestType':guestType, 'guestTel':guestTel, 'guestEmail':guestEmail},status_code=400)
     guest_token = guest.qr_token
+    guest_name = guest.id
     createQrCode(guest_token) 
     invite_token = guest.invite.qr_token
-    createInviteQrCode(invite_token)
+    createInviteQrCode(invite_token,event_id,guest_name)
     return templates.TemplateResponse('Guest/Forms/form.html',{'request':request,'event':db_event})
 
 @Root.get("/edit_guest_form/{event_id}/{guest_id}")
@@ -128,7 +129,8 @@ def deleteGuest(request:Request,event_id:str,guest_id:str=Form(...),db:Session=D
         if os.path.isfile(invite_qr_dirs):#si le qr code de l'invitation existe
             invite_qr_dirs.unlink()#et on le supprime
         #sinon
-        createInviteQrCode(invite_token) #on le cree
+        guest_name = guest_to_be_deleted.id
+        createInviteQrCode(invite_token,event_id,guest_name) #on le cree
         invite_qr_dirs.unlink()#et on le supprime
     if not guest_to_be_deleted: #si le guest n'existe pas dans l'evenement
         raise HTTPException(status_code = 404,detail="invité introuvable")
