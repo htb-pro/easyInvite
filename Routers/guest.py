@@ -61,12 +61,15 @@ def get_invited(request:Request,event_id:str,db:Session = Depends(connecting)):
     db_event = db.query(Event).filter(Event.id==event_id).first() #recuperer l'evenement en fin d'y associer l'invite
     return templates.TemplateResponse("Guest/Forms/form.html",{'request':request,'event':db_event})
 
-@Root.post('/create/{event_id}/guest')#get the guest register
-def newGuest(request:Request,event_id:str,guestName:str=Form(),guestType:str=Form(),guestTel:str=Form(),guestEmail:Optional[str]=Form(None),db:Session = Depends(connecting)):
+@Root.post('/create/{event_id}/guest')#get the guest register 
+def newGuest(request:Request,event_id:str,guestName:str=Form(),guestType:str=Form(),guestPlace:str = Form(...),guestTel:str=Form(),guestEmail:Optional[str]=Form(None),db:Session = Depends(connecting)):
     db_event = db.query(Event).filter(Event.id==event_id).first()
+    is_guest_exist = db.query(Guest).filter((Guest.telephone == guestTel) | (Guest.email == guestEmail),Guest.event_id == event_id).first() #verifier si le guest existe deja avec le meme numero ou email
+    success = True
     if not db_event :
         raise HTTPException(status_code=404,detail="Evenement introuvable")
-    
+    if is_guest_exist : 
+                return templates.TemplateResponse('Guest/Forms/form.html',{'request':request,'event':db_event,'emailError':'un invité existe deja avec cet email', 'guestName':guestName, 'guestType':guestType, 'guestTel':guestTel, 'guestEmail':guestEmail},status_code=400)
     new_invite = Invite(
     event_id = event_id,
     qr_token = str(uuid4())
@@ -75,26 +78,22 @@ def newGuest(request:Request,event_id:str,guestName:str=Form(),guestType:str=For
     guest = Guest(
         name = guestName,
         guest_type = guestType,
+        place = guestPlace,
         telephone = guestTel,
         email = guestEmail,
         event_id = event_id,
         qr_token = str(uuid4()),
         invite = new_invite
     ) 
-    try:
-        db.add(guest)
-        db.commit()
-        db.refresh(guest)  
-        
-    except IntegrityError:
-        db.rollback()
-        return templates.TemplateResponse('Guest/Forms/form.html',{'request':request,'event':db_event,'emailError':'un invité existe deja avec cet email', 'guestName':guestName, 'guestType':guestType, 'guestTel':guestTel, 'guestEmail':guestEmail},status_code=400)
+    db.add(guest)
+    db.commit()
+    db.refresh(guest)     
     guest_token = guest.qr_token
     guest_name = guest.id
     createQrCode(guest_token) 
     invite_token = guest.invite.qr_token
     createInviteQrCode(invite_token,event_id,guest_name)
-    return templates.TemplateResponse('Guest/Forms/form.html',{'request':request,'event':db_event})
+    return templates.TemplateResponse('Guest/Forms/form.html',{'request':request,'event':db_event,"success":success})
 
 @Root.get("/edit_guest_form/{event_id}/{guest_id}")
 def editGuest(request:Request,event_id:str,guest_id: str,db:Session=Depends(connecting)):
@@ -104,12 +103,13 @@ def editGuest(request:Request,event_id:str,guest_id: str,db:Session=Depends(conn
     return templates.TemplateResponse("Guest/Forms/edit_form.html",{'request':request,"guest":guest,'event_id':event_id},status_code=303)
 
 @Root.post("/edit_guest_form/{Event_id}")#edit guest form
-def editGuestPost(request:Request,Event_id:str,guest_id:str = Form(...),guestName:str=Form(),guestType:str=Form(...),guestTel:str=Form(),guestEmail:Optional[str]=Form(None),db:Session = Depends(connecting)):
+def editGuestPost(request:Request,Event_id:str,guest_id:str = Form(...),guestName:str=Form(),guestType:str=Form(...),guestPlace : str = Form(...),guestTel:str=Form(),guestEmail:Optional[str]=Form(None),db:Session = Depends(connecting)):
     new_guest = db.query(Guest).filter(Guest.id == guest_id,Guest.event_id == Event_id).first()
     if not new_guest:
         raise HTTPException (status_code = 404,detail = "Invite introuvable")
     new_guest.name = guestName
     new_guest.guest_type = guestType
+    new_guest.place = guestPlace
     new_guest.telephone = guestTel
     new_guest.email = guestEmail
     try:

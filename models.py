@@ -1,4 +1,4 @@
-from sqlalchemy import Column,String,Integer,DateTime,Text,Enum,Date,ForeignKey,Boolean
+from sqlalchemy import Column,String,Integer,DateTime,Text,Enum,Date,ForeignKey,Boolean,UniqueConstraint
 import enum
 from sqlalchemy.orm import relationship
 from db_setting import Base
@@ -22,8 +22,9 @@ class Guest(Base):
     id = Column(String,primary_key=True,unique=True,default=lambda:str(uuid4()))
     name = Column(String(60))
     guest_type = Column(String(20))
-    telephone =  Column(String,unique=True,nullable=False) 
-    email= Column(String,unique=True,nullable=True)
+    telephone =  Column(String,nullable=False) 
+    email= Column(String,nullable=True)
+    place = Column(String,nullable=True)
     event_id = Column(String,ForeignKey('events.id'),nullable=False)
     created_date = Column(DateTime,default=datetime.now())
     is_present = Column(Boolean,default=False)
@@ -31,7 +32,10 @@ class Guest(Base):
 
     event = relationship("Event",back_populates="guests")
     invite = relationship("Invite",back_populates="guest",uselist = False,cascade="all,delete-orphan")
-
+    __table_args__ = (
+        UniqueConstraint('email', 'event_id', name='uix_email_event'),
+        UniqueConstraint('telephone', 'event_id', name='uix_telephone_event'),
+    )
 class Invite(Base):
     __tablename__= "invites"
     id=Column(String,primary_key=True,unique=True,default = lambda :str(uuid4()))

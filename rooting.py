@@ -7,10 +7,12 @@ from Routers.main import Root as main_root
 from Routers.chekin import Root as checkin_root
 from Routers.loging import Root as log_root
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.sessions import SessionMiddleware
 
 
 #initialisation
 Apk = FastAPI()
+Apk.add_middleware(SessionMiddleware,secret_key = "super-secret-key-123")
 Apk.mount("/static",StaticFiles(directory="static"),name="static")
 Apk.include_router(Root)
 Apk.include_router(guest_root)

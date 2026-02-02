@@ -10,14 +10,53 @@
     
     <!-- Bootstrap 5 -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<style>
+        /* ===== BODY & RESET ===== */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      min-height: 100vh;
+      background-color: #0b1c2d;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* ===== BACKGROUND GEOMETRIQUE ===== */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.03) 25%, transparent 25%) -60px 0,
+        linear-gradient(225deg, rgba(255,255,255,0.03) 25%, transparent 25%) -60px 0,
+        linear-gradient(315deg, rgba(255,255,255,0.03) 25%, transparent 25%),
+        linear-gradient(45deg, rgba(255,255,255,0.03) 25%, transparent 25%);
+      background-size: 120px 120px;
+      z-index: 0;
+    }
+    .card
+    {
+        background-color : #3fa9f5;
+        color:white;
+    }
+</style>
 </head>
-<body class="bg-light">
+<body >
 
 <div class="container py-3">
-
+    {% if request.session.get("success") %}
+    <div id="success-alert" class="alert alert-success alert-dismissible fade show" role="alert">
+       {{request.session.pop("success")}}
+    </div>
+    {% endif %}
     <!-- Header -->
-    <div class="mb-3 d-flex justify-content-between align-items-center">
-        <h5 class="fw-bold mb-0">📅Evenements</h5>
+    <div class="mb-3 d-flex justify-content-between align-items-center" style="position:relative;z-index:1;>
+        <h5 class="fw-bold mb-0" style="color:#3fa9f5;">📅Evenements</h5>
         <a href="{{url_for('event_form')}}" class="btn btn-primary rounded-pill">➕ Ajouter un évènement</a>
     </div>
 
@@ -53,11 +92,11 @@
 
                     <div class="d-flex justify-content-between align-items-center">
                         <div class="btn-group btn-group-sm">
-                            <a href="/event_description/{{event.id}}" class="btn btn-outline-primary"><i class="bi bi-box-arrow-in-up-right"></i>ouvrir</a>
-                            <a href="/detail/{{event.id}}" class="btn btn-outline-primary">👁 Voir</a>
-                            <a href="/edit_event/{{event.id}}" class="btn btn-outline-secondary">✏ Modifier</a>
+                            <a href="/event_description/{{event.id}}" class="btn btn-outline-primary text-light"><i class="bi bi-box-arrow-in-up-right"></i>ouvrir</a>
+                            <a href="/detail/{{event.id}}" class="btn btn-outline-primary text-light">👁 Voir</a>
+                            <a href="/edit_event/{{event.id}}" class="btn btn-outline-secondary text-light">✏ Modifier</a>
                             <form action="/delete_event/{{event.id}}" method="post">
-                                <button type="submit" class="btn btn-outline-danger" onclick="return confirm('voulez-vous supprimer cette evement ?')">🗑 Supprimer</button>
+                                <button type="submit" class="btn btn-outline-danger text-light" onclick="return confirm('voulez-vous supprimer cette evement ?')">🗑 Supprimer</button>
                             </form>
                         </div>
                     </div>
@@ -91,6 +130,15 @@
     </nav>
 
 </div>
-
+<script>
+    setTimeout(() => {
+        const alert = document.getElementById("success-alert");
+        if (alert) {
+            alert.classList.remove("show");
+            alert.classList.add("fade");
+            setTimeout(() => alert.remove(), 500);
+        }
+    }, 3000); // disparaît après 3 secondes
+</script>
 </body>
 </html>

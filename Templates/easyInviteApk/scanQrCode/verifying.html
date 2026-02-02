@@ -9,19 +9,29 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
 
     <style>
-        body { background: #f4f6f9; }
         .card { border-radius: 18px; }
-        video { width: 100%; border-radius: 12px; }
-    </style>
-    <style>
-  body {
-    font-family: Arial, sans-serif;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 20px;
-    background: #f7f7f7;
-  }
+        .video { width: 100%; border-radius: 12px; }
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      min-height: 100vh;
+      background-color: #0b1c2d;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* ===== BACKGROUND GEOMETRIQUE ===== */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.03) 25%, transparent 25%) -60px 0,
+        linear-gradient(225deg, rgba(255,255,255,0.03) 25%, transparent 25%) -60px 0,
+        linear-gradient(315deg, rgba(255,255,255,0.03) 25%, transparent 25%),
+        linear-gradient(45deg, rgba(255,255,255,0.03) 25%, transparent 25%);
+      background-size: 120px 120px;
+      z-index: 0;
+    }
 
   h1 {
     margin-bottom: 20px;

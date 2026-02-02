@@ -17,8 +17,6 @@ models.Base.metadata.create_all(bind=engine)
 
 
 Root = APIRouter()
-
-
 templates = Jinja2Templates(directory="Templates")#ou sont stocker les templates
 Root.mount("/static",StaticFiles(directory="static"),name="static")#ou sont stocker les fichier static
 
@@ -35,7 +33,7 @@ def getEventForm(request:Request,event_id :str,
     total = len(guests.guests)
     return templates.TemplateResponse("Event/Home/mainEventView.html",{'request':request,"event":eventDescription,"guests":guests,"total":total})
 
-@Root.get("/event_list/",name="event_list")#get the mainEventView
+@Root.get("/event_list/",name="event_list")#get the event list 
 def getEventList(request:Request,  db: Session = Depends(connecting)):
     events = db.query(Event).all()
     return templates.TemplateResponse("Event/List/list_event.html",{'request':request,"events":events})
@@ -58,7 +56,6 @@ def creatEvent(request:Request,eventName:str = Form(),eventType:str =Form(...), 
         return templates.TemplateResponse("Event/Forms/event_form.html",{'request':request,"error":' Entrer une date correcte !!!',
         'eventName':eventName, 'eventType':eventType, 'eventDate':eventDate, 'eventAddress':eventAddress, 'eventDescription':eventDescription
         },status_code=400)
-
     newEvent = Event(
         name = eventName,
         type = eventType,
@@ -66,10 +63,10 @@ def creatEvent(request:Request,eventName:str = Form(),eventType:str =Form(...), 
         address = eventAddress,
         description = eventDescription
     )
-
     Db.add(newEvent)
     Db.commit()
     Db.refresh(newEvent)
+    request.session["success"] = "🎉 Événement créé avec succès !"
     return RedirectResponse("/event_list",status_code=303)
 
 
