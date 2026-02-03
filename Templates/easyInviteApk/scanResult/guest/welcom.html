@@ -50,6 +50,7 @@
         <p>Bienvenue {{ guest.name }}🎉</p>
         <p>Soyez le bienvenu a notre evenement </br>
         Votre numero est : <span class="guest-name">{{ guest.telephone }}</span></p>
+        Vous serez a la table : {%if guest.place %}<b>{{ guest.place }}</b>{%endif%}</p>
         <a href="{{ url_for('scanning') }}" class="btn btn-primary">retourner au scan</a>
         
 </div>

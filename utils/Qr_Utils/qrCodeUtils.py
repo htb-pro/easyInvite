@@ -19,10 +19,10 @@ def createQrCode(token) -> str :
     img.save(file_path)
     return filename
 
-def createInviteQrCode(Itoken,event,guest):
+def createInviteQrCode(Itoken,event,guest,guest_name,guest_tel):
     url = f"http://easyinvite-1.onrender.com/invite/{event}/{guest}/create"
     path = "static/Pictures/inviteQrCode"
-    filename = f"{Itoken}.png" #Invite token 
+    filename = f"{guest_name}-{guest_tel}.png" #Invite token 
     file_path = os.path.join(path,filename)
     qr = QRCode(
         version=1,
