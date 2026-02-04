@@ -8,13 +8,33 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
-            background-color: #f4f6f8;
-            padding: 20px;
+        font-family: "Segoe UI", system-ui, sans-serif;
+        min-height: 100vh;
+        background-color: #0b1c2d;
+        position: relative;
+        overflow-x: hidden;
         }
+
+        /* ===== BACKGROUND GEOMETRIQUE ===== */
+        body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background:
+            linear-gradient(135deg, rgba(255,255,255,0.03) 25%, transparent 25%) -60px 0,
+            linear-gradient(225deg, rgba(255,255,255,0.03) 25%, transparent 25%) -60px 0,
+            linear-gradient(315deg, rgba(255,255,255,0.03) 25%, transparent 25%),
+            linear-gradient(45deg, rgba(255,255,255,0.03) 25%, transparent 25%);
+        background-size: 120px 120px;
+        z-index: 0;
+        }
+
         .card {
             border-radius: 15px;
             box-shadow: 0 8px 20px rgba(0,0,0,0.1);
             padding: 20px;
+            background : rgb(255,255,255,0.2);
+            color : white;
         }
         .qr-code {
             max-width: 150px;
@@ -36,32 +56,36 @@
 <div class="container py-4">
 
     <!-- Bouton retour -->
-    <div class="mb-3">
-        <a href="/guest_list/{{event_id}}" class="btn btn-outline-secondary btn-sm">
+    <div class="mb-3 " style="position:relative">
+        <a href="/guest_list/{{event_id}}" class="btn btn-outline-secondary text-light btn-sm">
             ← Retour à la liste
         </a>
     </div>
-    <div class="container">
-        <div class="card">
-            <div class="row align-items-center d-flex">
+    <div class="container ">
+        <div class="card col-12 col-lg-8 d-flex justify-content-center">
+            <div class="row  d-flex  align-items-center ">
             <!-- Informations invité -->
                 <div class="col-md-6 mb-2">
                     <h2 class="card-title mb-3">
                         {{ guest.name }}
                     </h2>
-                    <strong class="mb-4">Type :  </strong>{{ guest.guest_type }} <br>
-                    <strong class="mb-2">Telephone :</strong> {{ guest.telephone}}<br>
-                    <strong class="mb-2">Email :</strong> {{ guest.email }}<br>
-                    <span class=""><strong>Date de creation :</strong>  {{guest.created_date}} </span><br>
-                    <span class=""><strong>Etat :</strong>
+                    <p class="">Type :  <strong>{{ guest.guest_type }} </strong></p>
+                    <p class="">Telephone :<strong> {{ guest.telephone}} </strong></p>
+                    <p class="">Email :<strong> {{ guest.email }} </strong></p>
+                    <p class="">Date de creation :<strong>  {{guest.created_date.strftime('%d-%m-%Y %H:%M')}}  </strong></p>
+                    <p class="">Etat :<strong>
                         {%if guest.is_present %} 
                          Present 
                          {% else %}
                          Absent
                          {%endif%} 
-                    </span>
+                     </strong></p>
+                  <!-- QR Code -->
+                <div class="col-12 col-md-4 col-lg-4 text-center mt-4">
+                    <img src="/static/Pictures/guestQrCode/{{ guest.qr_token }}.png" alt="QR Code" class="qr-code img-fluid">
+                </div>
                 <!-- Actions -->
-                <div class="d-flex gap-2 mt-5">
+                <div class="d-flex flex-column flex-lg-row  gap-2 mt-5">
                     <a href="/static/Pictures/inviteQrCode/{{guest.name}}-{{guest.telephone}}.png" class="btn btn-outline-success" download>
                         telecharger l'invitation
                     </a>
@@ -70,15 +94,11 @@
                     </a>
                     <form action="/delete_guest/{{event_id}}/guest" method="post">
                         <input type="hidden" name="guest_id" value="{{guest.id}}">
-                        <button type="submit" onclick="return confirm ('voulez-vous supprimer cet evenement')" class="btn btn-danger">
+                        <button type="submit" onclick="return confirm ('voulez-vous supprimer cet evenement')" class="col-12 btn btn-danger">
                             Supprimer
                         </button>
                     </form>
                 </div>
-            </div>
-            <!-- QR Code -->
-            <div class="col-12 col-md-4 col-lg-4 text-center">
-                <img src="/static/Pictures/guestQrCode/{{ guest.qr_token }}.png" alt="QR Code" class="qr-code img-fluid">
             </div>
         </div>
     </div>

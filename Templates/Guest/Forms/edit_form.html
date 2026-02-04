@@ -91,7 +91,15 @@
              <!-- table ou sera l'invite -->
         <div class="mb-3">
           <label class="form-label">Table</label>
-          <input type="text" class="form-control" name="guestPlace" placeholder="ex : A1" value="{{guestPlace}}" required>
+          <input type="text" class="form-control" name="guestPlace" placeholder="ex : A1" value="{{guest.place}}" required>
+        </div>
+        <!--etat present ou absent-->
+        <div class="mb-3">
+          <label class="form-label">Etat</label>
+          <select class="form-select selectInput" name="guestState"  required>
+            <option value="0" {%if not guest.is_present %}selected{%endif%}>Absent</option>
+            <option value="1" {%if guest.is_present %}selected{%endif%}>Present</option>
+          </select>
         </div>
 
         <!-- telephone -->

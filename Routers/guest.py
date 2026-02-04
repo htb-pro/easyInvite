@@ -101,17 +101,18 @@ def newGuest(request:Request,event_id:str,guestName:str=Form(),guestType:str=For
 def editGuest(request:Request,event_id:str,guest_id: str,db:Session=Depends(connecting)):
     guest = db.query(Guest).filter(Guest.id == guest_id,Guest.event_id== event_id).first()
     if not guest :
-        raise HTTPException(404,"invite non touve")
+        raise HTTPException(404,"invité non touve")
     return templates.TemplateResponse("Guest/Forms/edit_form.html",{'request':request,"guest":guest,'event_id':event_id},status_code=303)
 
 @Root.post("/edit_guest_form/{Event_id}")#edit guest form
-def editGuestPost(request:Request,Event_id:str,guest_id:str = Form(...),guestName:str=Form(),guestType:str=Form(...),guestPlace : str = Form(...),guestTel:str=Form(),guestEmail:Optional[str]=Form(None),db:Session = Depends(connecting)):
+def editGuestPost(request:Request,Event_id:str,guest_id:str = Form(...),guestName:str=Form(),guestType:str=Form(...),guestPlace : str = Form(...),guestState : int = Form(...),guestTel:str=Form(),guestEmail:Optional[str]=Form(None),db:Session = Depends(connecting)):
     new_guest = db.query(Guest).filter(Guest.id == guest_id,Guest.event_id == Event_id).first()
     if not new_guest:
         raise HTTPException (status_code = 404,detail = "Invite introuvable")
     new_guest.name = guestName
     new_guest.guest_type = guestType
     new_guest.place = guestPlace
+    new_guest.is_present = bool(guestState)
     new_guest.telephone = guestTel
     new_guest.email = guestEmail
     try:
