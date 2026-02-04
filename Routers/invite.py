@@ -2,6 +2,7 @@
 from fastapi import Request,Depends,APIRouter,HTTPException
 from fastapi.responses import HTMLResponse,StreamingResponse
 from fastapi.templating import Jinja2Templates
+from datetime import datetime
 import models
 from db_setting import engine,connecting
 from models import *
@@ -17,7 +18,8 @@ templates = Jinja2Templates(directory="Templates")#ou sont stocker les templates
 @Root.get('/invite/{event_id}/{guest_id}/create')
 def getGuestInvite(request:Request,event_id:str ,guest_id : str ,db:Session = Depends(connecting)):
     guestInvite = db.query(Guest).filter(Guest.id == guest_id, Guest.event_id == event_id).first()
-    return templates.TemplateResponse("Invitation/show_invite/invite.html",{'request':request,"guest":guestInvite})
+    copyright = datetime.now()
+    return templates.TemplateResponse("Invitation/show_invite/invite.html",{'request':request,"guest":guestInvite,'copyright':copyright})
 
 @Root.get('/get_invite',name="invitation",response_class=HTMLResponse)#get the invite url
 def getInvite(request:Request):

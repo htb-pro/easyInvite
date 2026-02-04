@@ -162,6 +162,7 @@
                         <small class="text-muted" style="font-size:18px;">{% if guest.is_present %}<i class="bi bi-check-circle-fill text-success"></i>   Present {%else%}<span class="text-danger"><i class="bi bi-x-circle-fill "></i> Absent</span>{%endif%}</small></br>
                         <div class="btn-group btn-group-sm">
                             <small class="d-flex justify-content-center ">
+                                <a href="/invite/{{event_id}}/{{guest.id}}/create" class="btn btn-outline-primary"><i class="bi bi-envelope me-1"></i></a>
                                 <a href="/guest/{{guest.id}}/{{event_id}}/detail"  class="btn btn-outline-light ms-2">👁</a>
                                 <a href="/edit_guest_form/{{event_id}}/{{guest.id}}" class="btn btn-outline-light ms-2">✏</a>
                                 <form action="/delete_guest/{{event_id}}/guest" method="post" class="ms-2">
