@@ -130,7 +130,7 @@ def deleteGuest(request:Request,event_id:str,guest_id:str=Form(...),db:Session=D
     Guest_name = guest_to_be_deleted.name
     Guest_tel = guest_to_be_deleted.telephone
     if invite : #si l'invitation existe
-        invite_qr_dirs = Path("static/Pictures/inviteQrCode")/f"{Guest_name}-{Guest_tel}.png" #on recupere le qrcode 
+        invite_qr_dirs = Path("static/Pictures/inviteQrCode")/f"Event_{event_id}/{Guest_name}-{Guest_tel}.png" #on recupere le qrcode 
         if os.path.isfile(invite_qr_dirs):#si le qr code de l'invitation existe
             invite_qr_dirs.unlink()#et on le supprime
         #sinon

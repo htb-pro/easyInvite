@@ -111,26 +111,38 @@
 
     <!-- Actions -->
     <div class="row g-2 mb-3 d-flex flex-column flex-lg-row ">
-        <div class="col-12 col-lg-4">
+        <div class="col-12 col-lg-3">
             <a href="/guest_list/{{event.id}}" class="btn btn-success w-100">
                 <i class="bi bi-plus-circle me-1"></i>
                 voir les invités
             </a>
         </div>
-        <div class="col-12 col-lg-4">
+        <div class="col-12 col-lg-3">
             <a href="/download/invite/{{event.id}}"  class="btn btn-outline-light w-100" >
                 <i class="bi bi-download me-2"></i>
                 Télécharger les invitations
             </a>
         </div>
 
-        <div class="col-12 col-lg-4">
-            <a href="#"  class="btn btn-outline-success w-100" download>
+        <div class="col-12 col-lg-3">
+            <a href="/download/list_guest/{{event.id}}/export_excel"  class="btn btn-outline-success w-100">
                 <i class="bi bi-download me-2"></i>
                 Télécharger la base de données excel
             </a>
         </div>
+
+        <div class="col-12 col-lg-3">
+            <a href="/download/presence/{{event.id}}/export_excel"  class="btn btn-outline-light w-100">
+                <i class="bi bi-download me-2"></i>
+                Analyser la presence
+            </a>
+        </div>
     </div>
+    {%if guestNotFound %}
+    <div class="alert alert-danger">
+        <p>Aucun n'invités dans la base de données, enregistrer et telecharger la base de données</p>
+    </div>
+    {%endif%}
 <div class="d-none d-md-block">
         <nav class="navbar bg-primary text-white px-3">
             <span class="navbar-brand mb-0 h5 text-white">
@@ -231,5 +243,16 @@
 
     </div>
 </div>
+<script>
+    setTimeout(() => {
+        const alert = document.querySelector(".alert-danger");
+        if (alert) {
+            alert.classList.remove("show");
+            alert.classList.add("fade");
+            setTimeout(() => alert.remove(), 500);
+        }
+    }, 3000); // disparaît après 3 secondes
+</script>
+</body>
 </body>
 </html>

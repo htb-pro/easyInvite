@@ -1,6 +1,6 @@
 #APIRouter permet juste l'organisation du code au lieu d' avoir tout les routes dans un fichier main oon cree les root separement
 from fastapi import Request,Form,Depends,HTTPException,APIRouter
-from fastapi.responses import HTMLResponse,RedirectResponse
+from fastapi.responses import HTMLResponse,RedirectResponse,StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from uuid import uuid4
@@ -12,7 +12,8 @@ from models import *
 from datetime import date
 from typing import Optional
 from datetime import datetime,date
-
+from openpyxl import Workbook
+from io import BytesIO
 models.Base.metadata.create_all(bind=engine)
 
 
@@ -88,7 +89,7 @@ def editEvent(request:Request,event_id : str,eventName:str = Form(...),eventType
         if(parsed_modified_date < datetime.now()):
             return templates.TemplateResponse("Event/Forms/edit_form.html",{'request':request,"dateError":'La date doit etre superieur a l\'actuelle !!!','event':editedEventData}, status_code=400)
     except (ValueError,TypeError):
-        return templates.TemplateResponse("Event/Forms/edit_form.html",{'request':request,'error':'veillez entrer une date correcte','event':editEventData},status_code=400)
+        return templates.TemplateResponse("Event/Forms/edit_form.html",{'request':request,'error':'veillez entrer une date correcte','event':editedEventData},status_code=400)
 
     if not editedEventData:
         raise HTTPException(status_code=400,detail="Evenement intouvable")
@@ -109,3 +110,72 @@ def deleteEvent(request:Request,event_id:str,db:Session = Depends(connecting)):
     db.delete(eventToDelete)
     db.commit()
     return RedirectResponse("/event_list",status_code=303)
+
+@Root.get("/download/list_guest/{event_id}/export_excel")
+def downloadGuestList(request:Request,event_id:str,db:Session = Depends(connecting)):
+    event_guests = db.query(Guest).filter(Guest.event_id == event_id).all()
+    show_event = db.query(Event).filter(Event.id == event_id).first()
+    event = db.query(Guest).filter(Guest.event_id == event_id).first()
+    wb = Workbook() #create a workbook
+    ws = wb.active #active it
+    ws.title = "liste_des_invites" #filename
+    #head of tables
+    if not event_guests :
+        guestNotFound = True
+        return templates.TemplateResponse("Event/Home/mainEventView.html",{'request':request,'guestNotFound':guestNotFound,"event":show_event,"guests":event_guests})
+    ws.append([
+        "Nom de l'invité",
+        "Telephone",
+        "Email",
+        "Type",
+        "Table"
+    ])
+    for guest in event_guests:
+        ws.append([
+            guest.name,
+            guest.telephone,
+            guest.email,
+            guest.guest_type,
+            guest.place
+            ])
+    file_stream = BytesIO()
+    wb.save(file_stream)
+    file_stream.seek(0)
+    return StreamingResponse(
+        file_stream,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f"attachment; filename=liste_des_invites_{event.event.name}.xlsx"
+        }
+    )
+
+@Root.get("/download/presence/{event_id}/export_excel")
+def getPresenceList(request:Request,event_id:str,db:Session = Depends(connecting)):
+    event_guests = db.query(Guest).filter(Guest.event_id == event_id).all()
+    event = db.query(Event).filter(Event.id== event_id).first()
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "La liste de presence d'invité"
+    if not event :
+        raise HTTPException(404,"event not found")
+    ws.append([
+        "Nom de l'invité",
+        "Numero",
+        "Present"
+    ])
+    for guest in event_guests:
+        ws.append([
+            guest.name,
+            guest.telephone,
+            guest.invite.guestResponse.response
+        ])
+    memory = BytesIO()
+    wb.save(memory) #save the sheet in memory (ram)
+    memory.seek(0)
+    return StreamingResponse(
+        memory,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f"attachment; filename=liste_des_presence_pour_event_{event.name}.xlsx"
+        }
+    )

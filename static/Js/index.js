@@ -1,16 +1,18 @@
-const referenceName = document.querySelector('.referenceName');// recuperer la div
-const selection = document.querySelector('.selectInput');// recuperer le champ
+//   function confirmYes() {
+//     const msg = document.getElementById('guestMessage').value;
+//     // Ici tu enverras la réponse à ton backend via fetch ou form
 
+//     document.getElementById('message-section').style.display = 'none';
+//     document.getElementById('confirmation-msg').style.display = 'block';
+//   }
 
-selection.addEventListener("change",desabledReferenceName)// si on selectionne une valeur dans la selection on execute la fonction
+//   function confirmNo() {
+//     const msg = document.getElementById('guestMessage').value;
+//     document.getElementById('message-section').style.display = 'none';
+//     document.getElementById('confirmation-msg').style.display = 'block';
+//   }
 
-function desabledReferenceName(){
-    if (selection.value == "couple"){
-        referenceName.style.display = "block"; // une fois que la valeur selectionner est couple on affiche le champ nom de reference
-    }
-    else{
-        referenceName.style.display = "none";
-    }
-    
-    
-}
+const btns = document.querySelectorAll('.btn') //get buttons
+
+btns.forEach(btn,)
+//btns.forEach((btn=>btn.disabled = true))

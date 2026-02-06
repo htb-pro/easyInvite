@@ -36,6 +36,17 @@ class Guest(Base):
         UniqueConstraint('email', 'event_id', name='uix_email_event'),
         UniqueConstraint('telephone', 'event_id', name='uix_telephone_event'),
     )
+class PresenceConfirmation(Base):
+    __tablename__ = "guestPresence"
+    id = Column(String,primary_key=True,unique=True,default=lambda:str(uuid4()))
+    guest_id = Column(String,ForeignKey("guests.id") ,nullable = False)
+    invite_id = Column(String,ForeignKey("invites.id") ,nullable = False)
+    response = Column(String,nullable = False)
+    comment = Column(String)
+    send_at = Column(DateTime,default=datetime.utcnow)
+
+    invite = relationship("Invite",back_populates = "guestResponse",uselist=False)
+
 class Invite(Base):
     __tablename__= "invites"
     id=Column(String,primary_key=True,unique=True,default = lambda :str(uuid4()))
@@ -48,4 +59,5 @@ class Invite(Base):
 
 
     guest=relationship("Guest",back_populates="invite",uselist=False)
+    guestResponse=relationship("PresenceConfirmation",back_populates="invite",cascade = "all,delete-orphan",uselist=False)
 

@@ -75,6 +75,10 @@
           <img src="/static/Pictures/guestQrCode/{{ guest.qr_token }}.png" alt="QR Code" class="qr-code img-fluid" width="150px">
           <p class="text-muted ms-2 text-2">A scaner a l'entree de la salle </p>
         </div>
+        <div class="text-center" data-aos="zoom-in" data-aos-delay="300">
+            <h4>On vous attend avec joie 🙂</h4>
+            <a href="/presence/confirmation/{{guest.id}}/{{guest.event_id}}" class="btn btn-primary btn-lg mt-3">Confirmer ma présence</a>
+        </div>
     </div>
 </section>
 
