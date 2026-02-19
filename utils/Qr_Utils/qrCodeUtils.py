@@ -9,7 +9,7 @@ def createQrCode(token) -> str :
     qr_dirs = "static/Pictures/guestQrCode" #le chemin du repertoir ou seront stocke les images (qrCode)
     filename = f"{token}.png" #le nom du qrCode
     file_path = os.path.join(qr_dirs,filename)
-    url = f"http://easyinvite-1.onrender.com/{token}" #l'addresse ou sera stocker les qrcodes
+    url = f"{token}" #l'addresse ou sera stocker les qrcodes
     qr = QRCode(
         version=1,
         error_correction=qrcode.constants.ERROR_CORRECT_H,
