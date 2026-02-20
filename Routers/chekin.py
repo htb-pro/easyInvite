@@ -6,11 +6,11 @@ from fastapi.templating import Jinja2Templates
 from uuid import uuid4
 import models
 from db_setting import engine,connecting
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import selectinload
+from sqlalchemy.future import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from models import *
 from utils.scanQrCode.scan import scan_qr_code
-
-models.Base.metadata.create_all(bind=engine)
 
 Root = APIRouter()
 
@@ -26,10 +26,11 @@ Root.mount("/static",StaticFiles(directory="static"),name="static")#ou sont stoc
 def scanQrCode(request:Request):
     return templates.TemplateResponse("easyInviteApk/scanQrCode/verifying.html",{'request':request})
 
-@Root.post('/checkIn/',name = "scanningView")
-def scanResult(request:Request,qr_token :str = Form(...),db:Session = Depends(connecting)):
-    token = qr_token.split('/')[-1]
-    guest = db.query(Guest).filter(Guest.qr_token == token).first()
+@Root.get('/checkIn/{qr_token}')#checking du scan
+async def scanResult(request:Request,qr_token :str,db:AsyncSession = Depends(connecting)):
+    token = qr_token
+    get_guest =await db.scalars(Guest).where(Guest.qr_token == token)
+    guest = get_guest.first()
     if not guest :
         return templates.TemplateResponse("easyInviteApk/scanResult/guest/notFound.html",{'request':request})
     if guest.is_present:
@@ -37,5 +38,31 @@ def scanResult(request:Request,qr_token :str = Form(...),db:Session = Depends(co
         return templates.TemplateResponse("easyInviteApk/scanResult/guest/guestResult.html",{'request':request})
     guest.is_present = True
     guest.invite.used_at = datetime.now()
-    db.commit()
+    await db.commit()
     return templates.TemplateResponse("easyInviteApk/scanResult/guest/welcom.html",{'request':request,"guest":guest})
+
+@Root.post('/checkIn/',name = "scanningView") #verification du token du guest
+async def scanResult(request:Request,guest_data :str = Form(...),db:AsyncSession = Depends(connecting)):
+    def extract_value(value): #methode de conversion pour recuperer l'id qu'il soit dans une chaine(url) ou seul
+        value = str(value).strip()
+        if "/" in value:
+            return value.rstrip('/').split("/")[-2]
+        return value
+    guest_id= extract_value(guest_data)
+    res_guest = await db.execute(select(Guest).where(Guest.id == guest_id))
+    is_guest_exist = res_guest.scalars().first()
+    if not is_guest_exist : 
+         return templates.TemplateResponse("easyInviteApk/scanResult/guest/notFound.html",{'request':request})
+    token = is_guest_exist.qr_token
+    get_guest =await db.execute(select(Guest).where(Guest.qr_token == token).options(selectinload(Guest.invite)))
+    guest =get_guest.scalars().first()
+    if not guest :
+        return templates.TemplateResponse("easyInviteApk/scanResult/guest/notFound.html",{'request':request})
+    if guest.is_present:#si is_present est = true alors 
+        guest.is_present =False
+        return templates.TemplateResponse("easyInviteApk/scanResult/guest/used_invite.html",{'request':request}) #renvoi un message d'un qr_code deja utilise dans un template html
+    guestNoneCard = f"{guest.name}<->{guest.place}&{guest.qr_token}${guest.telephone}<->{guest.qr_token}" #id for guest without smartphone
+    guest.is_present = True
+    guest.invite.used_at = datetime.now()
+    await db.commit()
+    return templates.TemplateResponse("easyInviteApk/scanResult/guest/welcom.html",{'request':request,"guest":guest,'NoPhoneId':guestNoneCard})

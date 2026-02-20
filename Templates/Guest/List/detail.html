@@ -80,13 +80,9 @@
                          Absent
                          {%endif%} 
                      </strong></p>
-                  <!-- QR Code -->
-                <div class="col-12 col-md-4 col-lg-4 text-center mt-4">
-                    <img src="/static/Pictures/guestQrCode/{{ guest.qr_token }}.png" alt="QR Code" class="qr-code img-fluid">
-                </div>
                 <!-- Actions -->
                 <div class="d-flex flex-column flex-lg-row  gap-2 mt-5">
-                    <a href="/static/Pictures/inviteQrCode/Event_{{event_id}}/{{guest.name}}-{{guest.telephone}}.png" class="btn btn-outline-success" download>
+                    <a href="/download/invite/{{event_id}}/{{guest.id}}" class="btn btn-outline-primary col-12 col-md-8 col-12 col-md-6 text-light">
                         telecharger l'invitation
                     </a>
                     <a href="/edit_guest_form/{{event_id}}/{{guest.id}}" class="btn btn-primary">

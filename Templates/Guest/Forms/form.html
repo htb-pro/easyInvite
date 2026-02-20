@@ -67,7 +67,7 @@
      
 </div>
 
-{% if success %}
+{% if success is true %}
   <div id="success-alert" class="alert alert-success alert-dismissible fade show col-12 col-lg-6 container mt-2" role="alert">
       🎉 Invité créé avec succès !
   </div>
@@ -79,9 +79,10 @@
       <span class="mt-2 text-center"> 📩 Nouvel Invité</span>
     <div class="card-body">
       <form method="post" action="/create/{{event.id}}/guest">
-        {% if emailError %}
+     
+        {% if uniqueValueError %}
         <div class="alert alert-danger">
-                <p>{{emailError}}</p>
+                <p>{{uniqueValueError}}</p>
           </div>
         {%endif%}
         <!-- NAME -->
@@ -94,9 +95,8 @@
         <div class="mb-3">
           <label class="form-label">Type</label>
           <select class="form-select selectInput" name="guestType"  required>
-            <option value="">-- {{guestType}} --</option>
-            <option value="Singleton">Singleton</option>
-            <option value="Couple">Couple</option>
+            <option value="Singleton" {%if guestType == 'Singleton' %}selected{%endif%}>Singleton</option>
+            <option value="Couple" {% if guestType == 'Couple' %} selected {%endif%}>Couple</option>
           </select>
         </div>
 

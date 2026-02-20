@@ -6,17 +6,44 @@
     <title>Check-in invité</title>
     <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-        <meta http-equiv="refresh" content="120;url=/scan">
+     <link rel="stylesheet" href="https://unpkg.com/aos@2.3.4/dist/aos.css"/>
+         <!-- Icons Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <meta http-equiv="refresh" content="120;url=/scan">
     <style>
+           @media (min-width : 716px){
+            .mobile-list{
+                display: none;
+            }
+        }
         body {
-            background-color: #f4f6f8;
+        font-family: "Segoe UI", system-ui, sans-serif;
+        min-height: 100vh;
+        background-color: #0b1c2d;
+        position: relative;
+        overflow-x: hidden;
         }
 
+        /* ===== BACKGROUND GEOMETRIQUE ===== */
+        body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background:
+            linear-gradient(135deg, rgba(255,255,255,0.03) 25%, transparent 25%) -60px 0,
+            linear-gradient(225deg, rgba(255,255,255,0.03) 25%, transparent 25%) -60px 0,
+            linear-gradient(315deg, rgba(255,255,255,0.03) 25%, transparent 25%),
+            linear-gradient(45deg, rgba(255,255,255,0.03) 25%, transparent 25%);
+        background-size: 120px 120px;
+        z-index: 0;
+        }
         .card {
             max-width: 400px;
             margin: 50px auto;
             border-radius: 15px;
             box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            background-color: rgba(0,0,0,0.4);
+            color: white;
             padding: 30px;
             text-align: center;
         }
@@ -30,10 +57,6 @@
         .error { color: #dc3545; }
         .warning { color: #ffc107; }
 
-        .guest-name {
-            font-weight: bold;
-        }
-
         @media (max-width: 576px) {
             .card {
                 margin: 20px auto;
@@ -44,18 +67,27 @@
 </head>
 <body>
 
-<div class="card">
-        <div class="status-icon success">✔</div>
-        <h3 class="success">Accès autorisé</h3>
-        <p>Bienvenue {{ guest.name }}🎉</p>
-        <p>Soyez le bienvenu a notre evenement </br>
-        Votre numero est : <span class="guest-name">{{ guest.telephone }}</span></p>
-        Vous serez a la table : {%if guest.place %}<b>{{ guest.place }}</b>{%endif%}</p>
+<div class="card" >
+        <div class="status-icon success" data-aos="fade-up" ><i class="bi bi-check-square"></i></div>
+        <h3 class="success" data-aos ="fade-up">Accès autorisé</h3>
+        <h4 data-aos ="fade-up"> Bienvenue {{ guest.name }}🎉</h4>
+        <p data-aos ="fade-up">Soyez le bienvenu a notre evenement </br>
+            <hr>
+     <div data-aos="fade-down">
+        <p class="text-start">Numero: <b>{{ guest.telephone }}</b></span></p>
+        <p class="text-start">Identifiant: <b>{{NoPhoneId }}</b></span></p>
+        <p class="text-start">table : {%if guest.place %}<b>{{ guest.place }}</b>{%endif%}</p>
         <a href="{{ url_for('scanning') }}" class="btn btn-primary">retourner au scan</a>
-        
+    </div>  
 </div>
 
 <!-- Bootstrap JS -->
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
+<script>
+    AOS.init({
+        delay:"400"
+    })
+</script>
 </body>
 </html>

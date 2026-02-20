@@ -12,17 +12,22 @@ from models import *
 from datetime import date
 from typing import Optional
 from datetime import datetime,date
+from Routers.loging import get_curent_user,get_current_user_from_cookie
 
-models.Base.metadata.create_all(bind=engine)
 
-
+#Root = APIRouter(prefix="/admin",dependencies = [Depends(get_current_user_from_cookie)])
 Root = APIRouter()
 
 templates = Jinja2Templates(directory="Templates")#ou sont stocker les templates
 Root.mount("/static",StaticFiles(directory="static"), name="static")#ou sont stocker les fichier static
 
-@Root.get("/",name="main_page",response_class=HTMLResponse)#get the main page
-def get_main(request:Request):
+
+@Root.get("/",name="intro_link")#get the intro view
+def intro_view(request:Request):
+    return templates.TemplateResponse("easyInviteApk/Intro/home.html",{'request':request})
+
+@Root.get("/main",name="main_page")#get the main page
+def get_main(request:Request,curent_user = Depends(get_current_user_from_cookie)):
     return templates.TemplateResponse("easyInviteApk/homePage/main.html",{'request':request})
 
 #-----------------------about invitation view
@@ -30,7 +35,5 @@ def get_main(request:Request):
 def getInvite(request:Request):
     return templates.TemplateResponse("Invitation/List/list.html",{'request':request})
 
-@Root.get("/easyInvite",name="intro_link",response_class=HTMLResponse)#get the intro view
-def intro_view(request:Request):
-    return templates.TemplateResponse("easyInviteApk/Intro/intro.html",{'request':request})
+
 

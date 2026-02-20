@@ -38,14 +38,18 @@
                 Accédez à la gestion des invitations
             </p>
         </div>
-
+        {%if message %}
+        <div class="alert alert-danger">
+            {{message}}
+        </div>
+        {%endif%}
         <!-- FORM -->
         <form method="post" action="/login">
 
             <div class="mb-3">
                 <label class="form-label">Email</label>
                 <input type="email"
-                       name="email"
+                       name="username"
                        class="form-control"
                        placeholder="admin@email.com"
                        required>
@@ -84,6 +88,16 @@
         </a>
     </div>
 </div>
+<script>
+    setTimeout(() => {
+        const alert = document.querySelector(".alert");
+            if (alert) {
+            alert.classList.remove("show");
+            alert.classList.add("fade");
+            setTimeout(() => alert.remove(), 500);
+        }
+    }, 3000); // disparaît après 3 secondes
 
+</script>
 </body>
 </html>

@@ -7,6 +7,8 @@
 
     <!-- Bootstrap 5 -->
     <link rel="stylesheet" href="/static/Css/bootstrap.min.css">
+        <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
         <!-- Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <style>
@@ -56,7 +58,7 @@
 <div class="container py-3">
     <!-- Header -->
     <div class="mb-3">
-        <h5 class="fw-bold mb-0 text-light">📋 Invités</h5>
+        <h5 class="fw-bold mb-0 text-light">📋 Invités </h5>
         <small class="text-light">Événement : {{event.name}}</small>
     </div>
 
@@ -64,20 +66,20 @@
     <div class="row g-2 mb-3">
         <div class="col-4 text-center">
             <div class="bg-white rounded-3 p-2 shadow-sm">
-                <strong>{{totalGuest}}</strong><br>
-                <small>Total</small>
+                <strong></strong><br>
+                <small>Total : {{guests | length}} </small>
             </div>
         </div>
         <div class="col-4 text-center">
             <div class="bg-white rounded-3 p-2 shadow-sm">
-                <strong class="text-success">{{presentGuest}}</strong><br>
-                <small>Présents</small>
+                <strong class="text-success"></strong><br>
+                <small>Présents : {{present_guest}}</small>
             </div>
         </div>
         <div class="col-4 text-center">
             <div class="bg-white rounded-3 p-2 shadow-sm">
-                <strong class="text-secondary">{{absentGuest}}</strong><br>
-                <small>Absent</small>
+                <strong class="text-secondary"></strong><br>
+                <small>Absent : {{absent_guest}}</small>
             </div>
         </div>
     </div>
@@ -94,7 +96,7 @@
                 <span class="navbar-brand mb-0 h5 text-white">
                     Liste des Invités
                 </span>
-                <a href="/create/{{event.id}}/guest" class="btn btn-light btn-sm">
+                <a href="/create/{{event_id}}/guest" class="btn btn-light btn-sm">
                     <i class="bi bi-plus"></i>Ajouter
                 </a>
             </nav>
@@ -112,7 +114,6 @@
                         <th>Actions</th>
                     </tr>
                 </thead>   
-                {% if guests %}
                     {% for guest in guests%}
                 <tbody>
                     <tr>
@@ -124,16 +125,15 @@
                         <td>{{guest.email}}</td>
                         <td>  {{guest.created_date.strftime('%d-%m-%y')}} {{guest.created_date.strftime('%H:%M')}}</td>
                         <td class="d-flex justify-content-start  align-items-center">
-                            <a href="/invite/{{event_id}}/{{guest.id}}/create" class="btn btn-outline-primary"><i class="bi bi-envelope me-1"></i></a>
-                            <a href="/guest/{{guest.id}}/{{event_id}}/detail"  class="btn btn-outline-primary">👁</a>
-                            <a href="/edit_guest_form/{{event_id}}/{{guest.id}}" class="btn btn-outline-secondary">✏</a>
+                            <a href="/invite/{{event_id}}/{{guest.id}}/create" class="btn btn-outline-light"><i class="bi bi-envelope me-1"></i></a>
+                            <a href="/guest/{{guest.id}}/{{event_id}}/detail"  class="btn btn-outline-light">👁</a>
+                            <a href="/edit_guest_form/{{event_id}}/{{guest.id}}" class="btn btn-outline-light">✏</a>
                             <form action="/delete_guest/{{event_id}}/guest" method="post">
                                 <input type="hidden" name="guest_id" value="{{guest.id}}">
-                                <input type="hidden" name="inviteId" value="{{guest.invite.id}}">
                                 <button type="submit" onclick="return confirm('voulez-vous supprimer cet invité ???')" class="btn btn-outline-danger">🗑</button>
                             </form>
                         </td>
-                    </tr> {% endfor %}{%endif%}
+                    </tr> {% endfor %}
                 </tbody> 
                 
             </table>
@@ -162,7 +162,7 @@
                         <small class="text-muted" style="font-size:18px;">{% if guest.is_present %}<i class="bi bi-check-circle-fill text-success"></i>   Present {%else%}<span class="text-danger"><i class="bi bi-x-circle-fill "></i> Absent</span>{%endif%}</small></br>
                         <div class="btn-group btn-group-sm">
                             <small class="d-flex justify-content-center ">
-                                <a href="/invite/{{event_id}}/{{guest.id}}/create" class="btn btn-outline-primary"><i class="bi bi-envelope me-1"></i></a>
+                                <a href="/invite/{{event_id}}/{{guest.id}}/create" class="btn btn-outline-light"><i class="bi bi-envelope me-1"></i></a>
                                 <a href="/guest/{{guest.id}}/{{event_id}}/detail"  class="btn btn-outline-light ms-2">👁</a>
                                 <a href="/edit_guest_form/{{event_id}}/{{guest.id}}" class="btn btn-outline-light ms-2">✏</a>
                                 <form action="/delete_guest/{{event_id}}/guest" method="post" class="ms-2">

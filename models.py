@@ -1,34 +1,45 @@
-from sqlalchemy import Column,String,Integer,DateTime,Text,Enum,Date,ForeignKey,Boolean,UniqueConstraint
-import enum
+from sqlalchemy import Column,String,DateTime,Text,Uuid,Date,ForeignKey,Boolean,UniqueConstraint
+import uuid
 from sqlalchemy.orm import relationship
 from db_setting import Base
 from uuid import uuid4
-from datetime import datetime
+from datetime import datetime,date
+
+class User(Base):
+    __tablename__ = "users"
+    id = Column(String,primary_key = True,default = lambda : str(uuid4()))
+    name = Column(String)
+    email = Column(String,unique = True,index=True,nullable = False)
+    password = Column(String,nullable = False)
+    role = Column(String,default="user")
+    state = Column(String,default="active")
+    created_at = Column(DateTime,default=datetime.utcnow())
+
 class Event(Base): #event table
     __tablename__="events"
     id = Column(String,primary_key=True,unique=True,default=lambda :str(uuid4()))
-    name = Column(String(50))
+    name= Column(String(50))
     type = Column(String(50))
     date = Column(Date)
-    address = Column(String(50))
+    address =Column(String(50))
     description = Column(Text,nullable=True)
-    created_date = Column(DateTime,default=datetime.now())
+    created_date =Column(DateTime,default=datetime.now())
     state = Column(String,default="en cours")
     
     guests = relationship("Guest",back_populates="event",cascade="all,delete")
 
 class Guest(Base):
     __tablename__="guests"
-    id = Column(String,primary_key=True,unique=True,default=lambda:str(uuid4()))
-    name = Column(String(60))
-    guest_type = Column(String(20))
+    id  = Column(String,primary_key=True,unique=True,default=lambda:str(uuid4()))
+    name  = Column(String(60))
+    guest_type  = Column(String(20))
     telephone =  Column(String,nullable=False) 
-    email= Column(String,nullable=True)
-    place = Column(String,nullable=True)
-    event_id = Column(String,ForeignKey('events.id'),nullable=False)
-    created_date = Column(DateTime,default=datetime.now())
-    is_present = Column(Boolean,default=False)
-    qr_token = Column(String,unique=True,nullable=False,default=lambda : str(uuid4()))
+    email = Column(String,nullable=True)
+    place  = Column(String,nullable=True)
+    event_id  = Column(String,ForeignKey('events.id'),nullable=False)
+    created_date  = Column(DateTime,default=datetime.now())
+    is_present  = Column(Boolean,default=False)
+    qr_token  = Column(String,unique=True,nullable=False,default=lambda : str(uuid4()))
 
     event = relationship("Event",back_populates="guests")
     invite = relationship("Invite",back_populates="guest",uselist = False,cascade="all,delete-orphan")
@@ -38,23 +49,23 @@ class Guest(Base):
     )
 class PresenceConfirmation(Base):
     __tablename__ = "guestPresence"
-    id = Column(String,primary_key=True,unique=True,default=lambda:str(uuid4()))
-    guest_id = Column(String,ForeignKey("guests.id") ,nullable = False)
+    id  = Column(String,primary_key=True,unique=True,default=lambda:str(uuid4()))
+    guest_id  = Column(String,ForeignKey("guests.id") ,nullable = False)
     invite_id = Column(String,ForeignKey("invites.id") ,nullable = False)
-    response = Column(String,nullable = False)
-    comment = Column(String)
-    send_at = Column(DateTime,default=datetime.utcnow)
+    response  =Column(String,nullable = False)
+    comment=Column(String)
+    send_at  = Column(DateTime,default=datetime.utcnow)
 
     invite = relationship("Invite",back_populates = "guestResponse",uselist=False)
 
 class Invite(Base):
     __tablename__= "invites"
-    id=Column(String,primary_key=True,unique=True,default = lambda :str(uuid4()))
-    guest_id = Column(String,ForeignKey('guests.id',ondelete="CASCADE"))
-    event_id = Column(String,ForeignKey('events.id',ondelete="CASCADE"))
-    qr_token = Column(String,unique=True, default=lambda:str(uuid4()))
-    created_date = Column(DateTime,default=datetime.now())
-    is_used = Column(Boolean,default = False)
+    id =Column(String,primary_key=True,unique=True,default = lambda :str(uuid4()))
+    guest_id  =Column(String,ForeignKey('guests.id',ondelete="CASCADE"))
+    event_id  = Column(String,ForeignKey('events.id',ondelete="CASCADE"))
+    qr_token  = Column(Uuid(as_uuid =True),unique=True, default=lambda:str(uuid4()))
+    created_date  = Column(DateTime,default=datetime.now())
+    is_used= Column(Boolean,default = False)
     used_at = Column(DateTime,default=datetime.now())
 
 

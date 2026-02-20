@@ -49,7 +49,7 @@
                 <div class="col-12 col-lg-6 d-flex flex-column  justify-content-center align-items-center">
                     <h1 class="display-5" style="font-family: 'Playfair Display', serif;font-size: 1.8rem;">Bonjour et bienvenue très cher(e) {{ guest.name }} 🎉</h1>
                     <p class="lead">
-                        Nous avons l'honneur de vous inviter à notre événement spécial de {{guest.event.type}}. pour plus de precision cliquer sur le bouton "voir le detail"
+                        Nous avons l'honneur de vous inviter à notre événement spécial de {{guest.event_id.type}}. pour plus de precision cliquer sur le bouton "voir le detail"
                     </p>
                     <a href="#details" class="btn btn-primary btn-lg mt-3">Voir les détails</a>
                 </div>
@@ -61,6 +61,7 @@
 <section id="details" class="py-5">
     <div class="container">
         <div class="row text-center">
+             <p class="mb-4" style="font-family:  serif,'Playfair Display'; font-size: 20px;">Nous sommes ravis de vous accueillir à notre {{guest.event.type}}, Voici l'addresse du lieu :</p>
             <div class="col-lg-6 mb-4" data-aos="fade-right" data-aos-duration="1500">
                 <h3 style="font-family:  serif,'Playfair Display';">📅 Date </h3>
                 <p style="font-family:  serif,'Playfair Display'; font-size: 20px;">{{guest.event.date.strftime('%d-%m-%Y')}}</p>
@@ -69,39 +70,23 @@
                 <h3 style="font-family:  serif,'Playfair Display';">📍 Addresse</h3>
                 <p  style="font-family:  serif,'Playfair Display'; font-size: 20px;">{{guest.event.address}}</p>
             </div>
+            <div class="text-center" data-aos="zoom-in" data-aos-delay="300">
+               
+                <h4>On vous attend avec joie</h4>
+                <a href="/presence/confirmation/{{guest.id}}/{{guest.event_id}}" class="btn btn-primary btn-lg mt-3">Confirmer ma présence</a>
+            </div>
         </div>
+    </div>
 
-        <div class="div text-center" data-aos="fade-right" data-aos-duration="1500">
-          <img src="/static/Pictures/guestQrCode/{{ guest.qr_token }}.png" alt="QR Code" class="qr-code img-fluid" width="150px">
-          <p class="text-muted ms-2 text-2">A scaner a l'entree de la salle </p>
-        </div>
-        <div class="text-center" data-aos="zoom-in" data-aos-delay="300">
-            <h4>On vous attend avec joie 🙂</h4>
-            <a href="/presence/confirmation/{{guest.id}}/{{guest.event_id}}" class="btn btn-primary btn-lg mt-3">Confirmer ma présence</a>
-        </div>
     </div>
 </section>
 
-<!-- RSVP Section -->
-<section id="rsvp" class="py-5 bg-light">
-    <div style="font-family : serif,'Playfair Display';" class="container text-center" data-aos="fade-left" data-aos-duration="1900">
-        Merci d’avoir scanné ce QR code.<br>
-        Nous sommes impatients de vous accueillir et de partager ce moment avec vous.<br>
-        Veuillez présenter ce QR code ou la carte d'invité à l’arrivée pour votre enregistrement.
-        <div class="container 2">
-            <a href="/static/Pictures/guestQrCode/{{guest.qr_token}}.png"  class="btn btn-outline-primary col-12 col-lg-6" download>
-                <i class="bi bi-download me-2"></i>
-                Télécharger le QR Code
-            </a>
-        </div>
-    </div>
-</section>
 
 <!-- Footer -->
 <footer class="text-center py-3">
+    <p><i class="bi bi-telephone-fill"></i> +243 897 401 210 ou +243 991 152 067</p>
+    <p><i class="bi bi-telephone-fill"></i> +243 898 147 644 ou +243 970 784 320</p>
     <p>&copy; easyInvite {{copyright.strftime('%Y')}}</p>
-    <p><i class="bi bi-telephone-fill"></i> +243 897 401 210</p>
-    <p><i class="bi bi-telephone-fill"></i> +243 898 147 644</p>
 </footer>
 
 <!-- Bootstrap JS -->
