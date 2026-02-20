@@ -3,7 +3,7 @@ from qrcode import QRCode
 import os,io
 
 def createInviteQrCode(event,guest):
-    url = f"http://easyinvite-1.onrender.com/invite/{event}/{guest}/making" #les variables du lien sont l'id de l'evenement et celui de guest
+    url = f"http://easyinvite-1.onrender.com/invite/{event}/{guest}/create" #les variables du lien sont l'id de l'evenement et celui de guest
     qr = QRCode(
         version=1,
         error_correction = qrcode.constants.ERROR_CORRECT_H,
