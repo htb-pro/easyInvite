@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>Scanner Invitation</title>
+<link rel="stylesheet" href="/static/Css/bootstrap.min.css">
+<script src="/static/Js/html5-qrcode-master/minified/html5-qrcode.min.js" defer></script>
+<script src="/static/Js/index.js" defer></script>
+<!-- Bootstrap -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+
+<!-- QR Scanner lib -->
+<script src="https://unpkg.com/html5-qrcode"></script>
+
+<style>
+body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      min-height: 100vh;
+      background-color: #0b1c2d;
+      position: relative;
+      overflow-x: hidden;
+    }
+
+    /* ===== BACKGROUND GEOMETRIQUE ===== */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.03) 25%, transparent 25%) -60px 0,
+        linear-gradient(225deg, rgba(255,255,255,0.03) 25%, transparent 25%) -60px 0,
+        linear-gradient(315deg, rgba(255,255,255,0.03) 25%, transparent 25%),
+        linear-gradient(45deg, rgba(255,255,255,0.03) 25%, transparent 25%);
+      background-size: 120px 120px;
+      z-index: 0;
+    }
+.card{
+    border-radius:20px;
+    box-shadow:0 10px 30px rgba(0,0,0,0.4);
+    background-color:rgba(0,0,0,0.4);
+
+}
+
+#reader{
+    border-radius:15px;
+    overflow:hidden;
+}
+#reader .html5-qrcode-camera-selector{
+    position: relative;
+    z-index: 1;
+    color :white;
+}
+
+.result-box{
+    margin-top:20px;
+    font-size:18px;
+}
+#reader__dashboard_section_csr span,#html5-qrcode-anchor-scan-type-change
+{
+    color: white;
+}
+.result-link{
+    display:block;
+    padding:14px;
+    border-radius:12px;
+    text-decoration:none;
+    font-weight:600;
+    transition:.2s;
+}
+
+.result-link:hover{
+    transform:scale(1.03);
+}
+</style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark bg-primary">
+    <div class="container-fluid">
+        <span class="navbar-brand">
+            <i class="bi bi-qr-code-scan me-2"></i>
+            Vérifier l’invitation
+        </span>
+    </div>
+</nav>
+<!-- next update
+<div class="container mt-4 px-3">
+    <div class="card shadow p-4 mb-4 text-center">
+        <h5 class="fw-bold mb-3 text-light">Scanner le QR Code</h5>
+        <p class="text-light small">Utilisez la caméra de votre téléphone</p>
+        <form method="post" action="/checkIn/">
+            <input type="text" name="guest_data" class="form-control mb-3" placeholder="Collez ou scannez le QR code" required>
+            <button type="submit" class="btn btn-primary w-100">
+                <i class="bi bi-check-circle me-2"></i>
+                Vérifier
+            </button>
+        </form>
+    </div>
+</div>
+-->
+<div class="container ">
+    <div class="col-12 col-md-6 col-lg-10  ">
+        <div class="card p-4 mt-4 text-center">
+            <h3 class="mb-3 text-light">Scanner une invitation</h3>
+            <div id="reader"></div>
+            <div id="result" class="result-box"></div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
