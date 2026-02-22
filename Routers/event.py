@@ -16,12 +16,14 @@ from typing import Optional
 from datetime import datetime,date
 from openpyxl import Workbook
 from io import BytesIO
+from Routers.loging import get_current_user_from_cookie
 
-Root = APIRouter()
+Root = APIRouter(tags = ["easyInvite"],dependencies =[Depends(get_current_user_from_cookie)])
 templates = Jinja2Templates(directory="Templates")#ou sont stocker les templates
 Root.mount("/static",StaticFiles(directory="static"),name="static")#ou sont stocker les fichier static
 
-@Root.get("/event_form",name="event_form",response_class = HTMLResponse)#event form request
+
+@Root.get("/event_form",name="event_form")#event form request
 def getEventForm(request:Request):
     return templates.TemplateResponse("Event/Forms/event_form.html",{'request':request})
 

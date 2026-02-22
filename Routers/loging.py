@@ -27,11 +27,27 @@ def get_curent_user(token:str = Depends(oauth_scheme)):
         raise HTTPException(status_code = status.HTTP_401_UNAUTHORIZED,detail = "non autorisé")
     return user
 
+#verifier le token de l'utilisateur
+async def get_current_user_from_cookie(request:Request,db:AsyncSession  = Depends(connecting)):
+    token = request.cookies.get("access_token")
+    if not token :
+        raise HTTPException(status_code = 401)
+    try:
+        payload = jwt.decode(token,secret,algorithms = algo)
+        email = payload.get("sub")
+    except JWTError:
+        raise HTTPException(status_code = 401)
+    res_user = await db.execute(select(User).where(User.email ==email))
+    user = res_user.scalars().first()
+    if not user :
+        raise HTTPException(status_code = 404,detail = "utilisateur introuvable")
+    return user
+
 def hash_password(password:str):#methode pour le hashage du password
     return pwd_context.hash(password[:1024])
 
 def verify_password(password:str,hashed:str):#verifier le password
-    return pwd_context.verify(password,hashed)
+    return pwd_context.verify(password,hashed)#hashed est le mot de passe contentu dans la db
 
 def create_token(data:dict):#Creation du token
     data_to_encode = data.copy()
@@ -44,12 +60,16 @@ def verify_token(token:str):#verification du token
         payload = jwt.decode(token,secret,algorithms = [algo])
         return payload
     except jwt.ExpiredSignatureError:
-        raise HTTPException(401,"token expire")
+        raise HTTPException(401,"token expired")
     except jwt.InvalidTokenError:
         raise HTTPException(401,"token invalide")
-    
+
+@Root.get("/",name="intro_link")#get the intro view
+def intro_view(request:Request):
+    return templates.TemplateResponse("Authentification/forms/home.html",{'request':request})
+
 @Root.get("/list_users")#get the auth view
-async def get_users(request:Request,db:AsyncSession = Depends(connecting)):
+async def get_users(request:Request,curent_user = Depends(get_current_user_from_cookie),db:AsyncSession = Depends(connecting)):
     user_res = await db.execute(select(User)) #get the list in user
     users = user_res.scalars().all()
     message = request.session.pop('message',None)
@@ -65,7 +85,7 @@ async def auth_view(request:Request,name:str = Form(),email:str =Form(...),passw
     res = await db.execute(select(User).where(User.email ==email))
     user = res.scalars().first()
     message = None
-    if user :
+    if user :#si un utilisateur existe avec l'email
         message = "utilisateur existe déjà cet email"
         return templates.TemplateResponse("Authentification/forms/register_user.html",{'request':request,'failed_message':message})
     hashed_pwd = hash_password(password)
@@ -87,9 +107,16 @@ async def auth_view(request:Request,name:str = Form(),email:str =Form(...),passw
 def auth_view(request:Request):
     return templates.TemplateResponse("Authentification/forms/auth.html",{'request':request})
 
-@Root.post("/login")#get the auth view
+@Root.get("/logout",name="logout")#get the auth view
+def logout():
+    response = RedirectResponse("/login",status_code = 302)
+    response.delete_cookie("access_token",path = "/")
+    return response
+
+@Root.post("/login")#get the user data
 async def login(request:Request,form_data : OAuth2PasswordRequestForm = Depends(),db:AsyncSession = Depends(connecting)):
-    user_res = await db.execute(select(User).where(User.email == form_data.username))
+    user_email = form_data.username
+    user_res = await db.execute(select(User).where(User.email == user_email))
     user = user_res.scalars().first()
     message = None
     if not user:
@@ -134,19 +161,5 @@ async def edit_user(request:Request,user_id:str,name:str = Form(),email:str = Fo
     request.session['message'] = message
     return RedirectResponse("/list_users",303)
 
-#verifier le token de l'utilisateur
-async def get_current_user_from_cookie(request:Request,db:AsyncSession  = Depends(connecting)):
-    token = request.cookies.get("access_token")
-    if not token :
-        return RedirectResponse(url="/login")
-    try:
-        payload = jwt.decode(token,secret,algorithms = algo)
-        email = payload.get("sub")
-    except JWTError:
-        return RedirectResponse(url="/login")
-    res_user = await db.execute(select(User).where(User.email ==email))
-    user = res_user.scalars().first()
-    if not user :
-        message = "utilisateur introuvable"
-        return templates.TemplateResponse("Authentification/forms/auth.html",{'request':request,'message':message})
-    return user
+
+

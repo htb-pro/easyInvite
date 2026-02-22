@@ -28,13 +28,13 @@ def extract_value(value): #methode de conversion pour recuperer l'id qu'il soit 
             return value.rstrip('/').split("/")[-2]
         return value
 
-@Root.get("/scan_test",name="scanning",response_class=HTMLResponse)#test scan
+@Root.get("/scan_view",name="scanning")#test scan
 def scanQrCode(request:Request):
     return templates.TemplateResponse("easyInviteApk/scanQrCode/scan.html",{'request':request})
 
-@Root.get("/scan_view",name="scanning",response_class=HTMLResponse)#test scan
-def scanQrCode(request:Request):
-    return templates.TemplateResponse("easyInviteApk/scanQrCode/verifying.html",{'request':request})
+# @Root.get("/scan_view",name="scanning",response_class=HTMLResponse)#test scan
+# def scanQrCode(request:Request):
+#     return templates.TemplateResponse("easyInviteApk/scanQrCode/verifying.html",{'request':request})
 
 @Root.get("/scan",name="scanning")#checking du scan 
 async def scanQrCode(request:Request,guest_id:str,db:AsyncSession = Depends(connecting)):

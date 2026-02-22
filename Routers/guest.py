@@ -17,8 +17,10 @@ import os
 from pathlib import Path
 from utils.Qr_Utils.qrCodeUtils import createInviteQrCode
 import base64
+from Routers.loging import get_current_user_from_cookie
 
-Root = APIRouter()
+
+Root = APIRouter(tags = ["easyInvite"],dependencies =[Depends(get_current_user_from_cookie)])
 templates = Jinja2Templates(directory="Templates")#ou sont stocker les templates
 
 #--------------------About guest
