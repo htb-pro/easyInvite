@@ -30,7 +30,7 @@ body {
         }
         .card
         {
-            background-color: rgb(255,255,255,0.3); 
+            background-color: rgb(255,255,255,0.1); 
             border-color :rgb(255,255,255,0.3);
         }
         .table th 
@@ -92,10 +92,14 @@ body {
                         <td> {{ user.role }}</td>
                         <td>{{ user.state }}</td>
                         <td>{{ user.created_at }}</td>
-                        <td class="text-end">
-                            <a href="/users/{{ user.id }}" class="btn btn-sm btn-outline-primary">Voir</a>
-                            <a href="/user/edit/{{ user.id }}" class="btn btn-sm btn-outline-warning">Modifier</a>
-                            <a href="/users/delete/{{ user.id }}" class="btn btn-sm btn-outline-danger">Supprimer</a>
+                        <td class="d-flex flex-row text-start">
+                            <a href="/detail/{{ user.id }}" class="btn btn-sm btn-outline-primary text-light">👁</a>
+                            <a href="/user/edit/{{ user.id }}" class="btn btn-sm btn-outline-warning text-light">✏</a>
+                             <form action="/delete_user/{{user.id}}" method="post">
+                            <button type="submit" onclick="return confirm ('voulez-vous supprimer cet evenement')" class="btn btn-outline-danger">
+                               🗑
+                            </button>
+                            </form>
                         </td>
                     </tr>
                     {% endfor %}

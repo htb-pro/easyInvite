@@ -15,9 +15,23 @@ from jose import JWTError,jwt
 from config import secret,algo,token_expire_minute
 
 templates = Jinja2Templates(directory = "Templates")
-Root = APIRouter()
 pwd_context = CryptContext(schemes=["argon2"],deprecated="auto")
-
+Root = APIRouter()
+#verifier le token de l'utilisateur
+async def get_current_user_from_cookie(request:Request,db:AsyncSession  = Depends(connecting)):
+    token = request.cookies.get("access_token") #recuperer le token 
+    if not token :
+        raise HTTPException(status_code = 401)
+    try:
+        payload = jwt.decode(token,secret,algorithms = algo)
+        email = payload.get("sub")#sub est la variable contenant l'email envoyer par le token
+    except JWTError:
+        raise HTTPException(status_code = 401)
+    res_user = await db.execute(select(User).where(User.email ==email))
+    user = res_user.scalars().first()
+    if not user :
+        raise HTTPException(status_code = 404,detail = "utilisateur introuvable")
+    return user
 
 #middleware pour la pretection des pages 
 oauth_scheme =OAuth2PasswordBearer(tokenUrl = "login")
@@ -27,21 +41,12 @@ def get_curent_user(token:str = Depends(oauth_scheme)):
         raise HTTPException(status_code = status.HTTP_401_UNAUTHORIZED,detail = "non autorisé")
     return user
 
-#verifier le token de l'utilisateur
-async def get_current_user_from_cookie(request:Request,db:AsyncSession  = Depends(connecting)):
-    token = request.cookies.get("access_token")
-    if not token :
-        raise HTTPException(status_code = 401)
-    try:
-        payload = jwt.decode(token,secret,algorithms = algo)
-        email = payload.get("sub")
-    except JWTError:
-        raise HTTPException(status_code = 401)
-    res_user = await db.execute(select(User).where(User.email ==email))
-    user = res_user.scalars().first()
-    if not user :
-        raise HTTPException(status_code = 404,detail = "utilisateur introuvable")
-    return user
+
+
+# def require_role(user:str):
+#     if user.role != "admin":
+#         raise HTTPException(status_code = status.HTTP_403_FORBIDDEN,detail="vous n'avez les droits")
+#     return user
 
 def hash_password(password:str):#methode pour le hashage du password
     return pwd_context.hash(password[:1024])
@@ -60,20 +65,26 @@ def verify_token(token:str):#verification du token
         payload = jwt.decode(token,secret,algorithms = [algo])
         return payload
     except jwt.ExpiredSignatureError:
-        raise HTTPException(401,"token expired")
+        raise HTTPException(status_code = 401,detail = "token expired")
     except jwt.InvalidTokenError:
-        raise HTTPException(401,"token invalide")
+        raise HTTPException(status_code = 401,detail = "token invalide")
 
 @Root.get("/",name="intro_link")#get the intro view
 def intro_view(request:Request):
     return templates.TemplateResponse("Authentification/forms/home.html",{'request':request})
 
 @Root.get("/list_users")#get the auth view
-async def get_users(request:Request,curent_user = Depends(get_current_user_from_cookie),db:AsyncSession = Depends(connecting)):
+async def get_users(request:Request,db:AsyncSession = Depends(connecting)):#user = Depends(require_role("admin"))):
     user_res = await db.execute(select(User)) #get the list in user
     users = user_res.scalars().all()
     message = request.session.pop('message',None)
     return templates.TemplateResponse("Authentification/admin/list_user.html",{'request':request,'users':users,'message':message})
+
+@Root.get("/detail/{user_id}")
+async def getUserDetail(request:Request,user_id :str,db:AsyncSession = Depends(connecting)):
+    get_user = await db.execute(select(User).where(User.id == user_id))
+    user = get_user.scalars().first()
+    return templates.TemplateResponse("Authentification/admin/detail.html",{'request':request,'user':user})
 
 @Root.get("/register")#get the auth view
 def auth_view(request:Request):
@@ -138,7 +149,7 @@ async def edit_user(request:Request,user_id:str,db:AsyncSession = Depends(connec
     get_user_to_edit = await db.execute(select(User).where(User.id == user_id))#trouver le user
     user = get_user_to_edit.scalars().first()#prendre la premiere ocurence
     if not user :
-        raise HTTPException(404,"l'utilisateur n\'existe pas ")
+        raise HTTPException(status_code = 404,datail = "l'utilisateur n\'existe pas ")
     userName = user.name
     userEmail = user.email
     userRole = user.role
@@ -151,7 +162,7 @@ async def edit_user(request:Request,user_id:str,name:str = Form(),email:str = Fo
     get_user_to_edit = await db.execute(select(User).where(User.id == user_id))#trouver le user
     user = get_user_to_edit.scalars().first()#prendre la premiere ocurence
     if not user :
-        raise HTTPException(404,"l'utilisateur n\'existe pas ")
+        raise HTTPException(status_code = 404,detail ="l'utilisateur n\'existe pas ")
     user.name = name
     user.email = email
     user.role=role
@@ -160,6 +171,16 @@ async def edit_user(request:Request,user_id:str,name:str = Form(),email:str = Fo
     message = "utilisateur modifié"
     request.session['message'] = message
     return RedirectResponse("/list_users",303)
+
+@Root.post('/delete_user/{user_id}')#root for deleting user
+async def deleteGuest(request:Request,user_id:str,db:AsyncSession=Depends(connecting)):
+    get_user_to_be_deleted = await db.execute(select(User).where(User.id==user_id))
+    user_to_be_deleted = get_user_to_be_deleted.scalars().first()
+    if not user_to_be_deleted: #si le user n'existe pas dans l'evenement
+        raise HTTPException(status_code = 404,detail="invité introuvable")
+    await db.delete(user_to_be_deleted)#suppresion du guest
+    await db.commit()#application de modification dans la db
+    return RedirectResponse(f"/list_users",status_code=303)
 
 
 
