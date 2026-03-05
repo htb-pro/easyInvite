@@ -63,14 +63,15 @@ def getEventForm(request:Request,user=Depends(permission_required("create_event"
 
 @Root.post("/create_event") #create an event
 async def creatEvent(request:Request,eventName:str = Form(),
-eventType:str =Form(...), eventDate: str = Form(),
+eventType:str =Form(...), eventDate: datetime = Form(),
 eventAddress:str = Form(),eventDescription: Optional[str] = Form(None),
+location:str = Form(...),
 photo:UploadFile = File(),
 user=Depends(permission_required("create_event")),
+couple_name :str = Form(...),
 Db:AsyncSession = Depends(connecting)):
     try:
-        parsed_date = datetime.fromisoformat(eventDate)#la conversion d'une date chaine de caractere('2026-2-1') en format date(2026,2,1)
-        if parsed_date < datetime.now():
+        if eventDate < datetime.now():
              return templates.TemplateResponse("Event/Forms/event_form.html",{'request':request,"dateError":' Entrez une date superieur a la date actuelle !!!',
             'eventName':eventName, 'eventType':eventType, 'eventDate':eventDate, 'eventAddress':eventAddress, 'eventDescription':eventDescription}, status_code=400)
     except (TypeError,ValueError):
@@ -80,9 +81,11 @@ Db:AsyncSession = Depends(connecting)):
     newEvent = Event(
         name = eventName,
         type = eventType,
-        date = parsed_date,
+        date = eventDate,
         address = eventAddress,
-        description = eventDescription
+        description = eventDescription,
+        location = location,
+        couple_name = couple_name
     )
     Db.add(newEvent)
     await Db.commit()
@@ -107,8 +110,8 @@ async def editEvent(request:Request,event_id : str,user=Depends(permission_requi
     return templates.TemplateResponse("Event/Forms/edit_form.html",{'request':request,"event":editEvent})
 
 @Root.post("/edit_event/{event_id}")#la root pour modifier un evenement
-async def editEvent(request:Request,event_id : str,eventName:str = Form(...),eventType:str = Form(...),eventDate: str = Form(...),
-                    eventAddress:str = Form(...),eventDescription: Optional[str] = Form(None),
+async def editEvent(request:Request,event_id : str,eventName:str = Form(...),coupleName:str = Form(...),eventType:str = Form(...),eventDate: str = Form(...),
+                    eventAddress:str = Form(...),location:str = Form(...),eventDescription: Optional[str] = Form(None),
                     eventState: str = Form(...),photo:UploadFile = File(),db:AsyncSession = Depends(connecting)
                     ,user=Depends(permission_required("edit_event"))):
     edited_Event_Data = select(Event).where(Event.id == event_id)
@@ -135,9 +138,11 @@ async def editEvent(request:Request,event_id : str,eventName:str = Form(...),eve
     if not editedEventData:
         raise HTTPException(status_code=400,detail="Evenement intouvable")
     editedEventData.name = eventName
+    editedEventData.couple_name = coupleName
     editedEventData.type = eventType
     editedEventData.date = parsed_modified_date
     editedEventData.address = eventAddress
+    editedEventData.location = location
     editedEventData.description = eventDescription
     editedEventData.state = eventState
     await db.commit()

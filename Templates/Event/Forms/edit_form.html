@@ -66,6 +66,12 @@
                 <input type="text" class="form-control" id="titre" name="eventName" placeholder="Ex : Gala 2026" value="{{event.name}}" required>
             </div>
 
+            <!-- nom couple -->
+            <div class="mb-3">
+                <label for="titre" class="form-label fw-semibold">Nom du couple</label>
+                <input type="text" class="form-control" id="couple" name="coupleName" placeholder="Ex : Gala 2026" value="{{event.couple_name}}" required>
+            </div>
+
             <div class="mb-3">
                 <label for="lieu" class="form-label fw-semibold">Type d'evenement</label>
                 <select name="eventType" id="eventState" class="form-select">
@@ -80,7 +86,12 @@
             <!-- Date de l'événement -->
             <div class="mb-3">
                 <label for="date" class="form-label fw-semibold">Date de l'événement</label>
-                <input type="date" class="form-control" id="date" name="eventDate" value="{{event.date}}" required>
+                <input type="datetime-local" class="form-control" id="date" name="eventDate" value="{{event.date}}" required>
+            </div>
+            <!-- salle de l'evenement -->
+            <div class="mb-3">
+                <label for="location" class="form-label fw-semibold">location</label>
+                <input type="text" class="form-control" id="location" name="location"  value="{{event.location}}" required>
             </div>
 
             <!-- Lieu de l'événement -->

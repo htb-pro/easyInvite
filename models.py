@@ -80,11 +80,14 @@ class Event(Base): #event table
     id = Column(String,primary_key=True,unique=True,default=lambda :str(uuid4()))
     name= Column(String(50))
     type = Column(String(50))
-    date = Column(Date)
+    date = Column(DateTime)
     address =Column(String(50))
+    location =Column(String(50))
     description = Column(Text,nullable=True)
     created_date =Column(DateTime,default=datetime.now())
     state = Column(String,default="en attente")
+    couple_name = Column(String(50))
+    created_by = Column(String,ForeignKey("users.id"))
     
     guests = relationship("Guest",back_populates="event",cascade="all,delete")
 
