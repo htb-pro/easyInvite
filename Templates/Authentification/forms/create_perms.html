@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Créer permission</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/static/Css/bootstrap.min.css">
+</head>
+<style>
+    body {
+        font-family: "Segoe UI", system-ui, sans-serif;
+        min-height: 100vh;
+        background-color: #0b1c2d;
+        position: relative;
+        overflow-x: hidden;
+        }
+
+        /* ===== BACKGROUND GEOMETRIQUE ===== */
+        body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background:
+            linear-gradient(135deg, rgba(255,255,255,0.03) 25%, transparent 25%) -60px 0,
+            linear-gradient(225deg, rgba(255,255,255,0.03) 25%, transparent 25%) -60px 0,
+            linear-gradient(315deg, rgba(255,255,255,0.03) 25%, transparent 25%),
+            linear-gradient(45deg, rgba(255,255,255,0.03) 25%, transparent 25%);
+        background-size: 120px 120px;
+        z-index: 0;
+        }
+        .card
+        {
+          background-color : rgba(255,255,255,0.1);
+          padding:5px;
+        }
+        label
+        {
+            color:white;
+        }
+    </style>
+<body>
+<div class="container d-flex justify-content-center">
+    <div class=" col-12 col-md-6 col-lg-8">
+        <div class="row vh-100 d-flex justify-content-center  align-items-center">
+            <div class="card ">
+                <h2 class="text-center text-light">Créer une permission</h2>
+
+                <form method="post" action="/create_permission">
+                    <div class="mb-3">
+                        {%if existing_message %}
+                        <div class="alert alert-danger">{{existing_message}}</div>
+                        {%endif%}
+                    </div>
+                    <div class="mb-3">
+                    <input type="text" class="form-control" name="permission_name"  required>
+                    </div>
+                    <div class="mb-3 d-grid">
+                        <button type="submit" class="btn btn-primary">Créer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    setTimeout(() => {
+        const alert = document.querySelector(".alert");
+        if (alert) {
+            alert.classList.remove("show");
+            alert.classList.add("fade");
+            setTimeout(() => alert.remove(), 500);
+        }
+    }, 3000); // disparaît après 3 secondes
+</script>
+</body>
+</html>

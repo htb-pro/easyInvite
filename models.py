@@ -1,19 +1,79 @@
-from sqlalchemy import Column,String,DateTime,Text,Uuid,Date,ForeignKey,Boolean,UniqueConstraint
+from sqlalchemy import Column,String,DateTime,Text,Uuid,Date,ForeignKey,Boolean,UniqueConstraint,Table
 import uuid
 from sqlalchemy.orm import relationship
 from db_setting import Base
 from uuid import uuid4
 from datetime import datetime,date
 
+
+
+#---------------------tables ------------------
+user_groups = Table(#association groupe et user
+    "user_groups",
+    Base.metadata,
+    Column("user_id",ForeignKey("users.id"),primary_key = True),
+    Column("group_id",ForeignKey("groups.id"),primary_key = True),
+)
+#permission <-> role
+role_permissions = Table(
+    "role_permissions",
+    Base.metadata,
+    Column("role_id",ForeignKey("roles.id"),primary_key = True),
+    Column("permission_id",ForeignKey("permissions.id"),primary_key = True),
+)
+#user <-> role
+user_roles = Table(
+    "user_roles",
+    Base.metadata,
+    Column("user_id",ForeignKey("users.id"),primary_key = True),
+    Column("role_id",ForeignKey("roles.id"),primary_key = True),
+)
+#groupe <-> role
+group_roles = Table(
+    "group_roles",
+    Base.metadata,
+    Column("group_id",ForeignKey("groups.id"),primary_key = True),
+    Column("role_id",ForeignKey("roles.id"),primary_key = True),
+)
 class User(Base):
     __tablename__ = "users"
     id = Column(String,primary_key = True,default = lambda : str(uuid4()))
     name = Column(String)
     email = Column(String,unique = True,index=True,nullable = False)
     password = Column(String,nullable = False)
-    role = Column(String,default="user")
     state = Column(String,default="active")
     created_at = Column(DateTime,default=datetime.utcnow())
+    group = Column(String,ForeignKey("groups.id"),nullable=True)
+
+    #relationship
+    groups = relationship("Group",secondary = user_groups,back_populates = "users")
+    roles = relationship("Role",secondary = user_roles,back_populates = "users")
+
+class Group(Base):
+    __tablename__= "groups"
+    id = Column(String,primary_key = True,default = lambda : str(uuid4()))
+    name = Column(String,unique = True)
+
+    #relationship
+    users = relationship("User",secondary = user_groups,back_populates = "groups")
+    roles = relationship("Role",secondary = group_roles,back_populates = "groups")
+
+class Role(Base):
+    __tablename__ = "roles"
+    id = Column(String,primary_key = True,default = lambda : str(uuid4()))
+    name = Column(String,unique = True)
+
+#relationship
+    users = relationship("User",secondary = user_roles,back_populates = "roles")
+    groups = relationship("Group",secondary = group_roles,back_populates = "roles")   
+    permissions =  relationship("Permission",secondary = role_permissions,back_populates = "roles")
+
+class Permission(Base):
+    __tablename__ = "permissions"
+    id = Column(String,primary_key = True,default = lambda : str(uuid4()))
+    name = Column(String,unique = True)
+    #relationship
+    roles=  relationship("Role",secondary = role_permissions,back_populates = "permissions")
 
 class Event(Base): #event table
     __tablename__="events"
@@ -24,7 +84,7 @@ class Event(Base): #event table
     address =Column(String(50))
     description = Column(Text,nullable=True)
     created_date =Column(DateTime,default=datetime.now())
-    state = Column(String,default="en cours")
+    state = Column(String,default="en attente")
     
     guests = relationship("Guest",back_populates="event",cascade="all,delete")
 
@@ -40,6 +100,7 @@ class Guest(Base):
     created_date  = Column(DateTime,default=datetime.now())
     is_present  = Column(Boolean,default=False)
     qr_token  = Column(String,unique=True,nullable=False,default=lambda : str(uuid4()))
+    get_pass = Column(String,unique=True,default=lambda : str(uuid4()))
 
     event = relationship("Event",back_populates="guests")
     invite = relationship("Invite",back_populates="guest",uselist = False,cascade="all,delete-orphan")

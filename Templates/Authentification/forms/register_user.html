@@ -46,9 +46,16 @@
         }
 </style>
 <body>
+
     <div class="container">
         <div class="row justify-content-center mt-5">
             <div class="col-md-8 col-lg-10">
+                  <!-- Bouton retour -->
+                <div class="mb-3" style="position: relative;">
+                    <a href="{{url_for('users_list')}}" class="btn btn-outline-primary text-light btn-sm">
+                        ← Retour à la liste
+                    </a>
+                </div>
                 <div class="card shadow-sm">
                     <div class="card-header bg-primary text-white text-center">
                         <h4>Créer un compte</h4>
@@ -90,9 +97,20 @@
                             <!-- Role (optionnel) -->
                             <div class="mb-3">
                                 <label for="role" class="form-label">Rôle</label>
-                                <select class="form-select" id="role" name="role">
-                                    <option value="user" selected>Utilisateur</option>
-                                    <option value="admin">Admin</option>
+                                <select class="form-select" id="role" name="role_id" multiple>
+                                    {%for role in roles%}
+                                    <option value="{{role.id}}" selected>{{role.name}}</option>
+                                {%endfor%}
+                                </select>
+                            </div>
+
+                            <!-- group  -->
+                            <div class="mb-3">
+                                <label for="group" class="form-label">Groupe</label>
+                                <select class="form-select" id="group" name="group_id">
+                                    {%for groupe in groupes%}
+                                    <option value="{{groupe.id}}" selected>{{groupe.name}}</option>
+                                {%endfor%}
                                 </select>
                             </div>
 

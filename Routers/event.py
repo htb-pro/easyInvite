@@ -1,10 +1,10 @@
 #APIRouter permet juste l'organisation du code au lieu d' avoir tout les routes dans un fichier main oon cree les root separement
-from fastapi import Request,Form,Depends,HTTPException,APIRouter
+from fastapi import Request,Form,Depends,HTTPException,APIRouter,UploadFile,File
 from fastapi.responses import HTMLResponse,RedirectResponse,StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from uuid import uuid4
-import models
+import models,os,shutil
 from db_setting import engine,connecting
 from sqlalchemy.orm import Session,selectinload
 from sqlalchemy.future import select
@@ -17,31 +17,13 @@ from datetime import datetime,date
 from openpyxl import Workbook
 from io import BytesIO
 from Routers.loging import get_current_user_from_cookie
+from app.security.permissions import permission_required,has_permission
 
 Root = APIRouter(tags = ["easyInvite"],dependencies =[Depends(get_current_user_from_cookie)])
 templates = Jinja2Templates(directory="Templates")#ou sont stocker les templates
 Root.mount("/static",StaticFiles(directory="static"),name="static")#ou sont stocker les fichier static
-
-
-@Root.get("/event_form",name="event_form")#event form request
-def getEventForm(request:Request):
-    return templates.TemplateResponse("Event/Forms/event_form.html",{'request':request})
-
-@Root.get("/event_description/{event_id}",name="main_event")#get the mainEventView
-async def getEventForm(request:Request,event_id :str,
-                       db:AsyncSession = Depends(connecting)):
-    select_event =(select(Event).where(Event.id==event_id).options(selectinload(Event.guests)))
-    get_guests = await db.execute(select_event)
-    event = get_guests.scalars().first()
-    total =len(event.guests)
-    return templates.TemplateResponse("Event/Home/mainEventView.html",{'request':request,"event":event,"total":total})
-
-@Root.get("/event_list/",name="event_list")#get the event list 
-async def getEventList(request:Request,  db:AsyncSession = Depends(connecting)):
-    selectEvent =(select(Event).options(selectinload(Event.guests)))
-    get_list_events = await db.execute(selectEvent)
-    events =get_list_events.scalars().all()
-    return templates.TemplateResponse("Event/List/list_event.html",{'request':request,"events":events})
+Pictures = "static/Pictures/{None}"
+os.makedirs("Pictures",exist_ok=True)
 
 @Root.get("/research_event")
 async def searchEvent(request:Request,researched_event:str,db:AsyncSession = Depends(connecting)):
@@ -53,10 +35,38 @@ async def searchEvent(request:Request,researched_event:str,db:AsyncSession = Dep
         return templates.TemplateResponse("Event/List/list_event.html",{'request':request,'eventNotFound':eventNotFound,'event':event})
     return templates.TemplateResponse("Event/List/list_event.html",{'request':request,"events":event})
 
+@Root.get("/event_list/",name="event_list")#get the event list 
+async def getEventList(request:Request,  db:AsyncSession = Depends(connecting)):
+    selectEvent =(select(Event).options(selectinload(Event.guests)))
+    get_list_events = await db.execute(selectEvent)
+    events =get_list_events.scalars().all()
+    return templates.TemplateResponse("Event/List/list_event.html",{'request':request,"events":events})
+
+@Root.get("/event_description/{event_id}",name="main_event")#get the mainEventView
+async def getEventForm(request:Request,event_id :str,
+                       db:AsyncSession = Depends(connecting)):
+    select_event =(select(Event).where(Event.id==event_id).options(selectinload(Event.guests)))
+    get_guests = await db.execute(select_event)
+    event = get_guests.scalars().first()
+    total =len(event.guests)
+    return templates.TemplateResponse("Event/Home/mainEventView.html",{'request':request,"event":event,"total":total})
+
+@Root.get("/detail/event/{event_id}")#la root pour voir les detail d'un event
+async def eventDetail(request:Request,event_id : str,db:AsyncSession = Depends(connecting)):
+    get_Event = await db.execute(select(Event).where(Event.id == event_id))
+    event = get_Event.scalars().first()
+    return templates.TemplateResponse("Event/List/detail.html",{'request':request,"event":event})
+
+@Root.get("/event_form",name="event_form")#event form request
+def getEventForm(request:Request,user=Depends(permission_required("create_event"))):
+    return templates.TemplateResponse("Event/Forms/event_form.html",{'request':request})
+
 @Root.post("/create_event") #create an event
 async def creatEvent(request:Request,eventName:str = Form(),
 eventType:str =Form(...), eventDate: str = Form(),
 eventAddress:str = Form(),eventDescription: Optional[str] = Form(None),
+photo:UploadFile = File(),
+user=Depends(permission_required("create_event")),
 Db:AsyncSession = Depends(connecting)):
     try:
         parsed_date = datetime.fromisoformat(eventDate)#la conversion d'une date chaine de caractere('2026-2-1') en format date(2026,2,1)
@@ -77,19 +87,20 @@ Db:AsyncSession = Depends(connecting)):
     Db.add(newEvent)
     await Db.commit()
     await Db.refresh(newEvent)
+    event_img_doc = newEvent.id
+    event_picture = photo.filename #la phone
+    if event_picture:
+        Pictures = f"static/Pictures/{event_img_doc}"#l'adresse du stockage de l'image
+        os.makedirs(Pictures,exist_ok=True)#creer un dosier s'il n'existe pas 
+        filepath = os.path.join(Pictures,event_picture)#precision de l'adresse relative de l'image
+        with open(filepath,"wb") as buffer :
+            shutil.copyfileobj(photo.file,buffer)
     request.session["success"] = "🎉 Événement créé avec succès !"
     return RedirectResponse("/event_list",status_code=303)
 
 
-@Root.get("/detail/{event_id}/")#la root pour voir les detail d'un event
-async def eventDetail(request:Request,event_id : str,db:AsyncSession = Depends(connecting)):
-    get_Event = (select(Event)).where(Event.id == event_id)
-    result = await db.execute(get_Event)
-    getEvent = result.scalars().first()
-    return templates.TemplateResponse("Event/List/detail.html",{'request':request,"event":getEvent})
-
 @Root.get("/edit_event/{event_id}")#la root pour la modification d'un evenement
-async def editEvent(request:Request,event_id : str,db:AsyncSession = Depends(connecting)):
+async def editEvent(request:Request,event_id : str,user=Depends(permission_required("edit_event")),db:AsyncSession = Depends(connecting)):
     edit_Event = select(Event).where(Event.id == event_id)
     res = await db.execute(edit_Event)
     editEvent = res.scalars().first()
@@ -97,10 +108,23 @@ async def editEvent(request:Request,event_id : str,db:AsyncSession = Depends(con
 
 @Root.post("/edit_event/{event_id}")#la root pour modifier un evenement
 async def editEvent(request:Request,event_id : str,eventName:str = Form(...),eventType:str = Form(...),eventDate: str = Form(...),
-                    eventAddress:str = Form(...),eventDescription: Optional[str] = Form(None),eventState: str = Form(...),db:AsyncSession = Depends(connecting)):
+                    eventAddress:str = Form(...),eventDescription: Optional[str] = Form(None),
+                    eventState: str = Form(...),photo:UploadFile = File(),db:AsyncSession = Depends(connecting)
+                    ,user=Depends(permission_required("edit_event"))):
     edited_Event_Data = select(Event).where(Event.id == event_id)
     res = await db.execute(edited_Event_Data)
-    editedEventData = res.scalars().first()
+    editedEventData = res.scalars().first() 
+    loaded_image = photo.filename
+    if loaded_image :#si une photo a ete chargee
+        edited_event_img_doc = event_id
+        Pictures = f"static/Pictures/{edited_event_img_doc}"#l'adresse de l'emplacement ou il y aura l'image
+        os.makedirs(Pictures,exist_ok=True) #creer le dossier d'emplacement s'il n'existe pas
+        images = os.listdir(Pictures)# prends toutes les images se trouves dans static/pictures
+        for img in images: #pour une image existante dans le dossier 
+            os.remove(os.path.join(Pictures,img))#tu le supprime
+        file_path = os.path.join(Pictures,loaded_image)
+        with open(file_path,"wb") as buffer:
+                        shutil.copyfileobj(photo.file,buffer)
     try:
         parsed_modified_date = datetime.fromisoformat(eventDate)
         if(parsed_modified_date < datetime.now()):
@@ -120,12 +144,16 @@ async def editEvent(request:Request,event_id : str,eventName:str = Form(...),eve
     return RedirectResponse("/event_list",status_code=303)
 
 @Root.post("/delete_event/{event_id}")
-async def deleteEvent(request:Request,event_id:str,db:AsyncSession = Depends(connecting)):
+async def deleteEvent(request:Request,event_id:str,user=Depends(permission_required("delete_event")),db:AsyncSession = Depends(connecting)):
     event_to_delete =select(Event).where(Event.id==event_id)
     res = await db.execute(event_to_delete)
     eventToDelete = res.scalars().first()
     if not eventToDelete:
         raise HTTPException(status_code=404,detail="cette evenement n'existe pas")
+    Pictures= f"static/Pictures/{event_id}"#dossier de l'image de l'evenement
+    is_dir_exist = os.path.exists(Pictures)#exist il ?
+    if is_dir_exist: #si oui 
+        shutil.rmtree(Pictures)#qu'il soit supprimer
     await db.delete(eventToDelete)
     await db.commit()
     return RedirectResponse("/event_list",status_code=303)
@@ -148,6 +176,7 @@ async def downloadGuestList(request:Request,event_id:str,db:AsyncSession = Depen
         "Telephone",
         "Email",
         "Type",
+        "Code d'acces",
         "Table",
         "Etat"
     ])
@@ -161,6 +190,7 @@ async def downloadGuestList(request:Request,event_id:str,db:AsyncSession = Depen
             guest.telephone,
             guest.email,
             guest.guest_type,
+            guest.get_pass,
             guest.place,
             presence 
             ])
@@ -175,7 +205,7 @@ async def downloadGuestList(request:Request,event_id:str,db:AsyncSession = Depen
         }
     )
 
-@Root.get("/download/presence/{event_id}/export_excel")
+@Root.get("/download/presence/{event_id}/export_excel")#endpoint pour le telechargement du fichier de confirmation des invités
 async def getPresenceList(request:Request,event_id:str,db:AsyncSession = Depends(connecting)):
     curent_event_guests =(select(Guest).where(Guest.event_id == event_id).options(selectinload(Guest.event),selectinload(Guest.invite).selectinload(Invite.guestResponse)))
     res = await db.execute(curent_event_guests)

@@ -51,8 +51,8 @@ body {
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4" style="position:relative;">
         <h3 class="fw-bold text-primary">Gestion des utilisateurs</h3>
-        <a href="/logout" class="btn btn-primary">deconnexion</a>
-        <a href="/register" class="btn btn-primary">+ Nouvel utilisateur</a>
+        <a href="/logout" class="btn btn-danger">deconnexion</a>
+        <a href="/register_user" class="btn btn-primary">+ Nouvel utilisateur</a>
     </div>
     {%if message %}
         <div class="alert alert-success">
@@ -77,6 +77,7 @@ body {
                         <th>Nom</th>
                         <th>Email</th>
                         <th>Rôle</th>
+                        <th>Groupe</th>
                         <th>Status</th>
                         <th>Date création</th>
                         <th class="text-end">Actions</th>
@@ -89,7 +90,10 @@ body {
                         <td>{{ loop.index }}</td>
                         <td>{{ user.name }}</td>
                         <td>{{ user.email }}</td>
-                        <td> {{ user.role }}</td>
+                        {%for role in user.roles%}
+                        <td> {{ role.name }}</td>
+                        {%endfor%}
+                        <td>{{ user.group.name }}</td>
                         <td>{{ user.state }}</td>
                         <td>{{ user.created_at }}</td>
                         <td class="d-flex flex-row text-start">

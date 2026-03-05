@@ -74,8 +74,9 @@
         <p data-aos ="fade-up">Soyez le bienvenu a notre evenement </br>
             <hr>
      <div data-aos="fade-down">
+        <p class="text-start">Evenement: <b>{{ event_name }}</b></span></p>
         <p class="text-start">Numero: <b>{{ guest.telephone }}</b></span></p>
-        <p class="text-start">Identifiant: <b>{{NoPhoneId }}</b></span></p>
+        <p class="text-start">Identifiant: <b>{{guest.get_pass}}</b></span></p>
         <p class="text-start">table : {%if guest.place %}<b>{{ guest.place }}</b>{%endif%}</p>
         <a href="{{ url_for('scanning') }}" class="btn btn-primary">retourner au scan</a>
     </div>  

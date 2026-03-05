@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Créer role</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="/static/Css/bootstrap.min.css">
+</head>
+<body>
+<div class="container d-flex justify-content-center">
+    <div class=" col-12 col-md-6 col-lg-8">
+        <div class="row vh-100 d-flex justify-content-center  align-items-center">
+            <div class="card ">
+                <h2 class="text-center">Créer un role</h2>
+
+                <form method="post" action="/create_role">
+                    <div class="mb-3">
+                        {%if existing_message %}
+                        <div class="alert alert-danger">{{existing_message}}</div>
+                        {%endif%}
+                    </div>
+                    <div class="mb-3">
+                    <input type="text" class="form-control" name="role_name" placeholder="Nom du role" required>
+                    </div>
+                    <div class="mb-3 d-grid">
+                        <button type="submit" class="btn btn-primary">Créer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    setTimeout(() => {
+        const alert = document.querySelector(".alert");
+        if (alert) {
+            alert.classList.remove("show");
+            alert.classList.add("fade");
+            setTimeout(() => alert.remove(), 500);
+        }
+    }, 3000); // disparaît après 3 secondes
+</script>
+</body>
+</html>

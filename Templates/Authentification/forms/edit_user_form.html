@@ -79,9 +79,18 @@
                             <div class="mb-3">
                                 <label for="role" class="form-label">Rôle</label>
                                 <select class="form-select" id="role" name="role">
-                                    <option value="{{userRole}}" {%if userRole %}selected{%endif%}>{{userRole}}</option>
-                                    <option value="user">Utilisateur</option>
-                                    <option value="admin">Admin</option>
+                                    {%for role in roles%}
+                                    <option value="{{role.id}}" {%if role in  user.roles%}selected{%endif%}>{{role.name}}</option>
+                                    {%endfor%}
+                                </select>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="group" class="form-label">Group</label>
+                                <select class="form-select" id="group" name="group">
+                                    {%for group in groupes%}
+                                    <option value="{{group.id}}" {% if group.id == user.group %}selected{%endif%}>{{group.name}}</option>
+                                    {%endfor%}
                                 </select>
                             </div>
 

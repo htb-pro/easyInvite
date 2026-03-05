@@ -18,7 +18,7 @@ from pathlib import Path
 from utils.Qr_Utils.qrCodeUtils import createInviteQrCode
 import base64
 from Routers.loging import get_current_user_from_cookie
-
+from app.security.permissions import permission_required
 
 Root = APIRouter(tags = ["easyInvite"],dependencies =[Depends(get_current_user_from_cookie)])
 templates = Jinja2Templates(directory="Templates")#ou sont stocker les templates
@@ -63,7 +63,7 @@ async def searchEvent(request:Request,event_id :str,telephone:str=Query(...,max_
     return templates.TemplateResponse("Guest/List/list.html",{'request':request,"guests":guest,'event':event,'event_id':event_id})
 
 @Root.get('/guest/{guest_id}/{event_id}/detail')#detail endpoint
-async def guestDetail(request:Request,guest_id:str,event_id:str,db:AsyncSession = Depends(connecting)):
+async def guestDetail(request:Request,guest_id:str,event_id:str,user=Depends(permission_required("view_guest")),db:AsyncSession = Depends(connecting)):
     get_guest =select(Guest).where(Guest.id ==guest_id,Guest.event_id == event_id)
     result = await db.execute(get_guest)
     guest =result.scalars().first()
@@ -72,7 +72,8 @@ async def guestDetail(request:Request,guest_id:str,event_id:str,db:AsyncSession 
     return templates.TemplateResponse("Guest/List/detail.html",{'request':request,"guest":guest,"event_id":event_id},status_code=303)
 
 @Root.get("/create/{event_id}/guest",name="guestForm") #get the guest register form
-async def get_invited(request:Request,event_id:str,success:int | None = None,db:AsyncSession = Depends(connecting)):
+async def get_invited(request:Request,event_id:str,success:int | None = None,db:AsyncSession = Depends(connecting),
+                      user : User = Depends(permission_required("create_guest"))):
     select_event=select(Event).options(selectinload(Event.guests)).where(Event.id == event_id)#recuperer l'evenement en fin d'y associer l'invite
     result= await  db.execute(select_event)
     event=result.scalars().first() 
@@ -82,7 +83,7 @@ async def get_invited(request:Request,event_id:str,success:int | None = None,db:
 
 @Root.post('/create/{event_id}/guest')#get the guest register 
 async def newGuest(request:Request,event_id:str,guestName:str=Form(),guestType:str=Form(),guestPlace:str = Form(...),
-                   guestTel:str=Form(),guestEmail:Optional[str]=Form(None),db:AsyncSession = Depends(connecting)):
+                   guestTel:str=Form(),guestEmail:Optional[str]=Form(None),user=Depends(permission_required("create_guest")),db:AsyncSession = Depends(connecting)):
     select_event = (select(Event).where(Event.id==event_id).options(selectinload(Event.guests)))
     get_event = await db.execute(select_event)
     event = get_event.first()
@@ -93,6 +94,7 @@ async def newGuest(request:Request,event_id:str,guestName:str=Form(),guestType:s
     is_guest_tel =tel_res.scalars().first()
     is_guest_email = email_res.scalars().first()
     error_message = ""
+    guest_get_pass = str(uuid4())[:8]
     def set_data(message):
          request.session['form_data'] = {
                      'uniqueValueError':message, 
@@ -125,7 +127,8 @@ async def newGuest(request:Request,event_id:str,guestName:str=Form(),guestType:s
         email = guestEmail,
         event_id = event_id,
         qr_token = str(uuid4()),
-        invite = new_invite
+        get_pass = guest_get_pass,
+        invite = new_invite,
     ) 
     db.add(guest)
     await db.commit()
@@ -134,7 +137,7 @@ async def newGuest(request:Request,event_id:str,guestName:str=Form(),guestType:s
     return RedirectResponse(url=f'/create/{event_id}/guest?success=1',status_code=303)#"success":success
 
 @Root.get("/edit_guest_form/{event_id}/{guest_id}")
-async def editGuest(request:Request,event_id:str,guest_id: str,db:AsyncSession=Depends(connecting)):
+async def editGuest(request:Request,event_id:str,guest_id: str,user=Depends(permission_required("edit_guest")),db:AsyncSession=Depends(connecting)):
     get_guest = select(Guest).where(Guest.id ==guest_id,Guest.event_id == event_id)
     result = await db.execute(get_guest)
     guest = result.scalars().first()
@@ -144,7 +147,8 @@ async def editGuest(request:Request,event_id:str,guest_id: str,db:AsyncSession=D
 
 @Root.post("/edit_guest_form/{Event_id}")#edit guest form
 async def editGuestPost(request:Request,Event_id:str,guest_id:str = Form(...),guestName:str=Form(),guestType:str=Form(...),guestPlace : str = Form(...),
-                        guestState : int = Form(...),guestTel:str=Form(),guestEmail:Optional[str]=Form(None),db:AsyncSession = Depends(connecting)):
+                        guestState : int = Form(...),guestTel:str=Form(),guestEmail:Optional[str]=Form(None),
+                        user=Depends(permission_required("edit_guest")),db:AsyncSession = Depends(connecting)):
     get_new_guest = select(Guest).where(Guest.id ==guest_id,Guest.event_id == Event_id) #prepare le guest
     result = await db.execute(get_new_guest) #select le guest concerné
     new_guest = result.scalars().first()#recupere le guest concerné
@@ -164,7 +168,7 @@ async def editGuestPost(request:Request,Event_id:str,guest_id:str = Form(...),gu
     return RedirectResponse(f"/guest_list/{Event_id}",status_code=303)
 
 @Root.post('/delete_guest/{event_id}/guest')#root for deleting guest
-async def deleteGuest(request:Request,event_id:str,guest_id:str=Form(...),db:AsyncSession=Depends(connecting)):
+async def deleteGuest(request:Request,event_id:str,guest_id:str=Form(...),user=Depends(permission_required("delete_guest")),db:AsyncSession=Depends(connecting)):
     get_guest_to_be_deleted = (select(Guest).where(Guest.id==guest_id,Guest.event_id == event_id).options(selectinload(Guest.invite)))
     result = await db.execute(get_guest_to_be_deleted)
     guest_to_be_deleted = result.scalars().first()

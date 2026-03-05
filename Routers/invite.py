@@ -12,8 +12,9 @@ from sqlalchemy.orm import selectinload
 import os, io , base64
 import zipfile
 from utils.Qr_Utils.qrCodeUtils import createInviteQrCode
-
+from pathlib import Path
 Root = APIRouter()
+picture_dirs = Path("static/Pictures/{None}/")
 
 templates = Jinja2Templates(directory="Templates")#ou sont stocker les templates
 def get_event_deadline(event_date:date): #setting a deadline
@@ -22,14 +23,34 @@ def get_event_deadline(event_date:date): #setting a deadline
 
 @Root.get('/invite/{event_id}/{guest_id}/create')#endpoint pour la l'invitation
 async def getGuestInvite(request:Request,event_id:str ,guest_id : str ,db:AsyncSession = Depends(connecting)):
-    get_guest_invite =select(Guest).where(Guest.id ==guest_id,Guest.event_id == event_id).options(selectinload(Guest.invite),selectinload(Guest.event)) #prepare le guest et son invite
-    result=await db.execute(get_guest_invite)
-    guestInvite =result.scalars().first() #le guest 
+    get_guest_invite =await db.execute(select(Guest).where(Guest.id ==guest_id,Guest.event_id == event_id).options(selectinload(Guest.invite),selectinload(Guest.event))) #prepare le guest et son invite
+    guestInvite =get_guest_invite.scalars().first() #le guest 
     event = guestInvite.event if guestInvite else None 
     invite = guestInvite.invite if guestInvite else None #l'invite
-    event= event_id
+    if not event:
+        return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
     copyright = datetime.now()
-    return templates.TemplateResponse("Invitation/show_invite/invite.html",{'request':request,'guest':guestInvite,'invite':invite,'event_id':event,'copyright':copyright})
+    picture_dirs = Path(f"static/Pictures/{event_id}/") 
+    image_name = event_id
+    event_img = None
+    if os.path.exists(picture_dirs):
+        images = os.listdir(picture_dirs)
+    else:
+        images = []
+    if not picture_dirs:
+        return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
+    if  images:
+        for img in images :
+            event_img = img
+            break
+    if not event_img:
+        return templates.TemplateResponse("Invitation/show_invite/invite.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright})
+    event_img_path = os.path.join(picture_dirs,event_img)
+    try:
+        event= guestInvite.event.type
+    except:
+        return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
+    return templates.TemplateResponse("Invitation/show_invite/invite.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright,'is_img_exist':images,"event_img":event_img_path})
 
 @Root.get('/get_invite',name="invitation",response_class=HTMLResponse)#get the invite url
 def getInvite(request:Request):

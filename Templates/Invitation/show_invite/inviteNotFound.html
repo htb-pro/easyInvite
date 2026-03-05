@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Invitation déjà utilisée</title>
+<!-- Bootstrap CSS -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<style>
+    body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        background-color: #f8f9fa;
+    }
+    .alert-card {
+        max-width: 400px;
+        width: 100%;
+        text-align: center;
+        padding: 2rem;
+        border-radius: 0.5rem;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        background-color: #fff;
+    }
+    .alert-card .icon {
+        font-size: 3rem;
+        color: #dc3545; /* rouge pour alerte */
+    }
+</style>
+</head>
+<body>
+
+<div class="alert-card">
+    <div class="icon mb-3">⚠️</div>
+    <h4 class="mb-2 text-danger">Invitation déjà utilisée</h4>
+    <p>Cette invitation a déjà expirer car l’événement est déja terminé.</p>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

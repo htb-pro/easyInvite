@@ -3,6 +3,7 @@ from sqlalchemy import create_engine
 from sqlalchemy import engine_from_config
 from sqlalchemy import pool
 from sqlalchemy.ext.asyncio import AsyncEngine 
+from models import Base
 import asyncio
 from models import Base
 from alembic import context
@@ -52,8 +53,8 @@ def run_migrations_offline() -> None:
 
     with context.begin_transaction():
         context.run_migrations()
-
-
+DB = os.getenv("db_url_local")
+engine = create_engine(DB,echo = True)
 def run_migrations_online():
     connectable = engine_from_config(
         config.get_section(config.config_ini_section),
@@ -71,7 +72,7 @@ def run_migrations_online():
         with context.begin_transaction():
             context.run_migrations()
 
-
+run_migrations_online()
 if context.is_offline_mode():
     run_migrations_offline()
 else:
