@@ -43,7 +43,7 @@ class User(Base):
     password = Column(String,nullable = False)
     state = Column(String,default="active")
     created_at = Column(DateTime,default=datetime.utcnow())
-    group = Column(String,ForeignKey("groups.id"),nullable=True)
+    group_id = Column(String,ForeignKey("groups.id"),nullable=True)
 
     #relationship
     groups = relationship("Group",secondary = user_groups,back_populates = "users")

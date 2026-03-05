@@ -105,7 +105,6 @@ async def get_roles_permissions(request:Request,role_id:str = Form([]),permissio
     if role :
         selected_permissions_res= await db.execute(select(Permission).where(Permission.id.in_(permission_ids)))
         selected_permissions = selected_permissions_res.scalars().all()
-
         role.permissions = selected_permissions
         await db.commit()
     return RedirectResponse(url="/permission_assigning/form",status_code = 303)

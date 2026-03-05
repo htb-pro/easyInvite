@@ -93,7 +93,7 @@ body {
                         {%for role in user.roles%}
                         <td> {{ role.name }}</td>
                         {%endfor%}
-                        <td>{{ user.group.name }}</td>
+                        <td>{{ user.group_id.name }}</td>
                         <td>{{ user.state }}</td>
                         <td>{{ user.created_at }}</td>
                         <td class="d-flex flex-row text-start">
