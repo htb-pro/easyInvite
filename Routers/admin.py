@@ -12,15 +12,6 @@ from Routers.loging import get_current_user_from_cookie,admin_required
 Root = APIRouter(tags = ["easyInvite"],dependencies =[Depends(get_current_user_from_cookie),Depends(admin_required)])
 templates= Jinja2Templates(directory="Templates")
 
-@Root.get("/get_roles")
-async def get_user_perms(request:Request,db:AsyncSession = Depends(connecting)):
-    user_res = await db.execute(select(User).options(selectinload(User.roles).selectinload(Role.permissions)))
-    users = user_res.scalars().all()
-    for user in users:
-        for user_role in user.roles:
-            print("user---------role",user_role.name)
-        for perm in user_role.permissions :
-            print("----------------------",perm.name)
 
 @Root.get("/group/create_form")
 def get_create_groupe_form(request:Request):

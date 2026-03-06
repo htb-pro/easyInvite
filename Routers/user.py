@@ -51,7 +51,7 @@ async def auth_view(request:Request,name:str = Form(),email:str =Form(...),passw
         email = email,
         password = hashed_pwd,
         state = state,
-        group = group_id,
+        group_id = group_id,
     )
     new_user.roles.append(roles)
     db.add(new_user)
@@ -75,7 +75,7 @@ async def edit_user(request:Request,user_id:str,db:AsyncSession = Depends(connec
     userName = user.name
     userEmail = user.email
     userRole = user.roles
-    userGroup=user.group
+    userGroup=user.group_id
     userState = user.state
     user_id = user.id
     return templates.TemplateResponse("Authentification/forms/edit_user_form.html",{'request':request,'user':user,'user_id':user_id,'userName':userName,'userEmail':userEmail,'userRole':userRole,'groupes':groupes,'roles':roles,'userGroup':userGroup,'userState':userState})
@@ -90,7 +90,7 @@ async def edit_user(request:Request,user_id:str,name:str = Form(),email:str = Fo
         raise HTTPException(status_code = 404,detail ="l'utilisateur n\'existe pas ")
     user.name = name
     user.email = email
-    user.group = group
+    user.group_id = group
     user.state = state
 
     user.roles=[roles]
