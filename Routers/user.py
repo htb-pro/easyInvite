@@ -19,7 +19,7 @@ async def get_users(request:Request,db:AsyncSession = Depends(connecting)):
     return templates.TemplateResponse("Authentification/admin/list_user.html",{'request':request,'users':users,'message':message})
 @Root.get("/detail/{user_id}")
 async def getUserDetail(request:Request,user_id :str,db:AsyncSession = Depends(connecting)):
-    get_user = await db.execute(select(User).where(User.id == user_id))
+    get_user = await db.execute(select(User).where(User.id == user_id).options(selectinload(User.groups)))
     user = get_user.scalars().first()
     return templates.TemplateResponse("Authentification/admin/detail.html",{'request':request,'user':user})
 
@@ -43,6 +43,9 @@ async def auth_view(request:Request,name:str = Form(),email:str =Form(...),passw
     group_res = await db.execute(select(Group).where(Group.id == group_id))
     group = group_res.scalars().first() 
     hashed_pwd = hash_password(password)
+    if group_id :
+        group_res = await db.execute(select(Group).where(Group.id==group_id))
+        groupes = group_res.scalars().first()
     if role_id :
             role_res = await db.execute(select(Role).where(Role.id == role_id))
             roles = role_res.scalars().first() #recuperer les roles dans la db
@@ -54,6 +57,7 @@ async def auth_view(request:Request,name:str = Form(),email:str =Form(...),passw
         group_id = group_id,
     )
     new_user.roles.append(roles)
+    new_user.groups.append(groupes)
     db.add(new_user)
     await db.commit()
     await db.refresh(new_user)
@@ -82,10 +86,14 @@ async def edit_user(request:Request,user_id:str,db:AsyncSession = Depends(connec
 
 @Root.post("/user/edit/{user_id}")#endpoint pour la modification d'un user
 async def edit_user(request:Request,user_id:str,name:str = Form(),email:str = Form(),role:str = Form(),group:str = Form(),state:str = Form(),db:AsyncSession = Depends(connecting)):
-    get_user_to_edit = await db.execute(select(User).where(User.id == user_id).options(selectinload(User.roles)))#trouver le user
+    get_user_to_edit = await db.execute(select(User).where(User.id == user_id).options(selectinload(User.roles),selectinload(User.groups)))#trouver le user
     user = get_user_to_edit.scalars().first()#prendre la premiere ocurence
-    roles_res = await db.execute(select(Role).where(Role.id == role))
-    roles = roles_res.scalars().first()
+    if group :
+        group_res = await db.execute(select(Group).where(Group.id==group))
+        groupes = group_res.scalars().first()
+    if role :
+            role_res = await db.execute(select(Role).where(Role.id == role))
+            roles = role_res.scalars().first() #recuperer les roles dans la db
     if not user :
         raise HTTPException(status_code = 404,detail ="l'utilisateur n\'existe pas ")
     user.name = name
@@ -94,6 +102,7 @@ async def edit_user(request:Request,user_id:str,name:str = Form(),email:str = Fo
     user.state = state
 
     user.roles=[roles]
+    user.groups=[groupes]
     await db.commit()
     message = "utilisateur modifié"
     request.session['message'] = message

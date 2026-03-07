@@ -36,7 +36,7 @@
             box-shadow: 0 8px 20px rgba(0,0,0,0.1);
             padding: 20px;
             background : rgb(255,255,255,0.2);
-            color : black;
+            color : white;
         }
 </style>
 <body>
@@ -58,11 +58,12 @@
                     </h2>
 
                     <!-- Infos principales -->
-                        <div class="col-md-6 mb-2">
-                            <strong class="mb-4">Email :  {{ user.email }} </strong><br>
-                            <strong class="mb-2">Role : {{ user.role}}</strong><br>
-                            <strong class="mb-2">Status : {{ user.state }}</strong><br>
-                            <strong class="mb-2">Date creation : {{ user.created_at }}</strong><br>
+                        <div class="col-md-7 mb-2">
+                            <p>Email :  <strong class="mb-0">{{ user.email }} </strong></p>
+                            <p>Role : <strong class="mb-0">{{ user.role}}</strong></p>
+                            <p>Status : <strong class="mb-0">{{ user.state }}</strong></p>
+                            <p>Groupe :<strong class="mb-0">{%for group in user.groups %} {{ group.name }}{%endfor%}</strong></p>
+                            <p>Date creation : <strong class="mb-0">{{ user.created_at }}</strong></p>
                     </div>
 
                     <!-- Actions -->

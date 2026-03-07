@@ -88,11 +88,13 @@
                         <a href="/edit_event/{{ event.id }}" class="btn btn-primary">
                             Modifier
                         </a>
+                        {%if curent_user_role == "admin"%}
                         <form action="/delete_event/{{ event.id }}" method="post">
                             <button type="submit" onclick="return confirm ('voulez-vous supprimer cet evenement')" class="btn btn-danger">
                                 Supprimer
                             </button>
                         </form>
+                        {%endif%}
                     </div>
 
                 </div>

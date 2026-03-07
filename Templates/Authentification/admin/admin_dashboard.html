@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Admin Dashboard</title>
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+
+<style>
+
+body{
+background:#f5f7fb;
+}
+
+.sidebar{
+height:100vh;
+background:#1e293b;
+color:white;
+}
+
+.sidebar a{
+color:white;
+text-decoration:none;
+display:block;
+padding:12px;
+border-radius:6px;
+}
+
+.sidebar a:hover{
+background:#334155;
+}
+
+.stat-card{
+border:none;
+border-radius:12px;
+}
+
+</style>
+
+</head>
+
+<body>
+
+<div class="container-fluid">
+    <div class="row">
+    <!-- SIDEBAR -->
+    <div class="col-md-2 sidebar p-3">
+    <h4 class="mb-4">
+    <i class="bi bi-lightning-charge"></i>
+    EasyInvite
+    </h4>
+    <a href="#">
+    <i class="bi bi-speedometer2"></i> Dashboard
+    </a>
+
+    <a href="#">
+    <i class="bi bi-calendar-event"></i> Événements
+    </a>
+
+    <a href="#">
+    <i class="bi bi-people"></i> Invités
+    </a>
+
+    <a href="#">
+    <i class="bi bi-qr-code-scan"></i> Scan QR
+    </a>
+
+    <a href="#">
+    <i class="bi bi-gear"></i> Paramètres
+    </a>
+
+</div>
+
+<!-- CONTENT -->
+
+<div class="col-md-10 p-4">
+
+<h3 class="mb-4">
+<i class="bi bi-speedometer2"></i>
+Dashboard Admin
+</h3>
+
+<!-- STATS -->
+
+<div class="row mb-4">
+
+<div class="col-md-3">
+
+<div class="card stat-card shadow-sm">
+<div class="card-body">
+
+<h6>Total événements</h6>
+
+<h3>
+<span class="badge bg-primary">
+12
+</span>
+</h3>
+
+</div>
+</div>
+
+</div>
+
+
+<div class="col-md-3">
+
+<div class="card stat-card shadow-sm">
+<div class="card-body">
+
+<h6>Invités</h6>
+
+<h3>
+<span class="badge bg-success">
+320
+</span>
+</h3>
+
+</div>
+</div>
+
+</div>
+
+
+<div class="col-md-3">
+
+<div class="card stat-card shadow-sm">
+<div class="card-body">
+
+<h6>Scans QR</h6>
+
+<h3>
+<span class="badge bg-info">
+215
+</span>
+</h3>
+
+</div>
+</div>
+
+</div>
+
+
+<div class="col-md-3">
+
+<div class="card stat-card shadow-sm">
+<div class="card-body">
+
+<h6>Événements actifs</h6>
+
+<h3>
+<span class="badge bg-warning text-dark">
+5
+</span>
+</h3>
+
+</div>
+</div>
+
+</div>
+
+</div>
+
+<!-- FILTRE -->
+
+<div class="card shadow-sm mb-4">
+
+<div class="card-body">
+
+<form class="row">
+
+<div class="col-md-4">
+
+<label class="form-label">
+Filtrer par groupe
+</label>
+
+<select class="form-select">
+
+<option>Tous</option>
+<option>Mariage</option>
+<option>Conférence</option>
+<option>Anniversaire</option>
+
+</select>
+
+</div>
+
+<div class="col-md-3 d-flex align-items-end">
+
+<button class="btn btn-primary w-100">
+<i class="bi bi-funnel"></i>
+Filtrer
+</button>
+
+</div>
+
+</form>
+
+</div>
+
+</div>
+
+<!-- TABLE EVENTS -->
+
+<div class="card shadow-sm">
+
+<div class="card-body">
+
+<div class="d-flex justify-content-between mb-3">
+
+<h5>Liste des événements</h5>
+
+<span class="badge bg-dark">
+12 événements
+</span>
+
+</div>
+
+<div class="table-responsive">
+
+<table class="table table-hover">
+
+<thead class="table-light">
+
+<tr>
+
+<th>ID</th>
+<th>Événement</th>
+<th>Date</th>
+<th>Groupe</th>
+<th>Invités</th>
+<th>Status</th>
+<th>Action</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<tr>
+
+<td>1</td>
+<td>Conférence IA</td>
+<td>12 Juin</td>
+
+<td>
+<span class="badge bg-info">
+Conférence
+</span>
+</td>
+
+<td>120</td>
+
+<td>
+<span class="badge bg-success">
+Actif
+</span>
+</td>
+
+<td>
+
+<button class="btn btn-sm btn-outline-primary">
+<i class="bi bi-eye"></i>
+</button>
+
+<button class="btn btn-sm btn-outline-warning">
+<i class="bi bi-pencil"></i>
+</button>
+
+</td>
+
+</tr>
+
+<tr>
+
+<td>2</td>
+<td>Mariage Kevin</td>
+<td>20 Juin</td>
+
+<td>
+<span class="badge bg-danger">
+Mariage
+</span>
+</td>
+
+<td>200</td>
+
+<td>
+<span class="badge bg-secondary">
+Terminé
+</span>
+</td>
+
+<td>
+
+<button class="btn btn-sm btn-outline-primary">
+<i class="bi bi-eye"></i>
+</button>
+
+<button class="btn btn-sm btn-outline-warning">
+<i class="bi bi-pencil"></i>
+</button>
+
+</td>
+
+</tr>
+
+</tbody>
+
+</table>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</body>
+
+</html>

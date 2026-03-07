@@ -1,5 +1,5 @@
 #APIRouter permet juste l'organisation du code au lieu d' avoir tout les routes dans un fichier main oon cree les root separement
-from fastapi import Request,Form,Depends,HTTPException,APIRouter,Query
+from fastapi import Request,Form,Depends,HTTPException,APIRouter,Query,Cookie
 from fastapi.responses import HTMLResponse,RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -19,13 +19,23 @@ from utils.Qr_Utils.qrCodeUtils import createInviteQrCode
 import base64
 from Routers.loging import get_current_user_from_cookie
 from app.security.permissions import permission_required
+from urllib.parse import quote
+from jose import jwt 
+from config import secret,algo
 
 Root = APIRouter(tags = ["easyInvite"],dependencies =[Depends(get_current_user_from_cookie)])
 templates = Jinja2Templates(directory="Templates")#ou sont stocker les templates
 
 #--------------------About guest
 @Root.get("/guest_list/{event_id}",name="guest_list") #get the guest list
-async def get_guest_list(request:Request,event_id:str,db:AsyncSession = Depends(connecting)):
+async def get_guest_list(request:Request,event_id:str,access_token = Cookie(None),db:AsyncSession = Depends(connecting)):
+    current_res = jwt.decode(access_token,secret,algorithms = [algo])
+    user_id = current_res.get("user")
+    if user_id:
+        user_res = await db.execute(select(User).where(User.id ==user_id))
+        user = user_res.scalars().first()
+        for role in user.roles:
+             user_role = role.name
     get_event_guest = select(Event).options(selectinload(Event.guests)).where(Event.id == event_id)#prendre l'evenement qui a des invites
     result = await db.execute(get_event_guest)
     event = result.scalars().first()
@@ -40,11 +50,19 @@ async def get_guest_list(request:Request,event_id:str,db:AsyncSession = Depends(
     get_absent_guest = absent_res.scalars().all()#guest nombre qui sont absent
     present_guest = len(get_present_guest)
     absent_guest = len(get_absent_guest)
+    #variable contenant message whatsapp
+    for guest in guests:
+        telephone = guest.telephone
+        guest_name = guest.name
+        guest_id = guest.id
+    invite_url = f"http://easyinvite-1.onrender.com/invite/{event_id}/{guest_id}/create"
+    message_whatsapp = f"https://wa.me/{telephone}?text=Bonjour%20{guest_name}%2C%20vous%20%C3%AAtes%20invit%C3%A9%20%C3%A0%20notre%20%C3%A9v%C3%A9nement.%20Voir%20l'invitation%20:%20{invite_url}"
+    #---------
     if not event :
         raise HTTPException(404,"aucun evenement trouvé")
     if not guests :
         return templates.TemplateResponse("Guest/List/notFound.html",{'request':request,"Error":'404','event':event})
-    return templates.TemplateResponse("Guest/List/list.html",{'request':request,'invite':invite,'event':event,'guests':guests,'event_id':event_id,'present_guest':present_guest,'absent_guest':absent_guest},status_code=303)
+    return templates.TemplateResponse("Guest/List/list.html",{'request':request,'invite':invite,'event':event,'guests':guests,'event_id':event_id,'present_guest':present_guest,'absent_guest':absent_guest,'message_whatsapp':message_whatsapp,'current_user_role':user_role},status_code=303)
 
 @Root.get("/telephone/{event_id}") #la rechecher d'une donnee
 async def searchEvent(request:Request,event_id :str,telephone:str=Query(...,max_length = 14,description ="le numero doit contenir au minimum 10 caractere"),db:AsyncSession = Depends(connecting)):

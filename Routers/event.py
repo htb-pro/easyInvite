@@ -1,10 +1,10 @@
 #APIRouter permet juste l'organisation du code au lieu d' avoir tout les routes dans un fichier main oon cree les root separement
-from fastapi import Request,Form,Depends,HTTPException,APIRouter,UploadFile,File
+from fastapi import Request,Form,Depends,HTTPException,APIRouter,UploadFile,File,Cookie
 from fastapi.responses import HTMLResponse,RedirectResponse,StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from uuid import uuid4
-import models,os,shutil
+import os,shutil
 from db_setting import engine,connecting
 from sqlalchemy.orm import Session,selectinload
 from sqlalchemy.future import select
@@ -12,12 +12,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
 from models import *
 from datetime import date
+from jose import jwt
 from typing import Optional
 from datetime import datetime,date
 from openpyxl import Workbook
 from io import BytesIO
 from Routers.loging import get_current_user_from_cookie
 from app.security.permissions import permission_required,has_permission
+from config import secret,algo
 
 Root = APIRouter(tags = ["easyInvite"],dependencies =[Depends(get_current_user_from_cookie)])
 templates = Jinja2Templates(directory="Templates")#ou sont stocker les templates
@@ -36,26 +38,50 @@ async def searchEvent(request:Request,researched_event:str,db:AsyncSession = Dep
     return templates.TemplateResponse("Event/List/list_event.html",{'request':request,"events":event})
 
 @Root.get("/event_list/",name="event_list")#get the event list 
-async def getEventList(request:Request,  db:AsyncSession = Depends(connecting)):
-    selectEvent =(select(Event).options(selectinload(Event.guests)))
-    get_list_events = await db.execute(selectEvent)
-    events =get_list_events.scalars().all()
-    return templates.TemplateResponse("Event/List/list_event.html",{'request':request,"events":events})
+async def getEventList(request:Request,  db:AsyncSession = Depends(connecting),access_token = Cookie(None)):
+    res = jwt.decode(access_token,secret,algorithms=[algo])
+    user_id = res.get("user")
+    user_res = await db.execute(select(User).where(User.id == user_id).options(selectinload(User.roles),selectinload(User.groups)))
+    user = user_res.scalars().first()
+    if user :
+        group_id = user.group_id
+        for role in user.roles:
+            user_role = role.name
+        if user_role == "admin":
+            get_event =await db.execute(select(Event).options(selectinload(Event.guests)))
+            events = get_event.scalars().all()
+            return templates.TemplateResponse("Event/List/list_event.html",{'request':request,"events":events,'curent_user_role':user_role})
+    get_event =await db.execute(select(Event).where(Event.group_id == group_id).options(selectinload(Event.guests)))
+    events = get_event.scalars().all()
+    return templates.TemplateResponse("Event/List/list_event.html",{'request':request,"events":events,'curent_user_role':user_role})
 
 @Root.get("/event_description/{event_id}",name="main_event")#get the mainEventView
 async def getEventForm(request:Request,event_id :str,
+                       access_token=Cookie(None),
                        db:AsyncSession = Depends(connecting)):
+    current_res = jwt.decode(access_token,secret,algorithms=[algo])
+    user_id = current_res.get("user")
+    user_res = await db.execute(select(User).where(User.id == user_id).options(selectinload(User.roles),selectinload(User.groups)))
+    user = user_res.scalars().first()
+    for role in user.roles:
+        user_role = role.name
     select_event =(select(Event).where(Event.id==event_id).options(selectinload(Event.guests)))
     get_guests = await db.execute(select_event)
     event = get_guests.scalars().first()
     total =len(event.guests)
-    return templates.TemplateResponse("Event/Home/mainEventView.html",{'request':request,"event":event,"total":total})
+    return templates.TemplateResponse("Event/Home/mainEventView.html",{'request':request,"event":event,"total":total,'current_user_role':user_role})
 
 @Root.get("/detail/event/{event_id}")#la root pour voir les detail d'un event
-async def eventDetail(request:Request,event_id : str,db:AsyncSession = Depends(connecting)):
+async def eventDetail(request:Request,event_id : str,access_token = Cookie(None),db:AsyncSession = Depends(connecting)):
+    res = jwt.decode(access_token,secret,algorithms=[algo])
+    user_id = res.get("user")
+    user_res = await db.execute(select(User).where(User.id == user_id).options(selectinload(User.roles),selectinload(User.groups)))
+    user = user_res.scalars().first()
+    for role in user.roles:
+        user_role = role.name
     get_Event = await db.execute(select(Event).where(Event.id == event_id))
     event = get_Event.scalars().first()
-    return templates.TemplateResponse("Event/List/detail.html",{'request':request,"event":event})
+    return templates.TemplateResponse("Event/List/detail.html",{'request':request,"event":event,'curent_user_role':user_role})
 
 @Root.get("/event_form",name="event_form")#event form request
 def getEventForm(request:Request,user=Depends(permission_required("create_event"))):
@@ -69,7 +95,17 @@ location:str = Form(...),
 photo:UploadFile = File(),
 user=Depends(permission_required("create_event")),
 couple_name :str = Form(...),
+access_token =Cookie(None),
 Db:AsyncSession = Depends(connecting)):
+    res = jwt.decode(access_token,secret,algorithms=[algo])
+    user_id = res.get("user")
+    user_res = await Db.execute(select(User).where(User.id == user_id).options(selectinload(User.groups)))
+    user = user_res.scalars().first()
+    if user.groups:
+        user_group = user.groups
+    group_id = user.group_id
+    groups_res = await Db.execute(select(Group).where(Group.id == group_id))
+    groups = groups_res.scalars().first()
     try:
         if eventDate < datetime.now():
              return templates.TemplateResponse("Event/Forms/event_form.html",{'request':request,"dateError":' Entrez une date superieur a la date actuelle !!!',
@@ -85,8 +121,11 @@ Db:AsyncSession = Depends(connecting)):
         address = eventAddress,
         description = eventDescription,
         location = location,
-        couple_name = couple_name
+        couple_name = couple_name,
+        created_by = user_id,
+        group_id = group_id
     )
+    newEvent.groups=groups
     Db.add(newEvent)
     await Db.commit()
     await Db.refresh(newEvent)
@@ -110,13 +149,22 @@ async def editEvent(request:Request,event_id : str,user=Depends(permission_requi
     return templates.TemplateResponse("Event/Forms/edit_form.html",{'request':request,"event":editEvent})
 
 @Root.post("/edit_event/{event_id}")#la root pour modifier un evenement
-async def editEvent(request:Request,event_id : str,eventName:str = Form(...),coupleName:str = Form(...),eventType:str = Form(...),eventDate: str = Form(...),
+async def editEvent(request:Request,event_id : str,access_token = Cookie(None),eventName:str = Form(...),coupleName:str = Form(...),eventType:str = Form(...),eventDate: str = Form(...),
                     eventAddress:str = Form(...),location:str = Form(...),eventDescription: Optional[str] = Form(None),
                     eventState: str = Form(...),photo:UploadFile = File(),db:AsyncSession = Depends(connecting)
                     ,user=Depends(permission_required("edit_event"))):
     edited_Event_Data = select(Event).where(Event.id == event_id)
     res = await db.execute(edited_Event_Data)
     editedEventData = res.scalars().first() 
+    res = jwt.decode(access_token,secret,algorithms=[algo])
+    user_id = res.get("user")
+    user_res = await db.execute(select(User).where(User.id == user_id).options(selectinload(User.groups)))
+    user = user_res.scalars().first()
+    if user.groups:
+        user_group = user.groups
+    group_id = user.group_id
+    groups_res = await db.execute(select(Group).where(Group.id == group_id))
+    groups = groups_res.scalars().first()
     loaded_image = photo.filename
     if loaded_image :#si une photo a ete chargee
         edited_event_img_doc = event_id
@@ -145,6 +193,10 @@ async def editEvent(request:Request,event_id : str,eventName:str = Form(...),cou
     editedEventData.location = location
     editedEventData.description = eventDescription
     editedEventData.state = eventState
+    editedEventData.created_by = user_id
+    editedEventData.group_id = group_id
+
+    edited_Event_Data.groups = [groups]
     await db.commit()
     return RedirectResponse("/event_list",status_code=303)
 

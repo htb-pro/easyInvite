@@ -25,11 +25,13 @@ async def get_main(request:Request,access_token:str=Cookie(None),current_user:Us
     id = get_email.get("user")
     user_res = await db.execute(select(User).where(User.id == id))
     user = user_res.scalars().first() 
+    for role in user.roles:
+        user_role = role.name #prendre le role du user pour l'envoyer dans le template pour verifier et afficher ou non certains section ou div 
     if not user :
         raise HTTPException("Utilisateur introuvable")
     user_name = user.name
     Today = date.today()
-    return templates.TemplateResponse("easyInviteApk/homePage/main.html",{'request':request,'username':user_name,'date':Today,'current_user':current_user})
+    return templates.TemplateResponse("easyInviteApk/homePage/main.html",{'request':request,'username':user_name,'date':Today,'current_user_role':user_role})
 
 #-----------------------about invitation view
 @Root.get('/get_invite',name="invitation",response_class=HTMLResponse)#get the invite url

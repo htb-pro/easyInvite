@@ -96,9 +96,11 @@
                 <span class="navbar-brand mb-0 h5 text-white">
                     Liste des Invités
                 </span>
+                {%if current_user_role == "admin" or current_user_role == "manager" %}
                 <a href="/create/{{event_id}}/guest" class="btn btn-light btn-sm">
                     <i class="bi bi-plus"></i>Ajouter
                 </a>
+                {%endif%}
             </nav>
         <div class="table-view">
             <table class="table table-striped">
@@ -125,14 +127,16 @@
                         <td>{{guest.email}}</td>
                         <td>  {{guest.created_date.strftime('%d-%m-%y')}} {{guest.created_date.strftime('%H:%M')}}</td>
                         <td class="d-flex justify-content-start  align-items-center">
-                            <a href="#" class="btn btn-outline-success"><i class="bi bi-whatsapp"></i></a>
-                            <a href="/invite/{{event_id}}/{{guest.id}}/create" class="btn btn-outline-light"><i class="bi bi-envelope me-1"></i></a>
                             <a href="/guest/{{guest.id}}/{{event_id}}/detail"  class="btn btn-outline-light">👁</a>
+                            {%if current_user_role == "admin" or current_user_role == "manager" %}
+                            <a href="{{message_whatsapp}}" target="_blank" class="btn btn-outline-success"><i class="bi bi-whatsapp"></i></a>
+                            <a href="/invite/{{event_id}}/{{guest.id}}/create" class="btn btn-outline-light"><i class="bi bi-envelope me-1"></i></a>
                             <a href="/edit_guest_form/{{event_id}}/{{guest.id}}" class="btn btn-outline-light">✏</a>
                             <form action="/delete_guest/{{event_id}}/guest" method="post">
                                 <input type="hidden" name="guest_id" value="{{guest.id}}">
                                 <button type="submit" onclick="return confirm('voulez-vous supprimer cet invité ???')" class="btn btn-outline-danger">🗑</button>
                             </form>
+                            {%endif%}
                         </td>
                     </tr> {% endfor %}
                 </tbody> 
@@ -163,14 +167,16 @@
                         <small class="text-muted" style="font-size:18px;">{% if guest.is_present %}<i class="bi bi-check-circle-fill text-success"></i>   Present {%else%}<span class="text-danger"><i class="bi bi-x-circle-fill "></i> Absent</span>{%endif%}</small></br>
                         <div class="btn-group btn-group-sm">
                             <small class="d-flex justify-content-center ">
+                                <a href="/guest/{{guest.id}}/{{event_id}}/detail"  class="btn btn-outline-light">👁</a>
+                                {%if current_user_role == "admin" or current_user_role == "manager" %}
                                 <a href="#" class="btn btn-outline-success"><i class="bi bi-whatsapp"></i></a>
                                 <a href="/invite/{{event_id}}/{{guest.id}}/create" class="btn btn-outline-light"><i class="bi bi-envelope me-1"></i></a>
-                                <a href="/guest/{{guest.id}}/{{event_id}}/detail"  class="btn btn-outline-light ms-2">👁</a>
                                 <a href="/edit_guest_form/{{event_id}}/{{guest.id}}" class="btn btn-outline-light ms-2">✏</a>
                                 <form action="/delete_guest/{{event_id}}/guest" method="post" class="ms-2">
                                     <input type="hidden" name="guest_id" value="{{guest.id}}">
                                     <button type="submit" onclick="return confirm('voulez-vous supprimer cet invité ???')" class="btn btn-outline-danger">🗑</button>
                                 </form>
+                                {%endif%}
                             </small>
                         </div>
                     </div>

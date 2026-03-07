@@ -57,6 +57,7 @@ class Group(Base):
     #relationship
     users = relationship("User",secondary = user_groups,back_populates = "groups")
     roles = relationship("Role",secondary = group_roles,back_populates = "groups")
+    events = relationship("Event",back_populates = "groups",cascade="all,delete")
 
 class Role(Base):
     __tablename__ = "roles"
@@ -88,8 +89,10 @@ class Event(Base): #event table
     state = Column(String,default="en attente")
     couple_name = Column(String(50))
     created_by = Column(String,ForeignKey("users.id"))
+    group_id= Column(String,ForeignKey("groups.id"))
     
     guests = relationship("Guest",back_populates="event",cascade="all,delete")
+    groups = relationship("Group",back_populates ="events")
 
 class Guest(Base):
     __tablename__="guests"

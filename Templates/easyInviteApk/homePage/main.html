@@ -135,8 +135,8 @@
               <ul class="dropdown-menu">
                 <!-- <li><a class="dropdown-item" href="">Invité(s)</a></li> -->
                 <li><a class="dropdown-item" href="{{url_for('event_list')}}">Evenement(s)</a></li>
-                {%if has_permission(current_user,"create_event")%}
-                <li><a class="dropdown-item" href="/list_users">Admin</a></li>
+                {%if current_user_role == "admin"%}
+                <li><a class="dropdown-item" href="/list_users">Admin dashboard</a></li>
                 {%endif%}
                 <a href="/logout" class="btn btn-danger ms-2"><i class="bi bi-box-arrow-left"></i> déconnexion</a>
               </ul>

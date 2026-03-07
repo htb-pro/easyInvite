@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Silas & Sarah | 28.02.2026</title>
+    
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:italic,wght@0,400;1,700&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --terracotta: #D4A373;
+            --gold: #D4A373; /* Harmonisé avec terracotta */
+            --rose-doux: #f8e5e5;
+            --blanc-pur: #ffffff;
+            --overlay: rgba(0, 0, 0, 0.4);
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background-color: var(--blanc-pur);
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        .font-romance { font-family: 'Great Vibes', cursive; color: var(--terracotta); }
+        .font-serif { font-family: 'Playfair Display', serif; }
+
+        /* --- Hero Section --- */
+        .hero-fullscreen {
+            height: 100vh;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: white;
+            background: linear-gradient(var(--overlay), var(--overlay)), 
+                        url('{%if is_img_exist %}/{%if event_img %}{{event_img}}{%endif%}{%endif%}') no-repeat center center/cover;
+            background-attachment: fixed;
+        }
+        .hero-content h1 { font-size: clamp(3rem, 10vw, 5.5rem); text-shadow: 2px 2px 10px rgba(0,0,0,0.3); }
+
+        /* --- Countdown --- */
+        .countdown-container {
+            background: white;
+            margin-top: -50px;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            z-index: 100;
+            position: relative;
+        }
+        .count-unit { font-size: 2rem; font-weight: 700; color: var(--terracotta); display: block; }
+        .count-label { font-size: 0.8rem; text-transform: uppercase; color: #888; letter-spacing: 2px; }
+
+        /* --- Sections & Cards --- */
+        .story-section { padding: 100px 0; position: relative; }
+        
+        .detail-box {
+            border: 1px solid var(--rose-doux);
+            padding: 40px;
+            border-radius: 20px;
+            transition: 0.3s;
+            background: #fffcfc;
+            height: 100%;
+        }
+        .detail-box:hover { border-color: var(--terracotta); transform: translateY(-5px); }
+        
+        .icon-circle {
+            width: 60px; height: 60px;
+            background: var(--rose-doux);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 1.5rem;
+        }
+
+        /* --- Motion Section (RSVP Area) --- */
+        #rsvp-area {
+            height: 600px; /* Hauteur fixe pour l'animation motion */
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+
+        .video-container {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: 1;
+        }
+
+        .bg-slide {
+            position: absolute;
+            width: 100%; height: 100%;
+            background-size: cover;
+            background-position: center;
+            opacity: 0;
+            animation: imageFade 15s infinite;
+        }
+
+        /* Utilisation de tes images de couple pour le diaporama */
+        .slide-1 { background-image: linear-gradient(var(--overlay), var(--overlay)), url('WhatsApp Image 2026-02-03 at 08.56.04.jpeg'); animation-delay: 0s; }
+        .slide-2 { background-image: linear-gradient(var(--overlay), var(--overlay)), url('https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80'); animation-delay: 5s; }
+        .slide-3 { background-image: linear-gradient(var(--overlay), var(--overlay)), url('https://images.unsplash.com/photo-1583939003579-730e3918a45a?q=80'); animation-delay: 10s; }
+
+        @keyframes imageFade {
+            0%, 10% { opacity: 0; transform: scale(1); }
+            20%, 40% { opacity: 1; }
+            50%, 100% { opacity: 0; transform: scale(1.1); }
+        }
+
+        .text-overlay { position: relative; z-index: 10; width: 100%; text-align: center; }
+
+        .motion-text {
+            position: relative;
+            top: 50%; 
+            left: 50%;
+            transform: translate(-50%, -50%);
+            opacity: 0;
+            width: 90%;
+            max-width: 600px;
+            padding: 20px;
+        }
+
+        .scene-1 { animation: textShow 5s forwards infinite; animation-delay: 0s; }
+        .scene-2 { animation: textShow 5s forwards infinite; animation-delay: 5s; }
+        .scene-3 { animation: textShow 5s forwards infinite; animation-delay: 10s; }
+
+        @keyframes textShow {
+            0% { opacity: 0; transform: translate(-50%, -40%); }
+            10%, 90% { opacity: 1; transform: translate(-50%, -50%); }
+            100% { opacity: 0; transform: translate(-50%, -60%); }
+        }
+
+        /* --- Boutons --- */
+        .btn{
+            height: 3rem;
+            background: var(--terracotta);
+            border-color: none;
+            font-size: 1.5rem;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: translateX(-50%) scale(1); }
+            50% { transform: translateX(-50%) scale(1.05); }
+        }
+        footer
+        {
+            margin-bottom:10px;
+        }
+    </style>
+</head>
+<body>
+    <section class="hero-fullscreen" style="background-image: url('/{{event_img}}');">
+        <div class="hero-content" data-aos="zoom-out" data-aos-duration="2000">
+            <p class="font-romance mb-2" style="font-size: 2.5rem;">Nous nous marions</p>
+            <h1 class="font-romance">{{guest.event.couple_name}}</h1>
+            <p class="font-serif italic h4 mt-3 tracking-widest">{{guest.event.date.date().strftime("%d-%m-%Y")}}</p>
+        </div>
+    </section>
+
+    <div class="container text-center">
+        <div class="row justify-content-center">
+            <div class="col-md-8 countdown-container" data-aos="fade-up">
+                <div class="row">
+                    <div class="col-3"><span class="count-unit" id="days">00</span><span class="count-label">Jours</span></div>
+                    <div class="col-3 border-start"><span class="count-unit" id="hours">00</span><span class="count-label">Heures</span></div>
+                    <div class="col-3 border-start"><span class="count-unit" id="minutes">00</span><span class="count-label">Min</span></div>
+                    <div class="col-3 border-start"><span class="count-unit" id="seconds">00</span><span class="count-label">Sec</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="story-section text-center container">
+        <div class="row justify-content-center" data-aos="fade-up">
+            <div class="col-md-7">
+                {%if is_img_exist %}
+                    <img src="/{%if event_img %}{{event_img}}{%endif%}" class="img-fluid mb-5 shadow-lg rounded-circle"  style="width: 220px;height: 220px;object-fit:cover;border:8px solid white" alt="not found">
+                {%endif%}                
+                <h2 class="font-romance mb-4" style="font-size: 3.5rem;font-family: 'Playfair Display', serif;">L'union de deux cœurs</h2>
+                 <h1 class="display-5" style="font-family: 'Playfair Display', serif;font-size: 1.8rem;"> Bonjour et bienvenue très cher(e) {{ guest.name }} 🎉</H1>
+                <p class="text-muted">C'est avec une immense joie que nous vous invitons à célébrer notre événement spécial de {{guest.event.type}}.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="pb-5 container">
+        <div class="row g-4 justify-content-center">
+            <div class="col-md-5" data-aos="fade-right">
+                <div class="detail-box text-center">
+                    <div class="icon-circle">💒</div>
+                    <h4 class="font-serif fw-bold">Bénédiction Nuptiale</h4>
+                    <p class="text-terracotta fw-bold">11h00 Precise</p>
+                    <p><strong>Ministère Génération Joël</strong><br>515, Route KIPOPO GOLF MALELA</p>
+                </div>
+            </div>
+            <div class="col-md-5" data-aos="fade-left">
+                <div class="detail-box text-center">
+                    <div class="icon-circle">🥂</div>
+                    <h4 class="font-serif fw-bold">Soirée Dansante</h4>
+                    <p class="text-terracotta fw-bold">{{guest.event.date.time().strftime("%H:%M")}}</p>
+                    <p>dans la salle <strong>{{guest.event.location}}</strong><br>se trouvant a l'addresse suivante : <strong>{{guest.event.address}}</strong></p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="rsvp-area">
+        <div class="video-container">
+            <div class="bg-slide slide-1"></div>
+            <div class="bg-slide slide-2"></div>
+            <div class="bg-slide slide-3"></div>
+        </div>
+        <div class="text-overlay">
+            <div class="motion-text scene-1">
+                <h1 class="font-romance" style="font-size: 4rem;">{{event.couple_name}}</h1>
+                <p class="text-uppercase tracking-widest">vont s'unir pour la vie</p>
+            </div>
+            <div class="motion-text scene-2">
+                <h2 class="font-serif italic mb-4">{{event.date}}</h2>
+                <p>À Lubumbashi</p>
+            </div>
+            <div class="motion-text scene-3">
+                <h2 class="font-romance" style="font-size: 3rem;">Votre présence</h2>
+                <p>est notre plus beau cadeau.</p>
+            </div>
+        </div>
+    </section>
+
+    <div class="confirm_presence my-3 d-flex justify-content-center">
+        <a href="/presence/confirmation/{{guest.id}}/{{guest.event_id}}" class="btn btn-warning  "class="" onclick="document.getElementById('rsvp-area').scrollIntoView({behavior: 'smooth'})">Confirmer ma présence</a>
+    </div>
+
+    <footer class="text-center py-3">
+        <p><i class="bi bi-telephone-fill"></i> +243 897 401 210 ou +243 991 152 067</p>
+        <p><i class="bi bi-telephone-fill"></i> +243 898 147 644 ou +243 970 784 320</p>
+        <p>&copy; easyInvite {{copyright.strftime('%Y')}}</p>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        AOS.init({ duration: 1000, once: true });
+
+        // COUNTDOWN SCRIPT
+        const weddingDate = new Date("{{guest.event.date}}").getTime();
+        setInterval(function() {
+            const now = new Date().getTime();
+            const distance = weddingDate - now;
+            if (distance < 0) return;
+            document.getElementById("days").innerText = Math.floor(distance / (1000 * 60 * 60 * 24));
+            document.getElementById("hours").innerText = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            document.getElementById("minutes").innerText = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+            document.getElementById("seconds").innerText = Math.floor((distance % (1000 * 60)) / 1000);
+        }, 1000);
+    </script>
+</body>
+</html>

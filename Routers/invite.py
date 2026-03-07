@@ -17,7 +17,7 @@ Root = APIRouter()
 picture_dirs = Path("static/Pictures/{None}/")
 
 templates = Jinja2Templates(directory="Templates")#ou sont stocker les templates
-def get_event_deadline(event_date:date): #setting a deadline
+def get_event_deadline(event_date:datetime): #setting a deadline
     deadline = event_date - timedelta(days=2)
     return deadline
 
@@ -44,13 +44,13 @@ async def getGuestInvite(request:Request,event_id:str ,guest_id : str ,db:AsyncS
             event_img = img
             break
     if not event_img:
-        return templates.TemplateResponse("Invitation/show_invite/invite.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright})
+        return templates.TemplateResponse("Invitation/show_invite/invite_template.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright})
     event_img_path = os.path.join(picture_dirs,event_img)
     try:
         event= guestInvite.event.type
     except:
         return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
-    return templates.TemplateResponse("Invitation/show_invite/invite.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright,'is_img_exist':images,"event_img":event_img_path})
+    return templates.TemplateResponse("Invitation/show_invite/invite_template.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright,'is_img_exist':images,"event_img":event_img_path})
 
 @Root.get('/get_invite',name="invitation",response_class=HTMLResponse)#get the invite url
 def getInvite(request:Request):
@@ -75,7 +75,7 @@ async def GuestResponse(request:Request,guest_id:str ,event_id : str, response :
     result = await db.execute(get_guest)
     guest = result.scalars().first()
     message = ""
-    today = date.today()
+    today = datetime.now()
     event_date = guest.event.date
     deadline = get_event_deadline(event_date)
     if not guest : #if the guest exist
