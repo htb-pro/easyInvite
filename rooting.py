@@ -27,7 +27,7 @@ async def on_startup():
     async with AsyncSessionLocal() as db:
         await create_admin(db)
 
-Apk.add_middleware(SessionMiddleware,secret_key = secret)
+Apk.add_middleware(SessionMiddleware,secret_key = secret,https_only = True,same_site = "lax")
 Apk.mount("/static",StaticFiles(directory="static"),name="static")
 Apk.include_router(Root)
 Apk.include_router(guest_root)
