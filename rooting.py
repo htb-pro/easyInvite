@@ -23,7 +23,7 @@ Apk = FastAPI()
 @Apk.on_event("startup")
 async def on_startup():
     await init_db()
-    #await recreate_tables()
+    await recreate_tables()
     async with AsyncSessionLocal() as db:
         await create_admin(db)
 
