@@ -15,12 +15,12 @@ async def ensure_admin_role(db:AsyncSession):
     admin_role_res = await db.execute(select(Role).where(Role.name == "admin"))
     admin_role = admin_role_res.scalars().first()
     if not admin_role:
-        new_role = Role(
+        admin_role = Role(
             name = "admin"
         )
-        db.add(new_role)
+        db.add(admin_role)
         await db.commit()
-        await db.refresh(new_role)
+        await db.refresh(admin_role)
     return admin_role
 
 async def create_admin(db:AsyncSession): 

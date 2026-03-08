@@ -30,31 +30,32 @@ async def auth_view(request:Request,db:AsyncSession = Depends(connecting)):
     res_group = await db.execute(select(Group))
     roles = res_role.scalars().all()
     groupes = res_group.scalars().all()
-    return templates.TemplateResponse("Authentification/forms/register_user.html",{'request':request,'success_message':message,'roles':roles,'groupes':groupes})
+    failed_message = request.session.pop('failed_message',None) 
+    return templates.TemplateResponse("Authentification/forms/register_user.html",{'request':request,'success_message':message,'roles':roles,'groupes':groupes,'failed_message':failed_message})
     
 @Root.post("/register")#get the auth view
 async def auth_view(request:Request,name:str = Form(),email:str =Form(...),password:str = Form(...),role_id:str =Form(...),group_id:str =Form(...),state:str = Form(),db:AsyncSession = Depends(connecting)):
     res = await db.execute(select(User).where(User.email ==email))
     user = res.scalars().first()
-    message = None
-    if user :#si un utilisateur existe avec l'email
-        message = "utilisateur existe déjà cet email"
-        return templates.TemplateResponse("Authentification/forms/register_user.html",{'request':request,'failed_message':message})
     group_res = await db.execute(select(Group).where(Group.id == group_id))
     group = group_res.scalars().first() 
-    hashed_pwd = hash_password(password)
+    message = None
     if group_id :
         group_res = await db.execute(select(Group).where(Group.id==group_id))
         groupes = group_res.scalars().first()
+    if user :#si un utilisateur existe avec l'email
+        message = "utilisateur existe déjà cet email"
+        request.session['failed_message'] = message
+        return RedirectResponse(url = "register_user",status_code = 303)
     if role_id :
             role_res = await db.execute(select(Role).where(Role.id == role_id))
             roles = role_res.scalars().first() #recuperer les roles dans la db
+    hashed_pwd = hash_password(password)
     new_user = User(
         name = name,
         email = email,
         password = hashed_pwd,
         state = state,
-        group_id = group_id,
     )
     new_user.roles.append(roles)
     new_user.groups.append(groupes)

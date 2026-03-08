@@ -44,13 +44,15 @@ async def getEventList(request:Request,  db:AsyncSession = Depends(connecting),a
     user_res = await db.execute(select(User).where(User.id == user_id).options(selectinload(User.roles),selectinload(User.groups)))
     user = user_res.scalars().first()
     if user :
-        group_id = user.group_id
+
         for role in user.roles:
             user_role = role.name
+        for user_group in user.groups:
+            group_id = user_group.id
         if user_role == "admin":
-            get_event =await db.execute(select(Event).options(selectinload(Event.guests)))
-            events = get_event.scalars().all()
-            return templates.TemplateResponse("Event/List/list_event.html",{'request':request,"events":events,'curent_user_role':user_role})
+             get_event =await db.execute(select(Event).options(selectinload(Event.guests)))
+             events = get_event.scalars().all()
+             return templates.TemplateResponse("Event/List/list_event.html",{'request':request,"events":events,'curent_user_role':user_role})
     get_event =await db.execute(select(Event).where(Event.group_id == group_id).options(selectinload(Event.guests)))
     events = get_event.scalars().all()
     return templates.TemplateResponse("Event/List/list_event.html",{'request':request,"events":events,'curent_user_role':user_role})
@@ -103,7 +105,8 @@ Db:AsyncSession = Depends(connecting)):
     user = user_res.scalars().first()
     if user.groups:
         user_group = user.groups
-    group_id = user.group_id
+    for user_group in user.groups:
+        group_id = user_group.id
     groups_res = await Db.execute(select(Group).where(Group.id == group_id))
     groups = groups_res.scalars().first()
     try:
@@ -123,7 +126,6 @@ Db:AsyncSession = Depends(connecting)):
         location = location,
         couple_name = couple_name,
         created_by = user_id,
-        group_id = group_id
     )
     newEvent.groups=groups
     Db.add(newEvent)
@@ -194,7 +196,6 @@ async def editEvent(request:Request,event_id : str,access_token = Cookie(None),e
     editedEventData.description = eventDescription
     editedEventData.state = eventState
     editedEventData.created_by = user_id
-    editedEventData.group_id = group_id
 
     edited_Event_Data.groups = [groups]
     await db.commit()

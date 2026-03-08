@@ -17,6 +17,3 @@ async def recreate_tables():
         # Cette ligne recrée toutes les tables
         await conn.run_sync(Base.metadata.create_all)
     print("Tables recreated successfully!")
-
-import asyncio
-#asyncio.run(recreate_tables())
