@@ -51,13 +51,14 @@ async def get_guest_list(request:Request,event_id:str,access_token = Cookie(None
     present_guest = len(get_present_guest)
     absent_guest = len(get_absent_guest)
     #variable contenant message whatsapp
-    for guest in guests:
-        telephone = guest.telephone
-        guest_name = guest.name
-        guest_id = guest.id
-        guest_get_pass = f"voici votre jeton en cas de manque de qrcode {guest.get_pass}"
-    invite_url = f"http://easyinvite-1.onrender.com/invite/{event_id}/{guest_id}/create"
-    message_whatsapp = f"https://wa.me/{telephone}?text=Bonjour%20{guest_name}%2C%20vous%20%C3%AAtes%20invit%C3%A9%20%C3%A0%20notre%20%C3%A9v%C3%A9nement.{guest_get_pass}%20Voir%20l'invitation%20:%20{invite_url}"
+    if guests:
+        for guest in guests:
+            telephone = guest.telephone
+            guest_name = guest.name
+            guest_id = guest.id
+            guest_get_pass = f"voici votre jeton en cas de manque de qrcode {guest.get_pass}"
+        invite_url = f"http://easyinvite-1.onrender.com/invite/{event_id}/{guest_id}/create"
+        message_whatsapp = f"https://wa.me/{telephone}?text=Bonjour%20{guest_name}%2C%20vous%20%C3%AAtes%20invit%C3%A9%20%C3%A0%20notre%20%C3%A9v%C3%A9nement.{guest_get_pass}%20Voir%20l'invitation%20:%20{invite_url}"
     #---------
     if not event :
         raise HTTPException(404,"aucun evenement trouvé")

@@ -88,6 +88,7 @@
                             <div class="mb-3">
                                 <label for="group" class="form-label">Group</label>
                                 <select class="form-select" id="group" name="group">
+                                    
                                     {%for group in userGroup%}
                                     <option value="{{group.id}}" {% if group.id == user.group %}selected{%endif%}>{{group.name}}</option>
                                     {%endfor%}

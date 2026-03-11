@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Billet Officiel - Soirée de Gala Miss</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --gold: #d4af37;
+            --dark-bg: #0a0a0a;
+            --ticket-bg: #111;
+        }
+
+        body {
+            background-color: var(--dark-bg);
+            font-family: 'Montserrat', sans-serif;
+            color: white;
+            padding: 50px 10px;
+        }
+
+        /* Conteneur principal du billet */
+        .ticket {
+            display: flex;
+            max-width: 900px;
+            margin: auto;
+            background: var(--ticket-bg);
+            border: 1px solid var(--gold);
+            position: relative;
+            filter: drop-shadow(0 0 15px rgba(212, 175, 55, 0.2));
+        }
+
+        /* Partie Gauche (Main) */
+        .ticket-main {
+            flex: 3;
+            padding: 30px;
+            border-right: 2px dashed var(--gold);
+            position: relative;
+        }
+
+        /* Partie Droite (Stub / Souche) */
+        .ticket-stub {
+            flex: 1;
+            padding: 30px;
+            background: rgba(212, 175, 55, 0.05);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        /* Cercles de perforation */
+        .ticket::before, .ticket::after {
+            content: '';
+            position: absolute;
+            right: 24.5%; /* Aligné sur la ligne pointillée */
+            width: 30px;
+            height: 30px;
+            background: var(--dark-bg);
+            border-radius: 50%;
+            border: 1px solid var(--gold);
+            z-index: 2;
+        }
+        .ticket::before { top: -16px; }
+        .ticket::after { bottom: -16px; }
+
+        .gold-text {
+            color: var(--gold);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .event-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.2rem;
+            font-weight: 700;
+            line-height: 1.2;
+            margin: 10px 0;
+            background: linear-gradient(45deg, #bf953f, #fcf6ba, #b38728);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .ticket-number {
+            font-family: monospace;
+            color: var(--gold);
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        .info-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            color: #888;
+            margin-bottom: 0;
+        }
+
+        .qr-code {
+            background: white;
+            padding: 5px;
+            width: 100px;
+            height: 100px;
+            margin-bottom: 10px;
+        }
+
+        .admission-type {
+            border: 1px solid var(--gold);
+            padding: 5px 15px;
+            font-size: 0.8rem;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .ticket { flex-direction: column; }
+            .ticket-main { border-right: none; border-bottom: 2px dashed var(--gold); }
+            .ticket::before, .ticket::after { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="ticket">
+        <div class="ticket-main">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <span class="info-label">Billet Officiel d'Entrée</span>
+                <span class="ticket-number">N° 0001-2025-GALA</span>
+            </div>
+
+            <p class="mb-0 italic-text" style="font-family: 'Playfair Display'; font-style: italic;">La Grande Soirée de</p>
+            <h1 class="event-title">L'ÉLECTION MISS 2025</h1>
+            
+            <div class="row mt-4">
+                <div class="col-6">
+                    <p class="info-label">DATE & HEURE</p>
+                    <p class="fw-bold mb-0">Samedi 25 Mai 2025</p>
+                    <p class="gold-text">À partir de 19H30</p>
+                </div>
+                <div class="col-6">
+                    <p class="info-label">LIEU</p>
+                    <p class="fw-bold mb-0">Grand Théâtre National</p>
+                    <p class="small text-muted">Adresse exacte, Ville</p>
+                </div>
+            </div>
+
+            <div class="mt-4">
+                <p class="info-label">PROGRAMME</p>
+                <p class="small">Défilé • Couronnement • Dîner de Gala • Spectacles</p>
+            </div>
+
+            <div class="mt-4 pt-3 border-top border-secondary">
+                <p class="small text-muted mb-0">* Ce billet est obligatoire pour accéder à la salle. Tenue de soirée exigée.</p>
+
+billet utilise un code dynamique à scan unique. 
+            Toute tentative de duplication ou de partage entraînera l'invalidation automatique du pass dès la première entrée détectée.
+            </div>
+        </div>
+
+        <div class="ticket-stub">
+            <div class="qr-code">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=MISS2025-TICKET-0001" alt="QR Code" style="width: 100%;">
+            </div>
+            <p class="info-label">SCANNEZ ICI</p>
+            
+            <div class="admission-type gold-text fw-bold">
+                PASS VIP
+            </div>
+            
+            <div class="mt-4 text-center">
+                <p class="info-label">SÉRIE</p>
+                <p class="small mb-0 fw-bold">0001</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+</body>
+</html>

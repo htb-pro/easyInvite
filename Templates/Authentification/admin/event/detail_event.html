@@ -43,7 +43,6 @@
             width:100px;
             height:100px;
             font-size:15px;
-            padding-top:50% ;
         }
 </style>
 <body>
@@ -53,7 +52,7 @@
             <div class="card shadow-sm col-12 col-lg-6">
                   <!-- Bouton retour -->
             <div class="mb-3" style="position: relative;">
-                <a href="{{url_for('event_list')}}" class="btn btn-outline-primary btn-sm">
+                <a href="/admin_dashboard" class="btn btn-outline-primary btn-sm">
                     ← Retour à la liste
                 </a>
             </div>
@@ -67,20 +66,12 @@
                     <!-- Infos principales -->
                         <div class="col-md-6 mb-2 d-flex" >
                             <div class="first_div">
-                                <p>Nom du couple :  <strong class="mb-4">{{ event.couple_name }} </strong></p>
+                                <p>Événement
+                                <strong class="mb-4">{{ event.name }} </strong></p>
                                 <p>Date : <strong class="mb-4">{{ event.date }} </strong></p>
-                                <p>Addresse : <strong class="mb-2">{{ event.address}}</strong></p>
-                                <p>salle : <strong class="mb-2">{{ event.location}}</strong></p>
-                                <p>Lieu : <strong class="mb-2">{%if event.description %}{{ event.description }}{%else%}Pas de description {%endif%}</strong></p>
-                            </div>
-                            <div class="seconde_div" style="position: absolute;top: 30px; right: 50px;">
-                                {% if event.state == "en attente"%}
-                                <span class="badge  bg-warning text-dark rounded-circle" >{{event.state}}</span>
-                                {% elif event.state == "en cours"%}
-                                <span class="badge bg-success rounded-circle text-center pt-5" style="font-size:15px;">{{event.state}}</span>
-                                {% else%}
-                                <span class="badge bg-danger rounded-circle text-center pt-5" style="font-size:15px;">{{event.state}}</span>
-                                {% endif%}
+                                <p>Groupe : <strong class="mb-2">{{ event.groups.name}}</strong></p>
+                                <p>Invités: <strong class="mb-2">{{event.guests|length}}</strong></p>
+                                <p>Status : <strong class="mb-2">{{event.state}}</strong></p>
                             </div>
                     </div>
 

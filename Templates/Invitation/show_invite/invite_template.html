@@ -161,7 +161,7 @@
         <div class="hero-content" data-aos="zoom-out" data-aos-duration="2000">
             <p class="font-romance mb-2" style="font-size: 2.5rem;">Nous nous marions</p>
             <h1 class="font-romance">{{guest.event.couple_name}}</h1>
-            <p class="font-serif italic h4 mt-3 tracking-widest">{{guest.event.date.date().strftime("%d-%m-%Y")}}</p>
+            <p class="font-serif italic h4 mt-3 tracking-widest text-dark">{{guest.event.date.date().strftime("%d-%m-%Y")}}</p>
         </div>
     </section>
 
@@ -180,12 +180,12 @@
 
     <section class="story-section text-center container">
         <div class="row justify-content-center" data-aos="fade-up">
-            <div class="col-md-7">
+            <div class="col-md-5">
                 {%if is_img_exist %}
                     <img src="/{%if event_img %}{{event_img}}{%endif%}" class="img-fluid mb-5 shadow-lg rounded-circle"  style="width: 220px;height: 220px;object-fit:cover;border:8px solid white" alt="not found">
                 {%endif%}                
                 <h2 class="font-romance mb-4" style="font-size: 3.5rem;font-family: 'Playfair Display', serif;">L'union de deux cœurs</h2>
-                 <h1 class="display-5" style="font-family: 'Playfair Display', serif;font-size: 1.8rem;"> Bonjour et bienvenue très cher(e) {{ guest.name }} 🎉</H1>
+                 <h1 class="display-5" style="font-family: 'Playfair Display', serif;font-size: 1.8rem;"> Bonjour et bienvenue très cher(e) {{ guest.name }}</H1>
                 <p class="text-muted">C'est avec une immense joie que nous vous invitons à célébrer notre événement spécial de {{guest.event.type}}.</p>
             </div>
         </div>
@@ -198,7 +198,7 @@
                     <div class="icon-circle">💒</div>
                     <h4 class="font-serif fw-bold">Bénédiction Nuptiale</h4>
                     <p class="text-terracotta fw-bold">11h00 Precise</p>
-                    <p><strong>Ministère Génération Joël</strong><br>515, Route KIPOPO GOLF MALELA</p>
+                    <p class="font-serif"><strong>Ministère Génération Joël</strong><br>515, Route KIPOPO GOLF MALELA</p>
                 </div>
             </div>
             <div class="col-md-5" data-aos="fade-left">
@@ -206,9 +206,19 @@
                     <div class="icon-circle">🥂</div>
                     <h4 class="font-serif fw-bold">Soirée Dansante</h4>
                     <p class="text-terracotta fw-bold">{{guest.event.date.time().strftime("%H:%M")}}</p>
-                    <p>dans la salle <strong>{{guest.event.location}}</strong><br>se trouvant a l'addresse suivante : <strong>{{guest.event.address}}</strong></p>
+                    <p class="font-serif">dans la salle <strong>{{guest.event.location}}</strong><br>se trouvant a l'addresse suivante : <strong>{{guest.event.address}}</strong></p>
                 </div>
             </div>
+            {%if guest.event.guest_present%}
+            <div class="col-md-5" data-aos="fade-right">
+                <div class="detail-box text-center">
+                    <div class="icon-circle">🎁</div>
+                    <h4 class="font-serif fw-bold">Cadeau</h4>
+                    <p class="font-serif">Votre présence à nos côtés est le plus beau cadeau.
+                            Si vous souhaitez nous témoigner votre affection par un présent, une contribution en espèce sera chaleureusement appréciée."</p>
+                </div>
+            </div>
+            {%endif%}
         </div>
     </section>
 

@@ -95,7 +95,7 @@
             </div>
             <!-- Titre de l'événement -->
              <div class="mb-3">
-                <label for="location" class="form-label fw-semibold">Location</label>
+                <label for="location" class="form-label fw-semibold">Salle</label>
                 <input type="text" class="form-control" id="location" name="location" placeholder=" Ex : salle du royaume" value="{{eventLocation}}" required>
             </div>
              <!-- photo du couple -->
@@ -105,8 +105,13 @@
                     class="form-control"
                     type="file"
                     name="photo"
-                    accept="image/*"
-                >
+                    accept="image/*">
+            </div>
+             <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="is_active" name="is_active">
+                <label class="form-check-label" for="is_active">
+                    cadeau en espèce
+                </label>
             </div>
             <!-- Description / Informations supplémentaires -->
             <div class="mb-3">

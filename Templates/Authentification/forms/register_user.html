@@ -107,7 +107,7 @@
                             <!-- group  -->
                             <div class="mb-3">
                                 <label for="group" class="form-label">Groupe</label>
-                                <select class="form-select" id="group" name="group_id">
+                                <select class="form-select" id="group" name="group_id" multiple>
                                     {%for groupe in groupes%}
                                     <option value="{{groupe.id}}" selected>{{groupe.name}}</option>
                                 {%endfor%}

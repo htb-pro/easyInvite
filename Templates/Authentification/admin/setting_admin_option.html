@@ -1,0 +1,54 @@
+{% extends 'Authentification/admin/admin_dashboard.html'%}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>setting</title>
+    <link rel="stylesheet" href="/static/Css/bootstrap.min.css">
+</head>
+<body>
+{%block content %}
+    <div class="container mt-4">
+
+    <h3 class="mb-4">Paramètres du système</h3>
+
+    <div class="row">
+
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+
+                    <h5 class="card-title">Gestion des Groupes roles et permissions</h5>
+                    <p class="card-text">
+                        Créer et gérer les groupes, roles et permissions d'utilisateurs.
+                    </p>
+                    <a href="{{url_for('access_manager')}}" class="btn btn-primary">
+                        Créer un groupe
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="card shadow-sm">
+                <div class="card-body text-center">
+
+                    <h5 class="card-title">Gestion de permissions</h5>
+                    <p class="card-text">
+                        assigner les permissions.
+                    </p>
+
+                    <a href="{{url_for('assign')}}" class="btn btn-success">
+                        Créer un rôle
+                    </a>
+
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+{%endblock%}
+</body>
+</html>

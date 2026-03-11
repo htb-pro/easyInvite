@@ -98,17 +98,22 @@ photo:UploadFile = File(),
 user=Depends(permission_required("create_event")),
 couple_name :str = Form(...),
 access_token =Cookie(None),
+is_active : bool = Form(None),
 Db:AsyncSession = Depends(connecting)):
     res = jwt.decode(access_token,secret,algorithms=[algo])
     user_id = res.get("user")
-    user_res = await Db.execute(select(User).where(User.id == user_id).options(selectinload(User.groups)))
+    user_res = await Db.execute(select(User).where(User.id == user_id).options(selectinload(User.groups),selectinload(User.roles)))
     user = user_res.scalars().first()
+    group_id = None
+    user_role = None
     if user.groups:
-        user_group = user.groups
-    for user_group in user.groups:
-        group_id = user_group.id
-    groups_res = await Db.execute(select(Group).where(Group.id == group_id))
-    groups = groups_res.scalars().first()
+        for group in user.groups:
+            group_id = group.id
+        for role in user.roles:
+            user_role = role.name
+    if user_role != "admin":
+        groups_res = await Db.execute(select(Group).where(Group.id == group_id))
+        groups = groups_res.scalars().first()
     try:
         if eventDate < datetime.now():
              return templates.TemplateResponse("Event/Forms/event_form.html",{'request':request,"dateError":' Entrez une date superieur a la date actuelle !!!',
@@ -126,13 +131,14 @@ Db:AsyncSession = Depends(connecting)):
         location = location,
         couple_name = couple_name,
         created_by = user_id,
+        guest_present = is_active if is_active else None,
+        group_id = group_id
     )
-    newEvent.groups=groups
     Db.add(newEvent)
     await Db.commit()
     await Db.refresh(newEvent)
     event_img_doc = newEvent.id
-    event_picture = photo.filename #la phone
+    event_picture = os.path.basename(photo.filename) #la phone
     if event_picture:
         Pictures = f"static/Pictures/{event_img_doc}"#l'adresse du stockage de l'image
         os.makedirs(Pictures,exist_ok=True)#creer un dosier s'il n'existe pas 
@@ -141,7 +147,6 @@ Db:AsyncSession = Depends(connecting)):
             shutil.copyfileobj(photo.file,buffer)
     request.session["success"] = "🎉 Événement créé avec succès !"
     return RedirectResponse("/event_list",status_code=303)
-
 
 @Root.get("/edit_event/{event_id}")#la root pour la modification d'un evenement
 async def editEvent(request:Request,event_id : str,user=Depends(permission_required("edit_event")),db:AsyncSession = Depends(connecting)):
@@ -153,7 +158,7 @@ async def editEvent(request:Request,event_id : str,user=Depends(permission_requi
 @Root.post("/edit_event/{event_id}")#la root pour modifier un evenement
 async def editEvent(request:Request,event_id : str,access_token = Cookie(None),eventName:str = Form(...),coupleName:str = Form(...),eventType:str = Form(...),eventDate: str = Form(...),
                     eventAddress:str = Form(...),location:str = Form(...),eventDescription: Optional[str] = Form(None),
-                    eventState: str = Form(...),photo:UploadFile = File(),db:AsyncSession = Depends(connecting)
+                    eventState: str = Form(...),photo:UploadFile = File(),is_active:bool = Form(None),db:AsyncSession = Depends(connecting)
                     ,user=Depends(permission_required("edit_event"))):
     edited_Event_Data = select(Event).where(Event.id == event_id)
     res = await db.execute(edited_Event_Data)
@@ -163,10 +168,12 @@ async def editEvent(request:Request,event_id : str,access_token = Cookie(None),e
     user_res = await db.execute(select(User).where(User.id == user_id).options(selectinload(User.groups)))
     user = user_res.scalars().first()
     if user.groups:
-        user_group = user.groups
-    group_id = user.group_id
-    groups_res = await db.execute(select(Group).where(Group.id == group_id))
-    groups = groups_res.scalars().first()
+        group_id = editedEventData.group_id
+    for role in user.roles:
+            user_role = role.name
+    if user_role != "admin":
+        groups_res = await db.execute(select(Group).where(Group.id == group_id))
+        groups = groups_res.scalars().first()
     loaded_image = photo.filename
     if loaded_image :#si une photo a ete chargee
         edited_event_img_doc = event_id
@@ -195,9 +202,11 @@ async def editEvent(request:Request,event_id : str,access_token = Cookie(None),e
     editedEventData.location = location
     editedEventData.description = eventDescription
     editedEventData.state = eventState
+    editedEventData.guest_present = is_active if is_active else None
     editedEventData.created_by = user_id
-
-    edited_Event_Data.groups = [groups]
+    if user_role != "admin":
+        edited_Event_Data.groups = [groups]
+    edited_Event_Data.groups = []
     await db.commit()
     return RedirectResponse("/event_list",status_code=303)
 

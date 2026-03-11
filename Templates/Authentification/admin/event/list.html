@@ -1,0 +1,74 @@
+{% extends "Authentification/admin/admin_dashboard.html" %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>list event</title>
+</head>
+<body>
+{% block content %}
+<div class="col-md-4">
+    <form action="/admin_list_event" method="get" class=" d-flex">
+        <input type="text" name="event_name" id="event" class="form-control" placeholder="barre de recherche">
+        <button class="btn btn-primary">Recherche</button>
+    </form>
+</div>
+<div class="card mt-2">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead class="table-light">
+                    <tr>
+                    <th>ID</th>
+                    <th>Événement</th>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Invités</th>
+                    <th>Status</th>
+                    <th>Groupe</th>
+                    <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {%for event in events%}
+                <tr>
+                    <td>{{loop.index}}</td>
+                    <td>{{event.name}}</td>
+                    <td>{{event.date}}</td>
+                    <td>
+                    <span>
+                    {{event.type}}
+                    </span>
+                    </td>
+                    <td>{{event.guests|length}}</td>
+                    <td>
+                        {% if event.state == "en attente"%}
+                    <span class="badge  bg-warning text-dark " >{{event.state}}</span>
+                    {% elif event.state == "en cours"%}
+                    <span class="badge bg-success  text-center pt-5" style="font-size:15px;">{{event.state}}</span>
+                    {% else%}
+                    <span class="badge bg-danger  text-center pt-5" style="font-size:15px;">{{event.state}}</span>
+                    {% endif%}
+                    </span>
+                    </td>
+                    <td>{{event.groups.name}}</td>
+                    <td>
+                    <a href="/see_event/{{event.id}}" class="btn btn-sm btn-outline-primary">
+                    <i class="bi bi-eye"></i>
+                    </a>
+                    <a href="/edit_event/{{event.id}}" class="btn btn-sm btn-outline-warning">
+                    <i class="bi bi-pencil"></i>
+                    </a>
+                    </td>
+                    </tr>
+                    {%endfor%}
+                    </tbody>
+
+            </table>
+        </div>
+    </div>
+</div>
+{%endblock%}
+</body>
+</html>

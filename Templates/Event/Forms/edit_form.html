@@ -74,7 +74,7 @@
 
             <div class="mb-3">
                 <label for="lieu" class="form-label fw-semibold">Type d'evenement</label>
-                <select name="eventType" id="eventState" class="form-select">
+                <select name="eventType" id="eventType" class="form-select">
                     <option value="Mariage"{%if event.type == 'Mariage' %}selected{%endif%}>Mariage</option>
                     <option value="Anniversaire" {%if event.type == 'Anniversaire' %}selected{%endif%}>Anniversaire</option>
                     <option value="Conference"{%if event.type == 'Conference' %}selected{%endif%}>Conference</option>
@@ -90,7 +90,7 @@
             </div>
             <!-- salle de l'evenement -->
             <div class="mb-3">
-                <label for="location" class="form-label fw-semibold">location</label>
+                <label for="location" class="form-label fw-semibold">Salle</label>
                 <input type="text" class="form-control" id="location" name="location"  value="{{event.location}}" required>
             </div>
 
@@ -115,8 +115,13 @@
                         class="form-control"
                         type="file"
                         name="photo"
-                        accept="image/*"
-                    >
+                        accept="image/*" >
+                </div>
+                       <div class="mb-3 form-check">
+                <input type="checkbox" class="form-check-input" id="is_active" name="is_active"  {%if event.guest_present%} checked{%endif%}>
+                <label class="form-check-label" for="is_active">
+                    cadeau en espèce
+                </label>
                 </div>
             <!-- Description / Informations supplémentaires -->
             <div class="mb-3">

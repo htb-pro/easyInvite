@@ -1,17 +1,17 @@
 #APIRouter permet juste l'organisation du code au lieu d' avoir tout les routes dans un fichier main oon cree les root separement
-from fastapi import Request,Form,Depends,HTTPException,APIRouter
-from fastapi.responses import HTMLResponse,RedirectResponse,JSONResponse
+from fastapi import Request,Form,Depends,HTTPException,APIRouter,Cookie
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-from uuid import uuid4
 import models
-from db_setting import engine,connecting
-from sqlalchemy.orm import selectinload,joinedload
+from db_setting import connecting
+from sqlalchemy.orm import selectinload
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from models import *
-from utils.scanQrCode.scan import scan_qr_code
 from Routers.loging import get_current_user_from_cookie
+from config import secret,algo
+from jose import jwt 
 
 Root = APIRouter(tags = ["easyInvite"],dependencies =[Depends(get_current_user_from_cookie)])
 templates = Jinja2Templates(directory="Templates")#ou sont stocker les templates
@@ -31,12 +31,19 @@ def extract_value(value): #methode de conversion pour recuperer l'id qu'il soit 
 def scanQrCode(request:Request):
     return templates.TemplateResponse("easyInviteApk/scanQrCode/scan.html",{'request':request})
 
-# @Root.get("/scan_view",name="scanning",response_class=HTMLResponse)#test scan
-# def scanQrCode(request:Request):
-#     return templates.TemplateResponse("easyInviteApk/scanQrCode/verifying.html",{'request':request})
-
 @Root.get("/scan",name="scanning")#checking du scan 
-async def scanQrCode(guest_id:str,db:AsyncSession = Depends(connecting)):
+async def scanQrCode(guest_id:str,access_token = Cookie(None),db:AsyncSession = Depends(connecting)):
+    # current_user_res = jwt.decode(access_token,secret,algorithms=[algo])
+    # current_user_id = current_user_res.get("user") 
+    # user_res = await db.execute(select(User).where(User.id == current_user_id).options(selectinload(User.groups)))
+    # user = user_res.scalars().first()
+    # user_group =None
+    # if user :
+    #     for group in user.groups:
+    #         group_id =group.id
+    #     event_res = await db.execute(select(Event))
+    #     events = event_res.scalars().all()
+    # print("---------------event ",event.name)
     guest_id = extract_value(guest_id)
     res_guest = await db.execute(select(Guest).where(Guest.id == guest_id))
     is_guest_exist = res_guest.scalars().first()

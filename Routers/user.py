@@ -1,4 +1,4 @@
-from fastapi import APIRouter,Depends,Request,Form,HTTPException
+from fastapi import APIRouter,Depends,Request,Form,HTTPException,Cookie
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import RedirectResponse
 from sqlalchemy import select
@@ -7,16 +7,23 @@ from db_setting import connecting
 from sqlalchemy.ext.asyncio import AsyncSession
 from models import User,Role,Group
 from Routers.loging import get_current_user_from_cookie,hash_password,admin_required
+from jose import jwt 
+from config import secret,algo
 
 templates = Jinja2Templates(directory="Templates")
 Root = APIRouter(tags = ["easyInvite"],dependencies =[Depends(get_current_user_from_cookie),Depends(admin_required)])
 
 @Root.get("/list_users",name="users_list")#get the auth view
 async def get_users(request:Request,db:AsyncSession = Depends(connecting)):
-    user_res = await db.execute(select(User).options(selectinload(User.roles),selectinload(User.groups))) #get the list in user
+    research_user = request.query_params.get('user_email')
+    query = select(User).options(selectinload(User.roles),selectinload(User.groups))
+    if research_user:
+         query = query.where(User.email ==research_user)
+    user_res = await db.execute(query) #get the list in user
     users = user_res.scalars().all()
     message = request.session.pop('message',None)
     return templates.TemplateResponse("Authentification/admin/list_user.html",{'request':request,'users':users,'message':message})
+
 @Root.get("/detail/{user_id}")
 async def getUserDetail(request:Request,user_id :str,db:AsyncSession = Depends(connecting)):
     get_user = await db.execute(select(User).where(User.id == user_id).options(selectinload(User.groups)))
@@ -68,7 +75,11 @@ async def auth_view(request:Request,name:str = Form(),email:str =Form(...),passw
 
 
 @Root.get("/user/edit/{user_id}")#endpoint pour la modification d'un user
-async def edit_user(request:Request,user_id:str,db:AsyncSession = Depends(connecting)):
+async def edit_user(request:Request,user_id:str,access_token=Cookie(None),db:AsyncSession = Depends(connecting)):
+    get_current_user = jwt.decode(access_token,secret,algorithms=[algo])
+    current_user_id = get_current_user.get("user")
+    current_user_res = await db.execute(select(User).where(User.id==current_user_id))
+    current_user = current_user_res.scalars().first()
     get_user_to_edit = await db.execute(select(User).where(User.id == user_id).options(selectinload(User.roles),selectinload(User.groups)))#trouver le user
     res_role = await db.execute(select(Role))
     res_group = await db.execute(select(Group))
@@ -77,10 +88,15 @@ async def edit_user(request:Request,user_id:str,db:AsyncSession = Depends(connec
     user = get_user_to_edit.scalars().first()#prendre la premiere ocurence
     if not user :
         raise HTTPException(status_code = 404,datail = "l'utilisateur n\'existe pas ")
+    for role in current_user.roles:
+         user_role = role.name
+    if user_role == "admin":
+         user_group = []
+    user_group = user.groups
     userName = user.name
     userEmail = user.email
     userRole = user.roles
-    userGroup=user.group_id
+    userGroup=user_group
     userState = user.state
     user_id = user.id
     return templates.TemplateResponse("Authentification/forms/edit_user_form.html",{'request':request,'user':user,'user_id':user_id,'userName':userName,'userEmail':userEmail,'userRole':userRole,'groupes':groupes,'roles':roles,'userGroup':userGroup,'userState':userState})
