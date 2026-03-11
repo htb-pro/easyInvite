@@ -27,6 +27,8 @@ async def getGuestInvite(request:Request,event_id:str ,guest_id : str ,db:AsyncS
     guestInvite =get_guest_invite.scalars().first() #le guest 
     event = guestInvite.event if guestInvite else None 
     invite = guestInvite.invite if guestInvite else None #l'invite
+    event_type = event.type
+    event_img_path =None
     if not event:
         return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
     copyright = datetime.now()
@@ -43,15 +45,19 @@ async def getGuestInvite(request:Request,event_id:str ,guest_id : str ,db:AsyncS
         for img in images :
             event_img = img
             break
-    if not event_img:
-        return templates.TemplateResponse("Invitation/show_invite/invite_template.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright})
-    event_img_path = os.path.join(picture_dirs,event_img)
+    if not event_img and event.type == "Mariage":
+        return templates.TemplateResponse("Invitation/show_invite/wedding_event/wedding_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright})
+    if event_img:
+        event_img_path = os.path.join(picture_dirs,event_img)
     try:
         event= guestInvite.event.type
     except:
         return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
-    return templates.TemplateResponse("Invitation/show_invite/invite_template.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright,'is_img_exist':images,"event_img":event_img_path})
-
+    if event_type == "Mariage":
+        return templates.TemplateResponse("Invitation/show_invite/wedding_event/wedding_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright,'is_img_exist':images,"event_img":event_img_path})
+    elif event_type == "Concours":
+        return templates.TemplateResponse("Invitation/show_invite/concours_event/concours_invite.html",{'request':request,'guest':guestInvite,'event':event,'copyright':copyright})
+    
 @Root.get('/get_invite',name="invitation",response_class=HTMLResponse)#get the invite url
 def getInvite(request:Request):
     return templates.TemplateResponse("Invitation/List/list.html",{'request':request})

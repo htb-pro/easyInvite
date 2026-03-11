@@ -76,6 +76,7 @@
                 <label for="lieu" class="form-label fw-semibold">Type d'evenement</label>
                 <select name="eventType" id="eventType" class="form-select">
                     <option value="Mariage"{%if event.type == 'Mariage' %}selected{%endif%}>Mariage</option>
+                    <option value="Concours">Concours</option>
                     <option value="Anniversaire" {%if event.type == 'Anniversaire' %}selected{%endif%}>Anniversaire</option>
                     <option value="Conference"{%if event.type == 'Conference' %}selected{%endif%}>Conference</option>
                     <option value="Reunion"{%if event.type == 'Reunion' %}selected{%endif%}>Reunion</option>

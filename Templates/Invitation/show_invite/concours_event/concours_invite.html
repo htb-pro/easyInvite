@@ -131,18 +131,18 @@
             </div>
 
             <p class="mb-0 italic-text" style="font-family: 'Playfair Display'; font-style: italic;">La Grande Soirée de</p>
-            <h1 class="event-title">L'ÉLECTION MISS 2025</h1>
+            <h1 class="event-title">{{guest.event.name}}</h1>
             
             <div class="row mt-4">
                 <div class="col-6">
                     <p class="info-label">DATE & HEURE</p>
-                    <p class="fw-bold mb-0">Samedi 25 Mai 2025</p>
-                    <p class="gold-text">À partir de 19H30</p>
+                    <p class="fw-bold mb-0">{{event.date}}</p>
+                    <p class="gold-text">À partir de {{guest.event.date.time()}}</p>
                 </div>
                 <div class="col-6">
                     <p class="info-label">LIEU</p>
-                    <p class="fw-bold mb-0">Grand Théâtre National</p>
-                    <p class="small text-muted">Adresse exacte, Ville</p>
+                    <p class="fw-bold mb-0">{{guest.event.location}}</p>
+                    <p class="small text-muted">{{guest.event.address}}</p>
                 </div>
             </div>
 
@@ -152,14 +152,13 @@
             </div>
 
             <div class="mt-4 pt-3 border-top border-secondary">
-                <p class="small text-muted mb-0">* Ce billet est obligatoire pour accéder à la salle. Tenue de soirée exigée.</p>
-
 billet utilise un code dynamique à scan unique. 
             Toute tentative de duplication ou de partage entraînera l'invalidation automatique du pass dès la première entrée détectée.
             </div>
         </div>
 
         <div class="ticket-stub">
+            {{guest.name}}
             <div class="qr-code">
                 <img src="https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=MISS2025-TICKET-0001" alt="QR Code" style="width: 100%;">
             </div>
