@@ -13,8 +13,6 @@ engine = create_async_engine(
     echo =True,
 )
         
-
-
 AsyncSessionLocal = async_sessionmaker(#creation de la session
     bind=engine,
     autocommit = False,
