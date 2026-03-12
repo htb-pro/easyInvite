@@ -7,6 +7,7 @@
 
     <!-- Bootstrap 5 -->
     <link rel="stylesheet" href="/static/Css/bootstrap.min.css">
+    <script src="/static/Js/event_forms.js" defer></script>
     <style>
     body {
       font-family: "Segoe UI", system-ui, sans-serif;
@@ -60,6 +61,17 @@
                     <p>{{Error}}</p>
                 </div>
             {% endif%}
+            <div class="mb-3">
+                <label for="lieu" class="form-label fw-semibold">Type d'evenement</label>
+                <select name="eventType" id="event_type" class="form-select">
+                    <option value="Mariage"{%if event.type == 'Mariage' %}selected{%endif%}>Mariage</option>
+                    <option value="Concours"{%if event.type == 'Concours' %}selected{%endif%}>Concours</option>
+                    <option value="Anniversaire" {%if event.type == 'Anniversaire' %}selected{%endif%}>Anniversaire</option>
+                    <option value="Conference"{%if event.type == 'Conference' %}selected{%endif%}>Conference</option>
+                    <option value="Reunion"{%if event.type == 'Reunion' %}selected{%endif%}>Reunion</option>
+                    <option value="Autres" {%if event.type == 'Autres' %}selected{%endif%}>Autres</option>
+                </select>
+            </div>
             <!-- Titre de l'événement -->
             <div class="mb-3">
                 <label for="titre" class="form-label fw-semibold">Nom de l'événement</label>
@@ -67,21 +79,9 @@
             </div>
 
             <!-- nom couple -->
-            <div class="mb-3">
+            <div class="mb-3 couple_name">
                 <label for="titre" class="form-label fw-semibold">Nom du couple</label>
                 <input type="text" class="form-control" id="couple" name="coupleName" placeholder="Ex : Gala 2026" value="{{event.couple_name}}" required>
-            </div>
-
-            <div class="mb-3">
-                <label for="lieu" class="form-label fw-semibold">Type d'evenement</label>
-                <select name="eventType" id="eventType" class="form-select">
-                    <option value="Mariage"{%if event.type == 'Mariage' %}selected{%endif%}>Mariage</option>
-                    <option value="Concours">Concours</option>
-                    <option value="Anniversaire" {%if event.type == 'Anniversaire' %}selected{%endif%}>Anniversaire</option>
-                    <option value="Conference"{%if event.type == 'Conference' %}selected{%endif%}>Conference</option>
-                    <option value="Reunion"{%if event.type == 'Reunion' %}selected{%endif%}>Reunion</option>
-                    <option value="Autres" {%if event.type == 'Autres' %}selected{%endif%}>Autres</option>
-                </select>
             </div>
 
             <!-- Date de l'événement -->
@@ -110,7 +110,7 @@
                         <option value="terminé" {%if event.state == "terminé"%}selected{%endif%}>terminé</option>
                     </select>
                 </div>
-                  <div class="mb-3">
+                  <div class="mb-3 event_img">
                     <label class="form-label">Choisir une image du couple</label>
                     <input 
                         class="form-control"

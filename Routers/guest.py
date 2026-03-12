@@ -3,7 +3,7 @@ from fastapi import Request,Form,Depends,HTTPException,APIRouter,Query,Cookie
 from fastapi.responses import HTMLResponse,RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select,and_
+from sqlalchemy import select,and_,func
 from uuid import uuid4
 import models
 from db_setting import engine,connecting
@@ -39,7 +39,8 @@ async def get_guest_list(request:Request,event_id:str,access_token = Cookie(None
     get_event_guest = select(Event).options(selectinload(Event.guests)).where(Event.id == event_id)#prendre l'evenement qui a des invites
     result = await db.execute(get_event_guest)
     event = result.scalars().first()
-    guests = list(event.guests) if event else []
+    guest_res = await db.execute(select(Guest).where(Guest.event_id==event_id).options(selectinload(Guest.invite)))
+    guests = guest_res.scalars().all()
     get_invite = await db.execute(select(Invite))
     invite = get_invite.scalars().all()
     get_present = select(Guest).where(Guest.event_id == event_id,Guest.is_present == True)
@@ -102,11 +103,15 @@ async def get_invited(request:Request,event_id:str,success:int | None = None,db:
     return templates.TemplateResponse("Guest/Forms/form.html",{'request':request,'event':event,'success':get_success,**form_data})
 
 @Root.post('/create/{event_id}/guest')#get the guest register 
-async def newGuest(request:Request,event_id:str,guestName:str=Form(),guestType:str=Form(),guestPlace:str = Form(...),
-                   guestTel:str=Form(),guestEmail:Optional[str]=Form(None),user=Depends(permission_required("create_guest")),db:AsyncSession = Depends(connecting)):
+async def newGuest(request:Request,event_id:str,guestName:str=Form(),guestType:str=Form(None),guestPlace:str = Form(None),
+                   guestTel:str=Form(),guestEmail:Optional[str]=Form(None),ticket_type:str = Form(None),user=Depends(permission_required("create_guest")),db:AsyncSession = Depends(connecting)):
     select_event = (select(Event).where(Event.id==event_id).options(selectinload(Event.guests)))
     get_event = await db.execute(select_event)
     event = get_event.first()
+    invite_res = await db.execute(select(func.max(Invite.ticket_number)).where(Invite.event_id == event_id))
+    invite = invite_res.scalar()
+    last_ticket_number = invite
+    ticket_number = (last_ticket_number or 0)+1
     select_guest_tel =select(Guest).where(and_(Guest.telephone == guestTel,Guest.event_id == event_id))#verifier si le guest existe deja avec le meme numero ou email
     tel_res = await db.execute(select_guest_tel)
     select_guest_mail =select(Guest).where(and_(Guest.email == guestEmail,Guest.event_id == event_id))#verifier si le guest existe deja avec le meme email
@@ -134,9 +139,12 @@ async def newGuest(request:Request,event_id:str,guestName:str=Form(),guestType:s
                 error_message = 'un invité existe deja avec cet email'
                 set_data(error_message)
                 return RedirectResponse(f'/create/{event_id}/guest',status_code=303)#renvoi erreur
+    
     new_invite = Invite(
     event_id = event_id,
-    qr_token = str(uuid4())
+    qr_token = str(uuid4()),
+    type = ticket_type,
+    ticket_number = ticket_number
     )
     db.add(new_invite)
     guest = Guest(
@@ -158,18 +166,20 @@ async def newGuest(request:Request,event_id:str,guestName:str=Form(),guestType:s
 
 @Root.get("/edit_guest_form/{event_id}/{guest_id}")
 async def editGuest(request:Request,event_id:str,guest_id: str,user=Depends(permission_required("edit_guest")),db:AsyncSession=Depends(connecting)):
-    get_guest = select(Guest).where(Guest.id ==guest_id,Guest.event_id == event_id)
+    get_guest = select(Guest).where(Guest.id ==guest_id,Guest.event_id == event_id).options(selectinload(Guest.invite))
     result = await db.execute(get_guest)
     guest = result.scalars().first()
+    event_res = await db.execute(select(Event).where(Event.id == event_id))
+    event = event_res.scalars().first()
     if not guest :
         raise HTTPException(404,"invité non touve")
-    return templates.TemplateResponse("Guest/Forms/edit_form.html",{'request':request,"guest":guest,'event_id':event_id},status_code=303)
+    return templates.TemplateResponse("Guest/Forms/edit_form.html",{'request':request,"guest":guest,'event':event},status_code=303)
 
 @Root.post("/edit_guest_form/{Event_id}")#edit guest form
-async def editGuestPost(request:Request,Event_id:str,guest_id:str = Form(...),guestName:str=Form(),guestType:str=Form(...),guestPlace : str = Form(...),
-                        guestState : int = Form(...),guestTel:str=Form(),guestEmail:Optional[str]=Form(None),
+async def editGuestPost(request:Request,Event_id:str,guest_id:str = Form(...),guestName:str=Form(),guestType:str=Form(None),guestPlace : str = Form(None),
+                        guestState : int = Form(...),guestTel:str=Form(),guestEmail:Optional[str]=Form(None),ticket_type:str = Form(None),
                         user=Depends(permission_required("edit_guest")),db:AsyncSession = Depends(connecting)):
-    get_new_guest = select(Guest).where(Guest.id ==guest_id,Guest.event_id == Event_id) #prepare le guest
+    get_new_guest = select(Guest).where(Guest.id ==guest_id,Guest.event_id == Event_id).options(selectinload(Guest.invite)) #prepare le guest
     result = await db.execute(get_new_guest) #select le guest concerné
     new_guest = result.scalars().first()#recupere le guest concerné
     if not new_guest:
@@ -180,6 +190,7 @@ async def editGuestPost(request:Request,Event_id:str,guest_id:str = Form(...),gu
     new_guest.is_present = bool(guestState)
     new_guest.telephone = guestTel
     new_guest.email = guestEmail
+    new_guest.invite.type = ticket_type
     try:
         await db.commit()
     except IntegrityError:

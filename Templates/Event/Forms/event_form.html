@@ -7,6 +7,7 @@
 
     <!-- Bootstrap 5 -->
   <link rel="stylesheet" href="/static/Css/bootstrap.min.css">
+  <script src="/static/Js/event_forms.js" defer></script>
     <style>
     body {
       font-family: "Segoe UI", system-ui, sans-serif;
@@ -61,27 +62,28 @@
                 <p>{{error}}</p>
             </div>
             {%endif%}
+<div class="mb-3">
+                <label for="lieu" class="form-label fw-semibold">Type d'evenement</label>
+                <select name="eventType" id="event_type" class="form-select">
+                        <option selected >--choisir le type d'evenement--</option>
+                        <option value="Mariage" {%if eventType == "Mariage"%}selected{%endif%}>Mariage</option>
+                        <option value="Concours" {%if eventType == "Concours"%}selected{%endif%}>Concours</option>
+                        <option value="Anniversaire" {%if eventType == "Anniversaire"%}selected{%endif%}>Anniversaire</option>
+                        <option value="Conference" {%if eventType == "Conference"%}selected{%endif%}>Conference</option>
+                        <option value="Reunion" {%if eventType == "Reunion"%}selected{%endif%}>Reunion</option>
+                        <option value="Autres" {%if eventType == "Autres"%}selected{%endif%}>Autres</option>
+                </select>
+            </div>
+
             <!-- Titre de l'événement -->
             <div class="mb-3">
                 <label for="titre" class="form-label fw-semibold">Nom de l'événement</label>
                 <input type="text" class="form-control" id="titre" name="eventName" value="{{eventName}}" placeholder="Ex : Gala 2026" required>
             </div>
             <!-- nom du couple -->
-            <div class="mb-3">
+            <div class="mb-3 couple_name">
                 <label for="titre" class="form-label fw-semibold">Nom du couple</label>
                 <input type="text" class="form-control" id="titre" name="couple_name" value="{{couple}}" placeholder="Ex : x et y" required>
-            </div>
-            <div class="mb-3">
-                <label for="lieu" class="form-label fw-semibold">Type d'evenement</label>
-                <select name="eventType" id="eventState" class="form-select">
-                    <option selected >--choisir le type d'evenement--</option>
-                    <option value="Mariage">Mariage</option>
-                    <option value="Concours">Concours</option>
-                    <option value="Anniversaire">Anniversaire</option>
-                    <option value="Conference">Conference</option>
-                    <option value="Reunion">Reunion</option>
-                    <option value="Autres">Autres</option>
-                </select>
             </div>
             <!-- Date de l'événement -->
             <div class="mb-3">
@@ -100,10 +102,10 @@
                 <input type="text" class="form-control" id="location" name="location" placeholder=" Ex : salle du royaume" value="{{eventLocation}}" required>
             </div>
              <!-- photo du couple -->
-             <div class="mb-3">
+             <div class="mb-3 event_img">
                 <label class="form-label">Choisir une image du couple</label>
                 <input 
-                    class="form-control"
+                    class="form-control "
                     type="file"
                     name="photo"
                     accept="image/*">

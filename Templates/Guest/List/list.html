@@ -107,9 +107,14 @@
                 <thead>
                     <tr>
                         <th>Nom</th>
+                        {%if event.type != "Concours"%}
                         <th>Type</th>
-                        <th>Statut</th>
                         <th>Place</th>
+                        {%endif%}
+                        {%if event.type == "Concours"%}
+                        <th>Type de billet</th>
+                        {%endif%}
+                        <th>Statut</th>
                         <th>Téléphone</th>
                         <th>Email</th>
                         <th>Creation</th>
@@ -120,9 +125,14 @@
                 <tbody>
                     <tr>
                         <td>{{ guest.name }}</td>
+                        {%if guest.event.type != "Concours"%}
                         <td>{{ guest.guest_type }}</td>
-                        <td> {% if guest.is_present %}Présent{%else%}Absent {%endif%}</td>
                         <td>{{guest.place}}</td>
+                        {%endif%}
+                        {%if guest.event.type == "Concours"%}
+                        <td>{{guest.invite.type}}</td>
+                        {%endif%}
+                        <td> {% if guest.is_present %}Présent{%else%}Absent {%endif%}</td>
                         <td>{{guest.telephone}}</td>
                         <td>{{guest.email}}</td>
                         <td>  {{guest.created_date.strftime('%d-%m-%y')}} {{guest.created_date.strftime('%H:%M')}}</td>
@@ -155,7 +165,9 @@
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
                             <h3 class="fw-bold mb-1">{{guest.name}}</h3>
+                            {%if guest.event.type != "Concours"%}
                             <small style="font-size:18px;">{{guest.type}}</small>
+                            {%endif%}
                             <small style="font-size:18px;">{{guest.telephone}}</small></br>
                             <small style="font-size:18px;">{{guest.email}}</small><br>
                             <small style="font-size:18px;">{{guest.created_date.strftime('%d-%m-%Y %H:%M' )}}</small>
@@ -163,7 +175,12 @@
                     </div>
                     <hr class="my-2">
                     <div class="d-flex flex-column justify-content-between ">
+                        {%if guest.event.type != "Concours"%}
                         <small style="font-size:18px;">Table : {{guest.place}}</small>
+                        {%endif%}
+                        {%if guest.event.type == "Concours"%}
+                            <small style="font-size:18px;">Billet : {{guest.invite.type}}</small>
+                        {%endif%}
                         <small class="text-muted" style="font-size:18px;">{% if guest.is_present %}<i class="bi bi-check-circle-fill text-success"></i>   Present {%else%}<span class="text-danger"><i class="bi bi-x-circle-fill "></i> Absent</span>{%endif%}</small></br>
                         <div class="btn-group btn-group-sm">
                             <small class="d-flex justify-content-center ">

@@ -1,3 +1,4 @@
+if (typeof Html5QrcodeScanner !== "undefined"){
 function showMessage(text,color){
     document.getElementById("result").innerHTML =
         `<div class="alert alert-${color} mt-3">${text}</div>`;
@@ -48,7 +49,6 @@ form.style.display ="none"
 show_form.addEventListener("click",()=>{
     form.style.display= form.style.display ==="none" ? "block":"none";
 })
-
 //----------------modifier le nom de la fonctionalite de "en scan an image en fr scanner une image"
 const scan_text = document.querySelector("#html5-qrcode-anchor-scan-type-change");
 const scan_camera_permission = document.querySelector("#reader__dashboard_section_csr button");//changer le text en fr
@@ -56,3 +56,5 @@ const select_image_to_scan = document.querySelector("#html5-qrcode-button-file-s
 scan_text.innerHTML = "Choisir le qr_code a scanner";
 scan_camera_permission.innerHTML = "Demander la permission de la camera";
 select_image_to_scan.innerHTML = "selectionner l'image - aucune image selectionné";
+}
+

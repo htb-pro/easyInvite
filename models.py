@@ -1,4 +1,4 @@
-from sqlalchemy import Column,String,DateTime,Text,Uuid,Date,ForeignKey,Boolean,UniqueConstraint,Table
+from sqlalchemy import Column,String,Integer,DateTime,Text,Uuid,Date,ForeignKey,Boolean,UniqueConstraint,Table
 import uuid
 from sqlalchemy.orm import relationship
 from db_setting import Base
@@ -6,7 +6,10 @@ from uuid import uuid4
 from datetime import datetime,date
 
 
-
+def generate_serie(even_name:str):#la methode de creation de la serie d'un event
+    words = even_name.split()
+    serie = "".join(word[0].upper() for word in words if word)
+    return serie
 #---------------------tables ------------------
 user_groups = Table(#association groupe et user
     "user_groups",
@@ -90,9 +93,12 @@ class Event(Base): #event table
     guest_present = Column(Boolean,default=False)
     created_by = Column(String,ForeignKey("users.id"))
     group_id= Column(String,ForeignKey("groups.id"))
-    
+    serie = Column(String,nullable=True)
+    programme = Column(Text,nullable=True)
+
     guests = relationship("Guest",back_populates="event",cascade="all,delete")
     groups = relationship("Group",back_populates ="events")
+    invites=relationship("Invite",back_populates="events",cascade = "all,delete-orphan")
 
 class Guest(Base):
     __tablename__="guests"
@@ -128,14 +134,16 @@ class PresenceConfirmation(Base):
 class Invite(Base):
     __tablename__= "invites"
     id =Column(String,primary_key=True,unique=True,default = lambda :str(uuid4()))
+    type = Column(String(25),nullable = True)
     guest_id  =Column(String,ForeignKey('guests.id',ondelete="CASCADE"))
     event_id  = Column(String,ForeignKey('events.id',ondelete="CASCADE"))
     qr_token  = Column(Uuid(as_uuid =True),unique=True, default=lambda:str(uuid4()))
     created_date  = Column(DateTime,default=datetime.now())
     is_used= Column(Boolean,default = False)
     used_at = Column(DateTime,default=datetime.now())
-
+    ticket_number =  Column(Integer)
 
     guest=relationship("Guest",back_populates="invite",uselist=False)
     guestResponse=relationship("PresenceConfirmation",back_populates="invite",cascade = "all,delete-orphan",uselist=False)
-
+    events = relationship("Event",back_populates= "invites")
+    __table_args__ = (UniqueConstraint("event_id","ticket_number",name="unique event ticket number"),)

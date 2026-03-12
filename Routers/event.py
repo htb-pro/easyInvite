@@ -50,9 +50,9 @@ async def getEventList(request:Request,  db:AsyncSession = Depends(connecting),a
         for user_group in user.groups:
             group_id = user_group.id
         if user_role == "admin":
-             get_event =await db.execute(select(Event).options(selectinload(Event.guests)))
-             events = get_event.scalars().all()
-             return templates.TemplateResponse("Event/List/list_event.html",{'request':request,"events":events,'curent_user_role':user_role})
+            get_event =await db.execute(select(Event).options(selectinload(Event.guests)))
+            events = get_event.scalars().all()
+            return templates.TemplateResponse("Event/List/list_event.html",{'request':request,"events":events,'curent_user_role':user_role})
     get_event =await db.execute(select(Event).where(Event.group_id == group_id).options(selectinload(Event.guests)))
     events = get_event.scalars().all()
     return templates.TemplateResponse("Event/List/list_event.html",{'request':request,"events":events,'curent_user_role':user_role})
@@ -96,24 +96,22 @@ eventAddress:str = Form(),eventDescription: Optional[str] = Form(None),
 location:str = Form(...),
 photo:UploadFile = File(),
 user=Depends(permission_required("create_event")),
-couple_name :str = Form(...),
+couple_name :str = Form(None),
 access_token =Cookie(None),
-is_active : bool = Form(None),
+is_active : bool = Form(None),#le cadeau
 Db:AsyncSession = Depends(connecting)):
     res = jwt.decode(access_token,secret,algorithms=[algo])
     user_id = res.get("user")
     user_res = await Db.execute(select(User).where(User.id == user_id).options(selectinload(User.groups),selectinload(User.roles)))
     user = user_res.scalars().first()
     group_id = None
-    user_role = None
+    user_role = None #le role de l'utilisateur sera none par defaut pour eviter les erreurs
+    serie = generate_serie(eventName)
     if user.groups:
         for group in user.groups:
             group_id = group.id
         for role in user.roles:
             user_role = role.name
-    if user_role != "admin":
-        groups_res = await Db.execute(select(Group).where(Group.id == group_id))
-        groups = groups_res.scalars().first()
     try:
         if eventDate < datetime.now():
              return templates.TemplateResponse("Event/Forms/event_form.html",{'request':request,"dateError":' Entrez une date superieur a la date actuelle !!!',
@@ -132,7 +130,8 @@ Db:AsyncSession = Depends(connecting)):
         couple_name = couple_name,
         created_by = user_id,
         guest_present = is_active if is_active else None,
-        group_id = group_id
+        group_id = group_id,
+        serie = serie
     )
     Db.add(newEvent)
     await Db.commit()
@@ -167,6 +166,7 @@ async def editEvent(request:Request,event_id : str,access_token = Cookie(None),e
     user_id = res.get("user")
     user_res = await db.execute(select(User).where(User.id == user_id).options(selectinload(User.groups)))
     user = user_res.scalars().first()
+    serie = generate_serie(eventName)
     if user.groups:
         group_id = editedEventData.group_id
     for role in user.roles:
@@ -204,6 +204,7 @@ async def editEvent(request:Request,event_id : str,access_token = Cookie(None),e
     editedEventData.state = eventState
     editedEventData.guest_present = is_active if is_active else None
     editedEventData.created_by = user_id
+    editedEventData.serie = serie
     if user_role != "admin":
         edited_Event_Data.groups = [groups]
     edited_Event_Data.groups = []

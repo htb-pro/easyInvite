@@ -127,7 +127,7 @@
         <div class="ticket-main">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <span class="info-label">Billet Officiel d'Entrée</span>
-                <span class="ticket-number">N° 0001-2025-GALA</span>
+                <span class="ticket-number">N° {{serie_number}}</span>
             </div>
 
             <p class="mb-0 italic-text" style="font-family: 'Playfair Display'; font-style: italic;">La Grande Soirée de</p>
@@ -142,7 +142,7 @@
                 <div class="col-6">
                     <p class="info-label">LIEU</p>
                     <p class="fw-bold mb-0">{{guest.event.location}}</p>
-                    <p class="small text-muted">{{guest.event.address}}</p>
+                    <p class="small ">{{guest.event.address}}</p>
                 </div>
             </div>
 
@@ -151,7 +151,7 @@
                 <p class="small">Défilé • Couronnement • Dîner de Gala • Spectacles</p>
             </div>
 
-            <div class="mt-4 pt-3 border-top border-secondary">
+            <div class="mt-4 pt-3 info-label border-top border-secondary">
 billet utilise un code dynamique à scan unique. 
             Toute tentative de duplication ou de partage entraînera l'invalidation automatique du pass dès la première entrée détectée.
             </div>
@@ -159,18 +159,18 @@ billet utilise un code dynamique à scan unique.
 
         <div class="ticket-stub">
             {{guest.name}}
-            <div class="qr-code">
+            <div class="qr-code mt-2">
                 <img src="https://api.qrserver.com/v1/create-qr-code/?size=90x90&data=MISS2025-TICKET-0001" alt="QR Code" style="width: 100%;">
             </div>
             <p class="info-label">SCANNEZ ICI</p>
             
             <div class="admission-type gold-text fw-bold">
-                PASS VIP
+                PASS {{guest.invite.type}}
             </div>
             
             <div class="mt-4 text-center">
-                <p class="info-label">SÉRIE</p>
-                <p class="small mb-0 fw-bold">0001</p>
+                <p class="info-label">Numero ticket</p>
+                <p class="small mb-0 fw-bold">{{ticket_number}}</p>
             </div>
         </div>
     </div>

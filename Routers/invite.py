@@ -29,6 +29,8 @@ async def getGuestInvite(request:Request,event_id:str ,guest_id : str ,db:AsyncS
     invite = guestInvite.invite if guestInvite else None #l'invite
     event_type = event.type
     event_img_path =None
+    serie_number = f"{event.serie}-{invite.ticket_number:04d}"#le numero de serie sera composer de serie et de numero de tiket
+    ticket_number = f"{invite.ticket_number:04d}" #le numero du ticket
     if not event:
         return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
     copyright = datetime.now()
@@ -56,7 +58,7 @@ async def getGuestInvite(request:Request,event_id:str ,guest_id : str ,db:AsyncS
     if event_type == "Mariage":
         return templates.TemplateResponse("Invitation/show_invite/wedding_event/wedding_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright,'is_img_exist':images,"event_img":event_img_path})
     elif event_type == "Concours":
-        return templates.TemplateResponse("Invitation/show_invite/concours_event/concours_invite.html",{'request':request,'guest':guestInvite,'event':event,'copyright':copyright})
+        return templates.TemplateResponse("Invitation/show_invite/concours_event/concours_invite.html",{'request':request,'guest':guestInvite,'event':event,'copyright':copyright,'serie_number':serie_number,'ticket_number':ticket_number})
     
 @Root.get('/get_invite',name="invitation",response_class=HTMLResponse)#get the invite url
 def getInvite(request:Request):
