@@ -108,10 +108,6 @@ async def newGuest(request:Request,event_id:str,guestName:str=Form(),guestType:s
     select_event = (select(Event).where(Event.id==event_id).options(selectinload(Event.guests)))
     get_event = await db.execute(select_event)
     event = get_event.first()
-    invite_res = await db.execute(select(func.max(Invite.ticket_number)).where(Invite.event_id == event_id))
-    invite = invite_res.scalar()
-    last_ticket_number = invite
-    ticket_number = (last_ticket_number or 0)+1
     select_guest_tel =select(Guest).where(and_(Guest.telephone == guestTel,Guest.event_id == event_id))#verifier si le guest existe deja avec le meme numero ou email
     tel_res = await db.execute(select_guest_tel)
     select_guest_mail =select(Guest).where(and_(Guest.email == guestEmail,Guest.event_id == event_id))#verifier si le guest existe deja avec le meme email
@@ -140,13 +136,6 @@ async def newGuest(request:Request,event_id:str,guestName:str=Form(),guestType:s
                 set_data(error_message)
                 return RedirectResponse(f'/create/{event_id}/guest',status_code=303)#renvoi erreur
     
-    new_invite = Invite(
-    event_id = event_id,
-    qr_token = str(uuid4()),
-    type = ticket_type,
-    ticket_number = ticket_number
-    )
-    db.add(new_invite)
     guest = Guest(
         name = guestName,
         guest_type = guestType,
@@ -156,9 +145,13 @@ async def newGuest(request:Request,event_id:str,guestName:str=Form(),guestType:s
         event_id = event_id,
         qr_token = str(uuid4()),
         get_pass = guest_get_pass,
-        invite = new_invite,
     ) 
     db.add(guest)
+    new_invite = Invite(
+    qr_token = str(uuid4()),
+    guest_id = guest.id
+    )
+    db.add(new_invite)
     await db.commit()
     await db.refresh(guest)     
     await db.refresh(new_invite)     
@@ -177,7 +170,7 @@ async def editGuest(request:Request,event_id:str,guest_id: str,user=Depends(perm
 
 @Root.post("/edit_guest_form/{Event_id}")#edit guest form
 async def editGuestPost(request:Request,Event_id:str,guest_id:str = Form(...),guestName:str=Form(),guestType:str=Form(None),guestPlace : str = Form(None),
-                        guestState : int = Form(...),guestTel:str=Form(),guestEmail:Optional[str]=Form(None),ticket_type:str = Form(None),
+                        guestState : int = Form(...),guestTel:str=Form(),guestEmail:Optional[str]=Form(None),
                         user=Depends(permission_required("edit_guest")),db:AsyncSession = Depends(connecting)):
     get_new_guest = select(Guest).where(Guest.id ==guest_id,Guest.event_id == Event_id).options(selectinload(Guest.invite)) #prepare le guest
     result = await db.execute(get_new_guest) #select le guest concerné
@@ -190,7 +183,6 @@ async def editGuestPost(request:Request,Event_id:str,guest_id:str = Form(...),gu
     new_guest.is_present = bool(guestState)
     new_guest.telephone = guestTel
     new_guest.email = guestEmail
-    new_guest.invite.type = ticket_type
     try:
         await db.commit()
     except IntegrityError:
@@ -203,10 +195,6 @@ async def deleteGuest(request:Request,event_id:str,guest_id:str=Form(...),user=D
     get_guest_to_be_deleted = (select(Guest).where(Guest.id==guest_id,Guest.event_id == event_id).options(selectinload(Guest.invite)))
     result = await db.execute(get_guest_to_be_deleted)
     guest_to_be_deleted = result.scalars().first()
-    invite = guest_to_be_deleted.invite
-    invite_token = guest_to_be_deleted.invite.qr_token
-    Guest_name = guest_to_be_deleted.name
-    Guest_tel = guest_to_be_deleted.telephone
     if not guest_to_be_deleted: #si le guest n'existe pas dans l'evenement
         raise HTTPException(status_code = 404,detail="invité introuvable")
     await db.delete(guest_to_be_deleted)#suppresion du guest

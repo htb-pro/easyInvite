@@ -133,7 +133,6 @@ class Invite(Base):
     __tablename__= "invites"
     id =Column(String,primary_key=True,unique=True,default = lambda :str(uuid4()))
     guest_id  =Column(String,ForeignKey('guests.id',ondelete="CASCADE"))
-    event_id  = Column(String,ForeignKey('events.id',ondelete="CASCADE"))
     qr_token  = Column(Uuid(as_uuid =True),unique=True, default=lambda:str(uuid4()))
     created_date  = Column(DateTime,default=datetime.now())
     is_used= Column(Boolean,default = False)
