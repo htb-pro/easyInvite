@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acheter un billet - event.name </title>
+    <link href="static/Css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .event-hero {
+            position: relative;
+            height: 300px;
+            background-image: url('{{ event_img }}');
+            background-size: cover;
+            background-position: center;
+            border-radius: 10px;
+            margin-bottom: 30px;
+        }
+        .overlay {
+            position: absolute;
+            top:0;
+            left:0;
+            width:100%;
+            height:100%;
+            background: rgba(0,0,0,0.4);
+            border-radius: 10px;
+        }
+        .hero-text {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            color: white;
+        }
+        .ticket-form {
+            max-width: 500px;
+            margin: auto;
+            padding: 30px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+
+    <!-- Hero -->
+    <div class="event-hero">
+        <div class="overlay"></div>
+        <div class="hero-text">
+            <h1>event.name </h1>
+            <p>event.date  | event.location </p>
+        </div>
+    </div>
+
+    <!-- Formulaire Achat Billet -->
+    <div class="ticket-form">
+        <h3 class="mb-4">Acheter le billet</h3>
+        <form action="/pay/event.id " method="post">
+            <div class="mb-3">
+                <label for="buyer_name" class="form-label">Votre nom complet</label>
+                <input type="text" class="form-control" id="buyer_name" name="buyer_name" required>
+            </div>
+            <div class="mb-3">
+                <label for="buyer_email" class="form-label">Email</label>
+                <input type="email" class="form-control" id="buyer_email" name="buyer_email" required>
+            </div>
+            <div class="mb-3">
+                <label for="amount" class="form-label">Nombre de billets</label>
+                <input type="number" class="form-control" id="amount" name="amount" value="1" min="1" required>
+            </div>
+            <button type="submit" class="btn btn-primary w-100">Payer maintenant</button>
+        </form>
+    </div>
+
+</div>
+    <script>
+        const form = document.getElementById('ticketForm');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const response = await fetch('http://localhost:8000/ticket', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    event_name: document.getElementById('event').value,
+                    buyer_name: document.getElementById('name').value,
+                    buyer_email: document.getElementById('email').value,
+                    amount: parseInt(document.getElementById('amount').value)
+                })
+            });
+            const data = await response.json();
+            window.location.href = `ticket.html?ticket_id=${data.ticket_id}`;
+        });
+    </script>
+</body>
+</html>

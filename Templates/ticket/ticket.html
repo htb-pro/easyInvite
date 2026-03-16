@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Paiement Billet</title>
+</head>
+<body>
+    <h1>Paiement Billet</h1>
+    <button id="payBtn">Payer</button>
+
+    <script>
+        const urlParams = new URLSearchParams(window.location.search);
+        const ticket_id = urlParams.get('ticket_id');
+
+        document.getElementById('payBtn').addEventListener('click', async () => {
+            const res = await fetch(`http://localhost:8000/pay/${ticket_id}`, {
+                method: 'POST'
+            });
+            const data = await res.json();
+            window.location.href = data.payment_link;  // redirection Flutterwave
+        });
+    </script>
+</body>
+</html>

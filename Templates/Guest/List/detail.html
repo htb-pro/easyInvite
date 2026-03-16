@@ -71,7 +71,7 @@
                     </h2>
                     <p class="">Type :  <strong>{{ guest.guest_type }} </strong></p>
                     <p class="">Telephone :<strong> {{ guest.telephone}} </strong></p>
-                    <p class="">Email :<strong> {{ guest.email }} </strong></p>
+                    <p class="">Email :<strong>{% if  guest.email %} {{ guest.email }}{%else%} Pas d'email{%endif%} </strong></p>
                     <p class="">Code d'acces :<strong> {{ guest.get_pass }} </strong></p>
                     <p class="">Date de creation :<strong>  {{guest.created_date.strftime('%d-%m-%Y %H:%M')}}  </strong></p>
                     <p class="">Etat :<strong>

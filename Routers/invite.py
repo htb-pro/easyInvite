@@ -29,13 +29,10 @@ async def getGuestInvite(request:Request,event_id:str ,guest_id : str ,db:AsyncS
     invite = guestInvite.invite if guestInvite else None #l'invite
     event_type = event.type
     event_img_path =None
-    serie_number = f"{event.serie}-{invite.ticket_number:04d}"#le numero de serie sera composer de serie et de numero de tiket
-    ticket_number = f"{invite.ticket_number:04d}" #le numero du ticket
     if not event:
         return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
     copyright = datetime.now()
     picture_dirs = Path(f"static/Pictures/{event_id}/") 
-    image_name = event_id
     event_img = None
     if os.path.exists(picture_dirs):
         images = os.listdir(picture_dirs)
@@ -50,15 +47,15 @@ async def getGuestInvite(request:Request,event_id:str ,guest_id : str ,db:AsyncS
     if not event_img and event.type == "Mariage":
         return templates.TemplateResponse("Invitation/show_invite/wedding_event/wedding_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright})
     if event_img:
-        event_img_path = os.path.join(picture_dirs,event_img)
+        event_img_path = f"static/Pictures/{event_id}/{event_img}"
     try:
         event= guestInvite.event.type
     except:
         return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
     if event_type == "Mariage":
         return templates.TemplateResponse("Invitation/show_invite/wedding_event/wedding_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright,'is_img_exist':images,"event_img":event_img_path})
-    elif event_type == "Concours":
-        return templates.TemplateResponse("Invitation/show_invite/concours_event/concours_invite.html",{'request':request,'guest':guestInvite,'event':event,'copyright':copyright,'serie_number':serie_number,'ticket_number':ticket_number})
+    # elif event_type == "Concours":
+    #     return templates.TemplateResponse("Invitation/show_invite/concours_event/concours_invite.html",{'request':request,'guest':guestInvite,'event':event,'copyright':copyright,'serie_number':serie_number,'ticket_number':ticket_number})
     
 @Root.get('/get_invite',name="invitation",response_class=HTMLResponse)#get the invite url
 def getInvite(request:Request):

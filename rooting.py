@@ -3,6 +3,7 @@ from fastapi import FastAPI,status,HTTPException,Request
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from Routers.event import Root
+from ticket_app.rooting.rooting import Root as ticket_root
 from Routers.guest import Root as guest_root
 from Routers.invite import Root as invite_root
 from Routers.main import Root as main_root
@@ -16,6 +17,8 @@ from db_setting import init_db,AsyncSessionLocal
 from config import secret
 from app.init_admin import create_admin
 from recreation import recreate_tables
+#fastapi.middleware.cors import CORSMiddleware
+
 
 templates = Jinja2Templates(directory = "Templates")
 #initialisation
@@ -27,9 +30,18 @@ async def on_startup():
     async with AsyncSessionLocal() as db:
         await create_admin(db)
 
+# CORS pour permettre frontend local
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=["*"],
+#     allow_methods=["*"],
+#     allow_headers=["*"],
+# )
+
 Apk.add_middleware(SessionMiddleware,secret_key = secret,https_only = True,same_site = "lax")
 Apk.mount("/static",StaticFiles(directory="static"),name="static")
 Apk.include_router(Root)
+Apk.include_router(ticket_root)
 Apk.include_router(guest_root)
 Apk.include_router(invite_root)
 Apk.include_router(main_root)

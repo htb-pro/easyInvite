@@ -106,7 +106,6 @@ Db:AsyncSession = Depends(connecting)):
     user = user_res.scalars().first()
     group_id = None
     user_role = None #le role de l'utilisateur sera none par defaut pour eviter les erreurs
-    serie = generate_serie(eventName)
     if user.groups:
         for group in user.groups:
             group_id = group.id
@@ -131,7 +130,6 @@ Db:AsyncSession = Depends(connecting)):
         created_by = user_id,
         guest_present = is_active if is_active else None,
         group_id = group_id,
-        serie = serie
     )
     Db.add(newEvent)
     await Db.commit()
@@ -166,7 +164,6 @@ async def editEvent(request:Request,event_id : str,access_token = Cookie(None),e
     user_id = res.get("user")
     user_res = await db.execute(select(User).where(User.id == user_id).options(selectinload(User.groups)))
     user = user_res.scalars().first()
-    serie = generate_serie(eventName)
     if user.groups:
         group_id = editedEventData.group_id
     for role in user.roles:
@@ -204,7 +201,6 @@ async def editEvent(request:Request,event_id : str,access_token = Cookie(None),e
     editedEventData.state = eventState
     editedEventData.guest_present = is_active if is_active else None
     editedEventData.created_by = user_id
-    editedEventData.serie = serie
     if user_role != "admin":
         edited_Event_Data.groups = [groups]
     edited_Event_Data.groups = []

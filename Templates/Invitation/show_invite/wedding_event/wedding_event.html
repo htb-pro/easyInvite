@@ -37,8 +37,6 @@
             justify-content: center;
             text-align: center;
             color: white;
-            background: linear-gradient(var(--overlay), var(--overlay)), 
-                        url('{%if is_img_exist %}/{%if event_img %}{{event_img}}{%endif%}{%endif%}') no-repeat center center/cover;
             background-attachment: fixed;
         }
         .hero-content h1 { font-size: clamp(3rem, 10vw, 5.5rem); text-shadow: 2px 2px 10px rgba(0,0,0,0.3); }
@@ -80,58 +78,34 @@
 
         /* --- Motion Section (RSVP Area) --- */
         #rsvp-area {
-            height: 600px; /* Hauteur fixe pour l'animation motion */
-            position: relative;
+            height: 300px; /* Hauteur fixe pour l'animation motion */
             overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
             color: white;
         }
-
-        .video-container {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            z-index: 1;
+        .text-overlay { 
+            position: relative;
+            height: 100%;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;            
+            background:var(--overlay);
         }
-
-        .bg-slide {
-            position: absolute;
-            width: 100%; height: 100%;
-            background-size: cover;
-            background-position: center;
-            opacity: 0;
-            animation: imageFade 15s infinite;
-        }
-
-        /* Utilisation de tes images de couple pour le diaporama */
-        .slide-1 { background-image: linear-gradient(var(--overlay), var(--overlay)), url('WhatsApp Image 2026-02-03 at 08.56.04.jpeg'); animation-delay: 0s; }
-        .slide-2 { background-image: linear-gradient(var(--overlay), var(--overlay)), url('https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80'); animation-delay: 5s; }
-        .slide-3 { background-image: linear-gradient(var(--overlay), var(--overlay)), url('https://images.unsplash.com/photo-1583939003579-730e3918a45a?q=80'); animation-delay: 10s; }
-
-        @keyframes imageFade {
-            0%, 10% { opacity: 0; transform: scale(1); }
-            20%, 40% { opacity: 1; }
-            50%, 100% { opacity: 0; transform: scale(1.1); }
-        }
-
-        .text-overlay { position: relative; z-index: 10; width: 100%; text-align: center; }
 
         .motion-text {
-            position: relative;
-            top: 50%; 
+            position: absolute;
+            top: 50%;
             left: 50%;
-            transform: translate(-50%, -50%);
             opacity: 0;
-            width: 90%;
-            max-width: 600px;
-            padding: 20px;
+            transform: translateY(-50%, -50%);
         }
 
-        .scene-1 { animation: textShow 5s forwards infinite; animation-delay: 0s; }
-        .scene-2 { animation: textShow 5s forwards infinite; animation-delay: 5s; }
-        .scene-3 { animation: textShow 5s forwards infinite; animation-delay: 10s; }
-
+         .scene-1 { animation: textShow 5s forwards; animation-delay: 0.5s; }
+        .scene-2 { animation: textShow 5s forwards; animation-delay: 5.5s; }
+        .scene-3 { animation: textShow 5s forwards; animation-delay: 10.5s; }
         @keyframes textShow {
             0% { opacity: 0; transform: translate(-50%, -40%); }
             10%, 90% { opacity: 1; transform: translate(-50%, -50%); }
@@ -157,11 +131,16 @@
     </style>
 </head>
 <body>
-    <section class="hero-fullscreen" style="background-image: url('/{{event_img}}');">
-        <div class="hero-content" data-aos="zoom-out" data-aos-duration="2000">
+    <section class="hero-fullscreen" style="background-image: url('/{{ event_img }}');background-repeat : no-repeat;background-size:cover;background-position:center;">
+        <div class="hero-conten container text-center" data-aos="zoom-out" data-aos-duration="2000" style="
+       position:absolute;
+       bottom:50px;
+        width:100%;
+        
+        background:rgba(0,0,0,0.4);">
             <p class="font-romance mb-2" style="font-size: 2.5rem;">Nous nous marions</p>
             <h1 class="font-romance">{{guest.event.couple_name}}</h1>
-            <p class="font-serif italic h4 mt-3 tracking-widest text-dark">{{guest.event.date.date().strftime("%d-%m-%Y")}}</p>
+            <p class="font-serif italic h4 mt-3 tracking-widest text-light">{{guest.event.date.date().strftime("%d-%m-%Y")}}</p>
         </div>
     </section>
 
@@ -184,9 +163,8 @@
                 {%if is_img_exist %}
                     <img src="/{%if event_img %}{{event_img}}{%endif%}" class="img-fluid mb-5 shadow-lg rounded-circle"  style="width: 220px;height: 220px;object-fit:cover;border:8px solid white" alt="not found">
                 {%endif%}                
-                <h2 class="font-romance mb-4" style="font-size: 3.5rem;font-family: 'Playfair Display', serif;">L'union de deux cœurs</h2>
                  <h1 class="display-5" style="font-family: 'Playfair Display', serif;font-size: 1.8rem;"> Bonjour et bienvenue très cher(e) {{ guest.name }}</H1>
-                <p class="text-muted">C'est avec une immense joie que nous vous invitons à célébrer notre événement spécial de {{guest.event.type}}.</p>
+                <p class="text-muted" style="font-family: 'Playfair Display', serif;">C'est avec une immense joie que nous vous invitons à célébrer notre événement spécial de {{guest.event.type}}.</p>
             </div>
         </div>
     </section>
@@ -223,19 +201,14 @@
     </section>
 
     <section id="rsvp-area">
-        <div class="video-container">
-            <div class="bg-slide slide-1"></div>
-            <div class="bg-slide slide-2"></div>
-            <div class="bg-slide slide-3"></div>
-        </div>
         <div class="text-overlay">
             <div class="motion-text scene-1">
-                <h1 class="font-romance" style="font-size: 4rem;">{{event.couple_name}}</h1>
+                <p class="date">PRÉPAREZ-VOUS</p>
+                <h1 class="font-romance" style="font-size: 4rem;">{{guest.event.couple_name}}</h1>
                 <p class="text-uppercase tracking-widest">vont s'unir pour la vie</p>
             </div>
             <div class="motion-text scene-2">
-                <h2 class="font-serif italic mb-4">{{event.date}}</h2>
-                <p>À Lubumbashi</p>
+                <h2 class="font-serif italic mb-4">{{guest.event.date.date()}}</br> à partir de {{guest.event.date.time()}}</h2>
             </div>
             <div class="motion-text scene-3">
                 <h2 class="font-romance" style="font-size: 3rem;">Votre présence</h2>
