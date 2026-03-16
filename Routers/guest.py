@@ -147,6 +147,8 @@ async def newGuest(request:Request,event_id:str,guestName:str=Form(),guestType:s
         get_pass = guest_get_pass,
     ) 
     db.add(guest)
+    await db.commit()
+    await db.refresh(guest)
     new_invite = Invite(
     qr_token = str(uuid4()),
     guest_id = guest.id
