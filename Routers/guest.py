@@ -22,6 +22,7 @@ from app.security.permissions import permission_required
 from urllib.parse import quote
 from jose import jwt 
 from config import secret,algo
+from urllib.parse import quote
 
 Root = APIRouter(tags = ["easyInvite"],dependencies =[Depends(get_current_user_from_cookie)])
 templates = Jinja2Templates(directory="Templates")#ou sont stocker les templates
@@ -52,20 +53,31 @@ async def get_guest_list(request:Request,event_id:str,access_token = Cookie(None
     present_guest = len(get_present_guest)
     absent_guest = len(get_absent_guest)
     #variable contenant message whatsapp
-    if guests:
-        for guest in guests:
-            telephone = guest.telephone
-            guest_name = guest.name
-            guest_id = guest.id
-            guest_get_pass = f"voici votre jeton en cas de manque de qrcode {guest.get_pass}"
-        invite_url = f"http://easyinvite-1.onrender.com/invite/{event_id}/{guest_id}/create"
-        message_whatsapp = f"https://wa.me/{telephone}?text=Bonjour%20{guest_name}%2C%20vous%20%C3%AAtes%20invit%C3%A9%20%C3%A0%20notre%20%C3%A9v%C3%A9nement.{guest_get_pass}%20Voir%20l'invitation%20:%20{invite_url}"
-    #---------
+    
     if not event :
         raise HTTPException(404,"aucun evenement trouvé")
     if not guests :
         return templates.TemplateResponse("Guest/List/notFound.html",{'request':request,"Error":'404','event':event})
-    return templates.TemplateResponse("Guest/List/list.html",{'request':request,'invite':invite,'event':event,'guests':guests,'event_id':event_id,'present_guest':present_guest,'absent_guest':absent_guest,'message_whatsapp':message_whatsapp,'current_user_role':user_role},status_code=303)
+    return templates.TemplateResponse("Guest/List/list.html",{'request':request,'invite':invite,'event':event,'guests':guests,'event_id':event_id,'present_guest':present_guest,'absent_guest':absent_guest,'current_user_role':user_role},status_code=303)
+
+@Root.get("/admin/whatsapp_links/{event_id}")
+async def whatsapp_link(event_id:str,db:AsyncSession = Depends(connecting)):
+    guest_res = await db.execute(select(Guest).where(Guest.event_id==event_id).options(selectinload(Guest.invite)))
+    guests = guest_res.scalars().all()
+    links = []
+    if guests:
+        for guest in guests:
+            telephone = guest.telephone.replace("+","").replace(" ","")
+            guest_name = guest.name
+            guest_id = guest.id
+            guest_get_pass = guest.get_pass
+            invite_url = f"http://easyinvite-1.onrender.com/invite/{event_id}/{guest_id}/create"
+            message = f"Bonjour {guest_name}, vous êtes invité à notre événement. voici votre jeton d'accès en cas de manque du qr code{guest_get_pass}, et cliquez sur le lien pour voir et télecharger votre invitation {invite_url}"
+            encoded_message = quote(message)
+            link = f"https://wa.me/{telephone}?text={encoded_message}"
+            links.append(link)
+        return {'links':links}
+    #---------
 
 @Root.get("/telephone/{event_id}") #la rechecher d'une donnee
 async def searchEvent(request:Request,event_id :str,telephone:str=Query(...,max_length = 14,description ="le numero doit contenir au minimum 10 caractere"),db:AsyncSession = Depends(connecting)):
@@ -104,7 +116,7 @@ async def get_invited(request:Request,event_id:str,success:int | None = None,db:
 
 @Root.post('/create/{event_id}/guest')#get the guest register 
 async def newGuest(request:Request,event_id:str,guestName:str=Form(),guestType:str=Form(None),guestPlace:str = Form(None),
-                   guestTel:str=Form(),guestEmail:Optional[str]=Form(None),ticket_type:str = Form(None),user=Depends(permission_required("create_guest")),db:AsyncSession = Depends(connecting)):
+                   guestTel:str=Form(),guestEmail:Optional[str]=Form(None),user=Depends(permission_required("create_guest")),db:AsyncSession = Depends(connecting)):
     select_event = (select(Event).where(Event.id==event_id).options(selectinload(Event.guests)))
     get_event = await db.execute(select_event)
     event = get_event.first()
