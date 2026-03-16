@@ -13,6 +13,8 @@ import os, io , base64
 import zipfile
 from utils.Qr_Utils.qrCodeUtils import createInviteQrCode
 from pathlib import Path
+from utils.Qr_Utils.qrCodeUtils import createInviteQrCode
+
 Root = APIRouter()
 picture_dirs = Path("static/Pictures/{None}/")
 
@@ -20,6 +22,11 @@ templates = Jinja2Templates(directory="Templates")#ou sont stocker les templates
 def get_event_deadline(event_date:datetime): #setting a deadline
     deadline = event_date - timedelta(days=2)
     return deadline
+
+@Root.get("/qr/{event_id}/{guest_id}")
+async def get_qr_img(event_id:str,guest_id:str):
+    qr_image = createInviteQrCode(event_id,guest_id)
+    return StreamingResponse(qr_image,media_type = "image/png") 
 
 @Root.get('/invite/{event_id}/{guest_id}/create')#endpoint pour la l'invitation
 async def getGuestInvite(request:Request,event_id:str ,guest_id : str ,db:AsyncSession = Depends(connecting)):
