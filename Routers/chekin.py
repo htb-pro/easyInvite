@@ -33,17 +33,6 @@ def scanQrCode(request:Request):
 
 @Root.get("/scan",name="scanning")#checking du scan 
 async def scanQrCode(guest_id:str,access_token = Cookie(None),db:AsyncSession = Depends(connecting)):
-    # current_user_res = jwt.decode(access_token,secret,algorithms=[algo])
-    # current_user_id = current_user_res.get("user") 
-    # user_res = await db.execute(select(User).where(User.id == current_user_id).options(selectinload(User.groups)))
-    # user = user_res.scalars().first()
-    # user_group =None
-    # if user :
-    #     for group in user.groups:
-    #         group_id =group.id
-    #     event_res = await db.execute(select(Event))
-    #     events = event_res.scalars().all()
-    # print("---------------event ",event.name)
     guest_id = extract_value(guest_id)
     res_guest = await db.execute(select(Guest).where(Guest.id == guest_id))
     is_guest_exist = res_guest.scalars().first()
@@ -67,13 +56,16 @@ async def scanResult(request:Request,guest_id :str,db:AsyncSession = Depends(con
     token = guest.qr_token
     get_guest =await db.execute(select(Guest).where(Guest.qr_token == token).options(selectinload(Guest.event)))
     guest = get_guest.scalars().first()
-    if guest.event.state =="en attente":
+    event_id = guest.event_id
+    event_res = await db.execute(select(Event).join(Guest).where(Event.id == event_id,Guest.id == guest_id))
+    event = event_res.scalars().first()
+    invite_used_at = guest.invite.used_at
+    if event.state =="en attente":
         return templates.TemplateResponse("easyInviteApk/scanResult/guest/pendingEvent.html",{'request':request})
-    if guest.event.state =="terminé" : 
+    if event.state =="terminé" : 
          return templates.TemplateResponse("easyInviteApk/scanResult/guest/event_done.html",{'request':request})
     if guest.is_present:
-        guest.is_present =False
-        return templates.TemplateResponse("easyInviteApk/scanResult/guest/used_invite.html",{'request':request})
+        return templates.TemplateResponse("easyInviteApk/scanResult/guest/used_invite.html",{'request':request,'invite_used_at':invite_used_at})
     guest.is_present = True
     guest.invite.used_at = datetime.now()
     await db.commit()
