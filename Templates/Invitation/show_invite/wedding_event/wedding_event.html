@@ -24,7 +24,7 @@
             overflow-x: hidden;
         }
 
-        .font-romance { font-family: 'Great Vibes', cursive; color: var(--terracotta); }
+        .font-romance { font-family: 'Great Vibes', cursive; color: pink; }
         .font-serif { font-family: 'Playfair Display', serif; }
 
         /* --- Hero Section --- */
@@ -36,7 +36,9 @@
             justify-content: center;
             text-align: center;
             color: white;
-            background-attachment: fixed;
+        }
+        .hero-content{
+            height: 200px;
         }
         .hero-content h1 { font-size: clamp(3rem, 10vw, 5.5rem); text-shadow: 2px 2px 10px rgba(0,0,0,0.3); }
 
@@ -50,7 +52,7 @@
             z-index: 100;
             position: relative;
         }
-        .count-unit { font-size: 2rem; font-weight: 700; color: var(--terracotta); display: block; }
+        .count-unit { font-size: 2rem; font-weight: 700; color: pink; display: block; }
         .count-label { font-size: 0.8rem; text-transform: uppercase; color: #888; letter-spacing: 2px; }
 
         /* --- Sections & Cards --- */
@@ -85,36 +87,38 @@
             position: relative;
             height: 100%;
             width: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
             align-items: center;
             text-align: center;
             padding: 20px;            
-            background:var(--overlay);
         }
 
         .motion-text {
+          
             position: absolute;
             top: 50%;
             left: 50%;
             opacity: 0;
             transform: translateY(-50%, -50%);
+            animation: sequence 15s infinite;
         }
 
-         .scene-1 { animation: textShow 5s forwards; animation-delay: 0.5s; }
-        .scene-2 { animation: textShow 5s forwards; animation-delay: 5.5s; }
-        .scene-3 { animation: textShow 5s forwards; animation-delay: 10.5s; }
-        @keyframes textShow {
-            0% { opacity: 0; transform: translate(-50%, -40%); }
-            10%, 90% { opacity: 1; transform: translate(-50%, -50%); }
-            100% { opacity: 0; transform: translate(-50%, -60%); }
+        * Chaque scène a juste un décalage */
+        .scene-1 { animation-delay: 0s; }
+        .scene-2 { animation-delay: 5s; }
+        .scene-3 { animation-delay: 10s; }
+
+        @keyframes sequence {
+            0%   { opacity: 0; transform: translate(-50%, -40%); }
+            5%   { opacity: 1; transform: translate(-50%, -50%); }
+            30%  { opacity: 1; }
+            35%  { opacity: 0; transform: translate(-50%, -60%); }
+            100% { opacity: 0; }
         }
 
         /* --- Boutons --- */
         .btn{
             height: 2rem;
-            background: var(--terracotta);
+            background: pink;
             border-color: none;
             font-size: 1rem;
             color: white;
@@ -132,15 +136,21 @@
 </head>
 <body>
     <section class="hero-fullscreen" style="background-image: url('/{{ event_img }}');background-repeat : no-repeat;background-size:cover;background-position:center;">
-        <div class="hero-conten container text-center" data-aos="zoom-out" data-aos-duration="2000" style="
-       position:absolute;
-       bottom:50px;
-        width:100%;
-        
-        background:rgba(0,0,0,0.4);">
-            <p class="font-romance mb-2" style="font-size: 2.5rem;">Nous nous marions</p>
-            <h1 class="font-romance">{{guest.event.couple_name}}</h1>
-            <p class="font-serif italic h4 mt-3 tracking-widest text-light">{{guest.event.date.date().strftime("%d-%m-%Y")}}</p>
+        <div class="hero-content container text-center" data-aos="zoom-out" data-aos-duration="2000" style="position:absolute;bottom:50px;width:100%;background:rgba(0,0,0,0.3);">
+            <div class="text-overlay">
+                <div class="motion-text scene-1">
+                    <p class="date">PRÉPAREZ-VOUS </br>
+                    <span class="font-romance" style="font-size: 2rem;font-weight: bold;">{{guest.event.couple_name}}</span>
+                    <p class="text-uppercase tracking-widest">vont s'unir pour la vie</p>
+                </div>
+                <div class="motion-text scene-2">
+                    <h2 class="font-serif italic mb-4">{{guest.event.date.date()}}</br> à partir de {{guest.event.date.time()}}</h2>
+                </div>
+                <div class="motion-text scene-3">
+                    <span class="font-romance" style="font-size: 1.5rem; ">Votre présence</span>
+                    <p>est notre plus beau cadeau.</p>
+                </div>
+            </div>
         </div>
     </section>
 
@@ -200,25 +210,7 @@
         </div>
     </section>
 
-    <section id="rsvp-area">
-        <div class="text-overlay">
-            <div class="motion-text scene-1">
-                <p class="date">PRÉPAREZ-VOUS</p>
-                <h1 class="font-romance" style="font-size: 4rem;">{{guest.event.couple_name}}</h1>
-                <p class="text-uppercase tracking-widest">vont s'unir pour la vie</p>
-            </div>
-            <div class="motion-text scene-2">
-                <h2 class="font-serif italic mb-4">{{guest.event.date.date()}}</br> à partir de {{guest.event.date.time()}}</h2>
-            </div>
-            <div class="motion-text scene-3">
-                <h2 class="font-romance" style="font-size: 3rem;">Votre présence</h2>
-                <p>est notre plus beau cadeau.</p>
-            </div>
-        </div>
-    </section>
-
-
-    <div class="container mt-5">
+    <div class="container mt-5" data-aos="fade-left">
     <div class="card shadow text-center p-4">
 
         <h4 class="mb-3">🎟️ Votre QR Code d'invitation</h4>
@@ -238,16 +230,16 @@
         <!-- BOUTONS -->
         <div class="d-flex justify-content-center gap-3">
             <a href="/download/invite/{{guest.event_id}}/{{guest.id}}" 
-               class="btn btn-success">
+               class="btn text-muted">
                 ⬇ Télécharger le QR Code
             </a>
         </div>
         <div class="confirm_presence my-3 d-flex justify-content-center">
-            <a href="/presence/confirmation/{{guest.id}}/{{guest.event_id}}" class="btn btn-success  "onclick="document.getElementById('rsvp-area').scrollIntoView({behavior: 'smooth'})">Confirmer ma présence</a>
+            <a href="/presence/confirmation/{{guest.id}}/{{guest.event_id}}" class="btn btn text-muted"onclick="document.getElementById('rsvp-area').scrollIntoView({behavior: 'smooth'})">Confirmer ma présence</a>
         </div>
     </div>
 </div>
-    <footer class="text-center py-3">
+    <footer class="text-center py-3" data-aos="fade-up">
         <p><i class="bi bi-telephone-fill"></i> +243 897 401 210 ou +243 991 152 067</p>
         <p><i class="bi bi-telephone-fill"></i> +243 898 147 644 ou +243 970 784 320</p>
         <p>&copy; easyInvite {{copyright.strftime('%Y')}}</p>

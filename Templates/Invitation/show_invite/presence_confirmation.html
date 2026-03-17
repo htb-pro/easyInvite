@@ -31,12 +31,7 @@
       width: 100%;
     }
 
-    .btn-confirm {
-      border-radius: 30px;
-      padding: 12px 28px;
-      font-weight: 600;
-      margin: 5px;
-    }
+    
 
     .btn-yes {
       background-color: #28a745;
@@ -72,16 +67,17 @@
 <div class="invitation-card text-center">
 
   <!-- Event Image -->
-  <img src="https://images.unsplash.com/photo-1529634806980-85c3dd6d34ac" alt="Événement" class="hero-img mb-4">
-
+    {%if is_img_exist %}
+        <img src="/{%if event_img %}{{event_img}}{%endif%}" class="img-fluid mb-5 shadow-lg rounded-circle"  style="width: 220px;height: 220px;object-fit:cover;border:8px solid white" alt="not found">
+    {%endif%}   
+  <h3>confirmation de présence</h3>
   <!-- Event Title -->
-  <h2 class="fw-bold mb-2">{{guest.event.name}}</h2>
-  <p class="text-muted mb-4">Trés cher {{guest.name}} nous sommes ravis de vous compter parmi nos invités ! Merci de renseigner votre presence en remplisant en cliquant sur <b>"je serai là ou "je ne serai pas là"</b>
+  <p class="text-muted mb-4">Trés cher <b>{{guest.name}}</b> nous <b>{{event.couple_name}}</b> sommes ravis de vous compter parmi nos invités ! Merci de renseigner votre position  en cliquant sur <b>"je serai là ou "je ne serai pas là"</b>
     pour nous permettre de savoir votre position.</p>
   <!-- RSVP Buttons -->
-  <div class="mb-3">
-    <form action="/presence/confirmation/{{guest.id}}/{{event_id}}" method="post">
-      <button type="submit" class="btn btn-confirm btn-yes" name="response" value="yes" >✅ Je serai là</button>
+  <div class="mb-3 ">
+    <form action="/presence/confirmation/{{guest.id}}/{{event.id}}" method="post" class="d-flex flex-column">
+      <button type="submit" class="btn btn-confirm btn-yes mb-2" name="response" value="yes" >✅ Je serai là</button>
       <button type="submit" class="btn btn-confirm btn-no" name="response" value="no" >❌ Je ne serai pas là</button>
     </form>
   </br>
