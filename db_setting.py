@@ -1,6 +1,7 @@
 from sqlalchemy.orm import declarative_base,sessionmaker
 from sqlalchemy.ext.asyncio import create_async_engine,async_sessionmaker,AsyncSession
 from dotenv import load_dotenv
+import ssl
 import os,asyncio
 #---------------------initialising
 Base = declarative_base() #-----------------la classe mere pour la creation de table
@@ -11,7 +12,7 @@ DB_URL =os.getenv('db_url')
 engine = create_async_engine(
     DB_URL,
     echo =True,
-    connect_args={"ssl":True}
+    connect_args={"ssl":ssl_context}
 )
         
 AsyncSessionLocal = async_sessionmaker(#creation de la session
