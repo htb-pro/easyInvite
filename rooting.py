@@ -16,7 +16,6 @@ from starlette.middleware.sessions import SessionMiddleware
 from db_setting import init_db,AsyncSessionLocal
 from config import secret
 from app.init_admin import create_admin
-from recreation import recreate_tables
 #fastapi.middleware.cors import CORSMiddleware
 
 
@@ -26,7 +25,6 @@ Apk = FastAPI()
 @Apk.on_event("startup")
 async def on_startup():
     await init_db()
-    #await recreate_tables()
     async with AsyncSessionLocal() as db:
         await create_admin(db)
 
