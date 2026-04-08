@@ -11,6 +11,7 @@ DB_URL =os.getenv('db_url')
 engine = create_async_engine(
     DB_URL,
     echo =True,
+    connect_args={"ssl":True}
 )
         
 AsyncSessionLocal = async_sessionmaker(#creation de la session
