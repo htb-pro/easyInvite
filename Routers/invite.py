@@ -95,7 +95,7 @@ async def confirm_presence(request:Request,guest_id : str,event_id:str,db:AsyncS
             event_img = img
             break
     if not event_img and event.type == "Mariage":
-        return templates.TemplateResponse("Invitation/show_invite/wedding_event/wedding_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright})
+        return templates.TemplateResponse("Invitation/show_invite/wedding_event/wedding_event.html",{'request':request,'guest':guest,'event':event,'copyright':copyright})
     if event_img:
         event_img_path = f"static/Pictures/{event_id}/{event_img}"
     return templates.TemplateResponse("Invitation/show_invite/presence_confirmation.html",{'request':request,"guest":guest,"event":event,'message':get_message,'is_img_exist':images,'event_img':event_img_path})
