@@ -9,6 +9,7 @@ Base = declarative_base() #-----------------la classe mere pour la creation de t
 load_dotenv()
 DB_URL =os.getenv('db_url')
 #DB_URL =os.getenv('db_url_local')
+ssl_context = ssl.create_default_context()
 engine = create_async_engine(
     DB_URL,
     echo =True,
