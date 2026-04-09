@@ -76,6 +76,7 @@ async def confirm_presence(request:Request,guest_id : str,event_id:str,db:AsyncS
     event_res = await db.execute(select(Event).where(Event.id == event_id).options(selectinload(Event.guests)))
     event = event_res.scalars().first()
     get_message = request.session.pop("message",None) #recupere le message envoye par post
+    year = datetime.now().year
     if not guest:
         raise HTTPException(404,"guest not found")
     event_img_path =None
@@ -95,10 +96,10 @@ async def confirm_presence(request:Request,guest_id : str,event_id:str,db:AsyncS
             event_img = img
             break
     if not event_img and event.type == "Mariage":
-        return templates.TemplateResponse("Invitation/show_invite/wedding_event/wedding_event.html",{'request':request,'guest':guest,'event':event,'copyright':copyright})
+        return templates.TemplateResponse("Invitation/show_invite/presence_confirmation.html",{'request':request,"guest":guest,"event":event,'message':get_message,"copyright":year})
     if event_img:
         event_img_path = f"static/Pictures/{event_id}/{event_img}"
-    return templates.TemplateResponse("Invitation/show_invite/presence_confirmation.html",{'request':request,"guest":guest,"event":event,'message':get_message,'is_img_exist':images,'event_img':event_img_path})
+    return templates.TemplateResponse("Invitation/show_invite/presence_confirmation.html",{'request':request,"guest":guest,"event":event,'message':get_message,'is_img_exist':images,'event_img':event_img_path,"copyright":year})
 
 @Root.post("/presence/confirmation/{guest_id}/{event_id}")
 async def GuestResponse(request:Request,guest_id:str ,event_id : str, response : str =Form(...),
