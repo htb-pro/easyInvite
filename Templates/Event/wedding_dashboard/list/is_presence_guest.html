@@ -1,0 +1,30 @@
+{% extends "Event/wedding_dashboard/list/total_guest.html" %}
+
+{% block list_title%}<i class="bi bi-people text-primary fs-2"></i>Les invités qui sont déjà present dans la salle{%endblock%}
+{%block content%}
+    <!-- liste invités -->
+    {%if are_present %}
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead>
+                    <tr>
+                        <th class="w-50 text-dark " >index</th>
+                        <th class="w-50 text-dark" >Nom</th>
+                    </tr>
+                </thead> 
+            {% for guest in are_present%}
+            <tbody>
+                <tr>
+                    <td >
+                    <span class="text-dark">{{loop.index}}</span>
+                    </td>
+                    <td >
+                    <span class="text-dark">{{guest.name}}</span>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+               {%endif%}
+    {%endblock%}

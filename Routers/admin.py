@@ -8,7 +8,7 @@ from db_setting import connecting,AsyncSessionLocal
 from sqlalchemy.ext.asyncio import AsyncSession
 from schemas import Group as group_schemas
 from Routers.loging import get_current_user_from_cookie,admin_required
-
+import os
 
 Root = APIRouter(tags = ["easyInvite"],dependencies =[Depends(get_current_user_from_cookie),Depends(admin_required)])
 templates= Jinja2Templates(directory="Templates")
@@ -130,3 +130,18 @@ async def get_roles_permissions(request:Request,role_id:str = Form([]),permissio
 @Root.get("/params",name="params")
 async def get_params_view(request:Request):
     return templates.TemplateResponse("Authentification/admin/setting_admin_option.html",{'request':request})
+
+@Root.post("/admin/delete_event/{event_id}")
+async def deleteEvent(request:Request,event_id:str,db:AsyncSession = Depends(connecting)):
+    event_to_delete =select(Event).where(Event.id==event_id)
+    res = await db.execute(event_to_delete)
+    eventToDelete = res.scalars().first()
+    if not eventToDelete:
+        raise HTTPException(status_code=404,detail="cette evenement n'existe pas")
+    Pictures= f"static/Pictures/{event_id}"#dossier de l'image de l'evenement
+    is_dir_exist = os.path.exists(Pictures)#exist il ?
+    if is_dir_exist: #si oui 
+        shutil.rmtree(Pictures)#qu'il soit supprimer
+    await db.delete(eventToDelete)
+    await db.commit()
+    return RedirectResponse("/admin_dashboard",status_code=303)

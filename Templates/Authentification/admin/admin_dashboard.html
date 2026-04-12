@@ -227,12 +227,15 @@ border-radius:12px;
                                 </td>
                                 <td>{{event.group_id}}</td>
                                 <td>
+                                <form action="/admin/delete_event/{{event.id}}" method="post">
                                 <a href="/see_event/{{event.id}}" class="btn btn-sm btn-outline-primary">
                                 <i class="bi bi-eye"></i>
                                 </a>
                                 <a href="/edit_event/{{event.id}}" class="btn btn-sm btn-outline-warning">
                                 <i class="bi bi-pencil"></i>
                                 </a>
+                                <button type="submit" class="btn btn-outline-danger text-light" onclick="return confirm('voulez-vous supprimer cette evement ?')">🗑</button>
+                                </form>
                                 </td>
                             </tr>
                             {%endfor%}

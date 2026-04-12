@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light">
     <title>{{guest.event.couple_name}}</title>
     <link rel="stylesheet" href="/static/Css/bootstrap.min.css">    
     <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
@@ -10,6 +11,7 @@
     
     <style>
         :root {
+            color-scheme: light !important;
             --terracotta: #D4A373;
             --gold: #D4A373; /* Harmonisé avec terracotta */
             --rose-doux: #f8e5e5;
@@ -140,7 +142,7 @@
             <div class="text-overlay">
                 <div class="motion-text scene-1">
                     <p class="date">PRÉPAREZ-VOUS </br>
-                    <span class="font-romance" style="font-size: 2rem;font-weight: bold;">{{guest.event.couple_name}}</span>
+                    <span class="font-romance" style="font-size: 1.8rem;font-weight: bold;">{{guest.event.couple_name}}</span>
                     <p class="text-uppercase tracking-widest">vont s'unir pour la vie</p>
                 </div>
                 <div class="motion-text scene-2">
@@ -173,8 +175,8 @@
                 {%if is_img_exist %}
                     <img src="/{%if event_img %}{{event_img}}{%endif%}" class="img-fluid mb-5 shadow-lg rounded-circle"  style="width: 220px;height: 220px;object-fit:cover;border:8px solid white" alt="not found">
                 {%endif%}                
-                 <h1 class="display-5" style="font-family: 'Playfair Display', serif;font-size: 1.8rem;"> Bonjour et bienvenue très cher(e) {{ guest.name }}</H1>
-                <p class="text-muted" style="font-family: 'Playfair Display', serif;">C'est avec une immense joie que nous vous invitons à célébrer notre événement spécial de {{guest.event.type}}.</p>
+                 <h1 class="display-5" style="font-family: 'Playfair Display', serif;font-size: 1.5rem;"> Bonjour et bienvenue<br> très cher(e) {%if guest.guest_type == "Couple"%}couple{%endif%} {{ guest.name }}</H1>
+                <p class="text-muted" style="font-family: 'Playfair Display', serif; padding: 2px;">C'est avec une immense joie que nous vous invitons à célébrer notre événement spécial de {{guest.event.type}}.</p>
             </div>
         </div>
     </section>

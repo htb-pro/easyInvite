@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fr" data-bs-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - EasyInvite</title>
+
+    <!-- Bootstrap 5 -->
+    <link rel="stylesheet" href="/static/Css/bootstrap.min.css">
+    <!-- Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+        }
+        .stat-card {
+            transition: 0.3s;
+        }
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="container py-4">
+
+    <!-- Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3 class="fw-bold">Dashboard {{event.type}}</h3>
+        <button class="btn btn-primary">EasyInvite</button>
+    </div>
+
+    <!-- Stats Cards -->
+    <div class="row g-4">
+        <p>Ce tableau de bord donne un état sur les invité ça veut dire il determine combien seront là ou non à l'événement </p>
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3 stat-card">
+                <h6>Total invités</h6>
+                <h3 class="fw-bold">{{total_guest}}</h3>
+                <i class="bi bi-people text-primary fs-2"></i>
+                <div class="detail">
+                    <a href="/total_guest/{{event.id}}" class="btn btn-primary">Voir en detail</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3 stat-card">
+                <h6>Présents</h6>
+                <h3 class="fw-bold text-success"><i class="bi bi-check-circle text-success fs-2"></i> {{present_guest}}</h3>
+                <p> seront là</p>
+                <div class="detail">
+                    <a href="/present_guest/{{event.id}}" class="btn btn-success">Voir en detail</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3 stat-card">
+                <h6>Absents</h6>
+                <h3 class="fw-bold text-danger"> <i class="bi bi-x-circle text-danger fs-2"></i> {{absent_guest}} </h3>
+                <p>ne seront pas là</p>
+                <div class="detail">
+                    <a href="/absent_guest/{{event.id}}" class="btn btn-danger">Voir en detail</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3 stat-card">
+                <h6>En attente</h6>
+                <h3 class="fw-bold text-warning"><i class="bi bi-hourglass fs-2"></i> {{pending_guest}} </h3>
+                <p>n'ont pas encore confirmer</p>
+                <div class="detail">
+                    <a href="/pending_guest/{{event.id}}" class="btn btn-dark">Voir en detail</a>
+                </div>
+            </div>
+        </div>
+    </div>
+    <hr>
+     <div class="row g-4">
+        <div class="col-md-3">
+            <div class="card shadow-sm p-3 stat-card">
+                <h6>Total des invités présent dans la salle</h6>
+                <h3 class="fw-bold">{{total_guest_present}}/{{total_guest}}</h3>
+                <i class="bi bi-people text-primary fs-2"></i>
+                <div class="detail">
+                    <a href="/guest_present/{{event.id}}" class="btn btn-primary">Voir en detail</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="d-flex justify-content-center ">
+    <p style="font-size: 1rem;font-weight: bold;">&copy; easyInvite {{copyright}}</p>
+</div>
+</body>
+</html>

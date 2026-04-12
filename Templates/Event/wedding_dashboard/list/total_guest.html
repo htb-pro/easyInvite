@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{%block title%}list guest{%endblock%}</title>
+    <link rel="stylesheet" href="/static/Css/bootstrap.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+
+</head>
+<body>
+    <!-- Bouton retour -->
+    <div class="my-3">
+        <a href="/wedding_dashboard/{{set_event.id}}" class="btn btn-primary text-light btn-sm">
+            ← Retour à la liste
+        </a>
+    </div>
+    <!-- Guest list -->
+    <nav class="navbar bg-primary text-white px-3">
+    <span class="navbar-brand mb-0 h5 text-light">
+        {% block list_title%}<i class="bi bi-people text-primary fs-2"></i>Liste des Invités{%endblock%}
+    </span>
+    </nav>
+
+   
+    </div>
+</div>
+    {%block content%}
+    <!-- liste invités -->
+    {%if event %}
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead>
+                    <tr>
+                        <th class="w-50 text-dark " >index</th>
+                        <th class="w-50 text-dark" >Nom</th>
+                    </tr>
+                </thead> 
+            {% for guest in event%}
+            <tbody>
+                <tr>
+                    <td >
+                    <span class="text-dark">{{loop.index}}</span>
+                    </td>
+                    <td >
+                    <span class="text-dark">{{guest.name}}</span>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+               {%endif%}
+    {%endblock%}
+</body>
+</html>

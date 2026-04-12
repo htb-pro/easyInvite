@@ -6,7 +6,8 @@ from fastapi.templating import Jinja2Templates
 from uuid import uuid4
 import os,shutil
 from db_setting import engine,connecting
-from sqlalchemy.orm import Session,selectinload
+from sqlalchemy.orm import selectinload
+from sqlalchemy import func
 from sqlalchemy.future import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import IntegrityError
@@ -304,3 +305,4 @@ async def getPresenceList(request:Request,event_id:str,db:AsyncSession = Depends
             "Content-Disposition": f"attachment; filename=liste_des_presence_pour_event_{event.name}.xlsx"
          }
      )
+

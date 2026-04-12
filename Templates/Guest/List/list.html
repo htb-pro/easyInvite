@@ -137,6 +137,11 @@
                         <td>{{guest.email}}</td>
                         <td>  {{guest.created_date.strftime('%d-%m-%y')}} {{guest.created_date.strftime('%H:%M')}}</td>
                         <td class="d-flex justify-content-start  align-items-center">
+                            {%if current_user_role == "admin" or current_user_role == "manager" %}                       
+                                <a href="/share_invite/{{event.id}}/{{guest.id}}"  class="btn btn-outline-success ">
+                                    <i class="bi bi-whatsapp"></i>
+                                </a>
+                            {%endif%}
                             <a href="/guest/{{guest.id}}/{{event_id}}/detail"  class="btn btn-outline-light">👁</a>
                             {%if current_user_role == "admin" or current_user_role == "manager" %}
                             <a href="/invite/{{event_id}}/{{guest.id}}/create" class="btn btn-outline-light"><i class="bi bi-envelope me-1"></i></a>
@@ -183,6 +188,7 @@
                         <small class="text-muted" style="font-size:18px;">{% if guest.is_present %}<i class="bi bi-check-circle-fill text-success"></i>   Present {%else%}<span class="text-danger"><i class="bi bi-x-circle-fill "></i> Absent</span>{%endif%}</small></br>
                         <div class="btn-group btn-group-sm">
                             <small class="d-flex justify-content-center ">
+                                
                                 <a href="/guest/{{guest.id}}/{{event_id}}/detail"  class="btn btn-outline-light">👁</a>
                                 {%if current_user_role == "admin" or current_user_role == "manager" %}
                                 <a href="#" class="btn btn-outline-success"><i class="bi bi-whatsapp"></i></a>

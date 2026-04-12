@@ -11,6 +11,7 @@ from Routers.chekin import Root as checkin_root
 from Routers.loging import Root as log_root
 from Routers.user import Root as user_root
 from Routers.admin import Root as admin_root
+from Routers.event_dashboard import Root as event_dashboard_root
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from db_setting import init_db,AsyncSessionLocal
@@ -47,6 +48,7 @@ Apk.include_router(checkin_root)
 Apk.include_router(log_root)
 Apk.include_router(user_root)
 Apk.include_router(admin_root)
+Apk.include_router(event_dashboard_root)
 
 
 @Apk.exception_handler(HTTPException)

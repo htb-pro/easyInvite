@@ -1,0 +1,30 @@
+{% extends "Event/wedding_dashboard/list/total_guest.html" %}
+
+{% block list_title%}<i class="bi bi-hourglass fs-2"></i> Les invités qui n'ont pas encore confirmer leur presence{%endblock%}
+{%block content%}
+    <!-- liste invités -->
+    {%if pending_guest %}
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead>
+                    <tr>
+                        <th class="w-50 text-dark " >index</th>
+                        <th class="w-50 text-dark" >Nom</th>
+                    </tr>
+                </thead> 
+            {% for guest in pending_guest%}
+            <tbody>
+                <tr>
+                    <td >
+                    <span class="text-dark">{{loop.index}}</span>
+                    </td>
+                    <td >
+                    <span class="text-dark">{{guest.name}}</span>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+               {%endif%}
+    {%endblock%}

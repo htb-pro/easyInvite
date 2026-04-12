@@ -1,0 +1,30 @@
+{% extends "Event/wedding_dashboard/list/total_guest.html" %}
+
+{% block list_title%}<i class="bi bi-check-circle text-success fs-2"></i>Liste des Invités qui seront present{%endblock%}
+{%block content%}
+    <!-- liste invités -->
+    {%if present_guest %}
+        <div class="table-responsive">
+            <table class="table mb-0">
+                <thead>
+                    <tr>
+                        <th class="w-50 text-dark " >index</th>
+                        <th class="w-50 text-dark" >Nom</th>
+                    </tr>
+                </thead> 
+            {% for guest in present_guest%}
+            <tbody>
+                <tr>
+                    <td >
+                    <span class="text-dark">{{loop.index}}</span>
+                    </td>
+                    <td >
+                    <span class="text-dark">{{guest.name}}</span>
+                    </td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+               {%endif%}
+    {%endblock%}

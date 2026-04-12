@@ -123,13 +123,6 @@
                 Télécharger les invitations
             </a>
         </div>-->
-        {%if current_user_role == "admin" or current_user_role == "manager" %}                       
-         <div class="col-12 col-lg-3">
-            <button onclick="sendInvitations()" class="btn btn-success">
-                📤 Envoyer invitations WhatsApp
-            </button>
-        </div>
-        {%endif%}
         <div class="col-12 col-lg-3">
             <a href="/download/list_guest/{{event.id}}/export_excel"  class="btn btn-outline-success w-100">
                 <i class="bi bi-download me-2"></i>
@@ -138,9 +131,8 @@
         </div>
 
         <div class="col-12 col-lg-3">
-            <a href="/download/presence/{{event.id}}/export_excel"  class="btn btn-outline-light w-100">
-                <i class="bi bi-download me-2"></i>
-                Analyser la presence
+            <a href="/wedding_dashboard/{{event.id}}"  class="btn btn-outline-light w-100">
+                <i class="bi bi-share-fill"></i> Partager le tableau de bord des invités
             </a>
         </div>
     </div>
@@ -261,20 +253,20 @@
 </script>
 
 <script>
-async function sendInvitations(){
+// async function sendInvitations(){
 
-    const response = await fetch("/admin/whatsapp_links/{{event.id}}")
-    const data = await response.json()
+//     const response = await fetch("/admin/whatsapp_links/{{event.id}}")
+//     const data = await response.json()
 
-    data.links.forEach((link, index) => {
+//     data.links.forEach((link, index) => {
 
-        setTimeout(() => {
-            window.open(link, "_blank")
-        }, index * 1200)
+//         setTimeout(() => {
+//             window.open(link, "_blank")
+//         }, index * 1200)
 
-    })
+//     })
 
-}
+// }
 
 </script>
 </body>

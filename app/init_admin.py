@@ -34,6 +34,7 @@ async def create_admin(db:AsyncSession):
     
     print("Role admin introuvable")
     init_admin = User(
+    name = "htb-pro",
     email = email,
     password = hash_password(pwd)
     )

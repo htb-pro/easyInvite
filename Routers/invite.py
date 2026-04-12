@@ -107,15 +107,34 @@ async def GuestResponse(request:Request,guest_id:str ,event_id : str, response :
     get_guest = (select(Guest).where(Guest.id == guest_id,Guest.event_id == event_id).options(selectinload(Guest.event),selectinload(Guest.invite)))
     result = await db.execute(get_guest)
     guest = result.scalars().first()
+    event_res = await db.execute(select(Event).where(Event.id == event_id).options(selectinload(Event.guests)))
+    event = event_res.scalars().first()
     message = ""
     today = datetime.now()
     event_date = guest.event.date
     deadline = get_event_deadline(event_date)
     if not guest : #if the guest exist
         raise HTTPException(404,"l'invité introuvable")
+    picture_dirs = Path(f"static/Pictures/{event_id}/") 
+    event_img = None
+    if os.path.exists(picture_dirs):
+        images = os.listdir(picture_dirs)
+    else:
+        images = []
+    if not picture_dirs:
+        return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
+    if  images:
+        for img in images :
+            event_img = img
+            break
+    if not event_img and event.type == "Mariage":
+        return templates.TemplateResponse("Invitation/show_invite/presence_confirmation.html",{'request':request,"guest":guest,"event":event,'message':get_message,"copyright":year})
+    if event_img:
+        event_img_path = f"static/Pictures/{event_id}/{event_img}"
     if today >  get_event_deadline(event_date):
        message = "la date limite pour la confirmation est dépassée"
-       return templates.TemplateResponse("Invitation/show_invite/presence_confirmation.html",{'request':request,'guest':guest,'message':message,'deadline':deadline.isoformat()})
+       print("--------------------",event_img_path)
+       return templates.TemplateResponse("Invitation/show_invite/presence_confirmation.html",{'request':request,'guest':guest,"event":event,'is_img_exist':images,'event_img':event_img_path,'message':message,'deadline':deadline.isoformat()})
     get_response = select(PresenceConfirmation).where(PresenceConfirmation.guest_id == guest_id) #get data of guest in presenceconfirmation
     response_result =await db.execute(get_response)
     exist_response = response_result.scalars().first() #get data of guest in presenceconfirmation
@@ -126,6 +145,7 @@ async def GuestResponse(request:Request,guest_id:str ,event_id : str, response :
         exist_response.response = response
         exist_response.send_at = datetime.utcnow()
         message =  "✅ Votre réponse a été mise à jour."
+
     else: 
         #create a new one
         presence = PresenceConfirmation(
@@ -138,7 +158,7 @@ async def GuestResponse(request:Request,guest_id:str ,event_id : str, response :
         await db.refresh(presence)
         message = "🎉 Votre présence a été enregistrée."
     request.session['message'] =message # prendre le message est l'envoyer vers get 
-    return RedirectResponse(f'/presence/confirmation/{guest_id}/{event_id}',status_code = 303)#'guest':guest,'message':message})
+    return RedirectResponse(f'/presence/confirmation/{guest_id}/{event_id}',status_code = 303)
 
 @Root.get("/download/invite/{event_id}/{guest_id}")#telecharger une invitation
 async def get_guest_invite(event_id:str,guest_id :str,db:AsyncSession =Depends(connecting)):

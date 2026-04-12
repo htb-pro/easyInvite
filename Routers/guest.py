@@ -1,22 +1,20 @@
 #APIRouter permet juste l'organisation du code au lieu d' avoir tout les routes dans un fichier main oon cree les root separement
-from fastapi import Request,Form,Depends,HTTPException,APIRouter,Query,Cookie
+from fastapi import Request,Form,Depends,HTTPException,APIRouter,Query,Cookie,Response
 from fastapi.responses import HTMLResponse,RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select,and_,func
 from uuid import uuid4
-import models
 from db_setting import engine,connecting
 from sqlalchemy.orm import Session,selectinload
 from sqlalchemy.exc import IntegrityError
 from models import *
-from datetime import date
 from typing import Optional
-from datetime import datetime,date
+from datetime import datetime
 import os
 from pathlib import Path
 from utils.Qr_Utils.qrCodeUtils import createInviteQrCode
-import base64
+import base64,urllib.parse
 from Routers.loging import get_current_user_from_cookie
 from app.security.permissions import permission_required
 from urllib.parse import quote
@@ -60,40 +58,44 @@ async def get_guest_list(request:Request,event_id:str,access_token = Cookie(None
         return templates.TemplateResponse("Guest/List/notFound.html",{'request':request,"Error":'404','event':event})
     return templates.TemplateResponse("Guest/List/list.html",{'request':request,'invite':invite,'event':event,'guests':guests,'event_id':event_id,'present_guest':present_guest,'absent_guest':absent_guest,'current_user_role':user_role},status_code=303)
 
-@Root.get("/admin/whatsapp_links/{event_id}")
-async def whatsapp_link(event_id:str,db:AsyncSession = Depends(connecting)):
-    guest_res = await db.execute(select(Guest).where(Guest.event_id==event_id).options(selectinload(Guest.invite)))
-    guests = guest_res.scalars().all()
-    links = []
-    if guests:
-        for guest in guests:
-            telephone = guest.telephone.replace("+","").replace(" ","")
-            guest_name = guest.name
-            guest_id = guest.id
-            guest_get_pass = guest.get_pass
-            invite_url = f"http://easyinvite-1.onrender.com/invite/{event_id}/{guest_id}/create"
-            message = f"Bonjour {guest_name}, vous êtes invité à notre événement. voici votre jeton d'accès en cas de manque du qr code{guest_get_pass}, et cliquez sur le lien pour voir et télecharger votre invitation {invite_url}"
-            encoded_message = quote(message)
-            link = f"https://wa.me/{telephone}?text={encoded_message}"
-            links.append(link)
-        return {'links':links}
+@Root.get("/share_invite/{event_id}/{guest_id}")
+async def send_whatsapp_redirect(event_id: str,guest_id: str, db: AsyncSession = Depends(connecting)):
+    # 1. Récupérer l'invité en BDD
+    guest_res = await db.execute(select(Guest).where(Guest.id == guest_id,Guest.event_id == event_id))
+    guest = guest_res.scalars().first()
+     
+    if not guest:
+        raise HTTPException(status_code=404, detail="Invité non trouvé")
+
+    # 2. Préparer les données
+    guest_get_pass = guest.get_pass
+    invite_url = f"http://easyinvite-1.onrender.com/invite/{event_id}/{guest_id}/create"
+    message = f"INVITATION OFFICIELLE\n\nBonjour {guest.name}, vous êtes invité à notre événement.\n\n voici votre jeton d'accès en cas de manque du qr code *{guest_get_pass}* \n\n cliquez sur le lien pour voir et télecharger votre invitation . \n\n*Note : si le lien n'est pas cliquable veillez enregistrer ce numero dans vos contacts ou s'implement repondre a ce message.* \n\nlien:{invite_url}"
+
+    
+    # 3. Nettoyer le numéro (ne garder que les chiffres)
+    # On suppose que le numéro est stocké avec l'indicatif pays (ex: 243...)
+    clean_phone = "".join(filter(str.isdigit, guest.telephone))
+    # 4. Encoder le message pour l'URL
+    encoded_message = urllib.parse.quote(message)
+    whatsapp_url = f"https://wa.me/{clean_phone}?text={encoded_message}"
+    
+    # 5. Rediriger l'utilisateur directement vers WhatsApp
+    return RedirectResponse(url=whatsapp_url)
     #---------
 
 @Root.get("/telephone/{event_id}") #la rechecher d'une donnee
-async def searchEvent(request:Request,event_id :str,telephone:str=Query(...,max_length = 14,description ="le numero doit contenir au minimum 10 caractere"),db:AsyncSession = Depends(connecting)):
-    try : 
-        telephone
-    except ValueError :
-        return HTTPException(400,"le numero doit etre egale a 10 au min et a 14 au max")
-    get_guest = select(Guest).where(Guest.telephone.like(f"%{telephone}%"),Guest.event_id==event_id)
-    res = await db.execute(get_guest)
-    guest =res.scalars().all()
-    get_event =select(Event).where(Event.id==event_id)#get event
-    event_res = await db.execute(get_event)
+async def searchEvent(request:Request,event_id :str,telephone:str = None,db:AsyncSession = Depends(connecting)):
+    query =select(Guest).where(Guest.event_id==event_id)
+    if telephone:
+        query = query.where(Guest.telephone.like(f"%{telephone}%"))
+    res = await db.execute(query)
+    guests =res.scalars().all()
+    event_res = await db.execute(select(Event).where(Event.id==event_id))
     event =event_res.scalars().first()
-    if not guest :
+    if not guests :
         raise HTTPException(404,"invite introuvable")
-    return templates.TemplateResponse("Guest/List/list.html",{'request':request,"guests":guest,'event':event,'event_id':event_id})
+    return templates.TemplateResponse("Guest/List/list.html",{'request':request,"guests":guests,'event':event,'event_id':event_id})
 
 @Root.get('/guest/{guest_id}/{event_id}/detail')#detail endpoint
 async def guestDetail(request:Request,guest_id:str,event_id:str,user=Depends(permission_required("view_guest")),db:AsyncSession = Depends(connecting)):
