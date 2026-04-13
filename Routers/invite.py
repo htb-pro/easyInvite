@@ -111,6 +111,7 @@ async def GuestResponse(request:Request,guest_id:str ,event_id : str, response :
     event = event_res.scalars().first()
     message = ""
     today = datetime.now()
+    year = today.year
     event_date = guest.event.date
     deadline = get_event_deadline(event_date)
     if not guest : #if the guest exist
@@ -128,12 +129,11 @@ async def GuestResponse(request:Request,guest_id:str ,event_id : str, response :
             event_img = img
             break
     if not event_img and event.type == "Mariage":
-        return templates.TemplateResponse("Invitation/show_invite/presence_confirmation.html",{'request':request,"guest":guest,"event":event,'message':get_message,"copyright":year})
+        return templates.TemplateResponse("Invitation/show_invite/presence_confirmation.html",{'request':request,"guest":guest,"event":event,"copyright":year})
     if event_img:
         event_img_path = f"static/Pictures/{event_id}/{event_img}"
     if today >  get_event_deadline(event_date):
        message = "la date limite pour la confirmation est dépassée"
-       print("--------------------",event_img_path)
        return templates.TemplateResponse("Invitation/show_invite/presence_confirmation.html",{'request':request,'guest':guest,"event":event,'is_img_exist':images,'event_img':event_img_path,'message':message,'deadline':deadline.isoformat()})
     get_response = select(PresenceConfirmation).where(PresenceConfirmation.guest_id == guest_id) #get data of guest in presenceconfirmation
     response_result =await db.execute(get_response)
