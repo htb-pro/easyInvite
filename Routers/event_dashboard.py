@@ -13,15 +13,15 @@ Root = APIRouter()
 templates = Jinja2Templates(directory="Templates")#ou sont stocker les templates
 
 
-@Root.get("/share_wedding_dashboard/{event_id}",name="share_wedding_dashboard")#la root pour partager le dashboard d'un evenement
+@Root.get("/share_wedding_dashboard/{event_id}",name="share_wedding_dashboard")#la root pour partager le dashboard d'un evenement au couple organisateur
 async def shareWeddingDashboard(request:Request,event_id:str,db:AsyncSession = Depends(connecting)):
     res = await db.execute(select(Event).where(Event.id == event_id))
     event = res.scalars().first()
-    phone = "243991152067"
+    phone = event.couple_phone_number if event else None
     if not event:
         return templates.TemplateResponse("Event/wedding_dashboard/dashboard_not_available.html",{'request':request})
-    dashboard_url = f"http://easyinvite-1.onrender.com/invite/wedding_dashboard/{event_id}"
-    message = f"Bonjour, voici le lien pour accéder au tableau de bord de l'événement '{event.name}': *{dashboard_url}*"
+    dashboard_url = f"http://easyinvite-1.onrender.com/wedding_dashboard/{event_id}"
+    message = f"Bonjour cher {event.couple_name}, voici le lien pour accéder au tableau de bord de votre événement de '{event.type}': *{dashboard_url}*"
     encoded_message = urllib.parse.quote(message)
     whatsapp_url = f"https://wa.me/{phone}?text={encoded_message}"
     return RedirectResponse(url=whatsapp_url)

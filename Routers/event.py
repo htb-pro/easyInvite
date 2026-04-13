@@ -91,13 +91,14 @@ def getEventForm(request:Request,user=Depends(permission_required("create_event"
     return templates.TemplateResponse("Event/Forms/event_form.html",{'request':request})
 
 @Root.post("/create_event") #create an event
-async def creatEvent(request:Request,eventName:str = Form(),
-eventType:str =Form(...), eventDate: datetime = Form(),
-eventAddress:str = Form(),eventDescription: Optional[str] = Form(None),
+async def creatEvent(request:Request,eventName:str = Form(...),
+eventType:str =Form(...), eventDate: datetime = Form(...),
+eventAddress:str = Form(),eventDescription: Optional[str] = Form(...),
 location:str = Form(...),
 photo:UploadFile = File(),
 user=Depends(permission_required("create_event")),
-couple_name :str = Form(None),
+couple_name :str = Form(...),
+couple_phone_number :str = Form(...),
 access_token =Cookie(None),
 is_active : bool = Form(None),#le cadeau
 Db:AsyncSession = Depends(connecting)):
@@ -128,6 +129,7 @@ Db:AsyncSession = Depends(connecting)):
         description = eventDescription,
         location = location,
         couple_name = couple_name,
+        couple_phone_number = couple_phone_number,
         created_by = user_id,
         guest_present = is_active if is_active else None,
         group_id = group_id,
@@ -154,7 +156,7 @@ async def editEvent(request:Request,event_id : str,user=Depends(permission_requi
     return templates.TemplateResponse("Event/Forms/edit_form.html",{'request':request,"event":editEvent})
 
 @Root.post("/edit_event/{event_id}")#la root pour modifier un evenement
-async def editEvent(request:Request,event_id : str,access_token = Cookie(None),eventName:str = Form(...),coupleName:str = Form(...),eventType:str = Form(...),eventDate: str = Form(...),
+async def editEvent(request:Request,event_id : str,access_token = Cookie(None),eventName:str = Form(...),coupleName:str = Form(...),couple_phone_number:str = Form(...),eventType:str = Form(...),eventDate: str = Form(...),
                     eventAddress:str = Form(...),location:str = Form(...),eventDescription: Optional[str] = Form(None),
                     eventState: str = Form(...),photo:UploadFile = File(),is_active:bool = Form(None),db:AsyncSession = Depends(connecting)
                     ,user=Depends(permission_required("edit_event"))):
@@ -194,6 +196,7 @@ async def editEvent(request:Request,event_id : str,access_token = Cookie(None),e
         raise HTTPException(status_code=400,detail="Evenement intouvable")
     editedEventData.name = eventName
     editedEventData.couple_name = coupleName
+    editedEventData.couple_phone_number = couple_phone_number
     editedEventData.type = eventType
     editedEventData.date = parsed_modified_date
     editedEventData.address = eventAddress

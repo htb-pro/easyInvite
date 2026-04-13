@@ -90,6 +90,7 @@ class Event(Base): #event table
     created_date =Column(DateTime,default=datetime.now())
     state = Column(String,default="en attente")
     couple_name = Column(String(50))
+    couple_phone_number= Column(String(15))
     guest_present = Column(Boolean,default=False)
     created_by = Column(String,ForeignKey("users.id"))
     group_id= Column(String,ForeignKey("groups.id"))
