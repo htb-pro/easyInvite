@@ -128,8 +128,7 @@ async def GuestResponse(request:Request,guest_id:str ,event_id : str, response :
         for img in images :
             event_img = img
             break
-    if not event_img and event.type == "Mariage":
-        return templates.TemplateResponse("Invitation/show_invite/presence_confirmation.html",{'request':request,"guest":guest,"event":event,"copyright":year})
+    
     if event_img:
         event_img_path = f"static/Pictures/{event_id}/{event_img}"
     if today >  get_event_deadline(event_date):
@@ -145,7 +144,7 @@ async def GuestResponse(request:Request,guest_id:str ,event_id : str, response :
         exist_response.response = response
         exist_response.send_at = datetime.utcnow()
         message =  "✅ Votre réponse a été mise à jour."
-
+        await db.commit()
     else: 
         #create a new one
         presence = PresenceConfirmation(

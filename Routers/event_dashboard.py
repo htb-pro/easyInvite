@@ -41,9 +41,10 @@ async def getWeddingDashboard(request:Request,event_id:str,db:AsyncSession = Dep
     total_guest = len(events)
     present_guest = len([guest for guest in events if guest.invite.guestResponse is not None and guest.invite.guestResponse.response == "yes"])
     absent_guest = len([guest for guest in events if guest.invite.guestResponse is not None and guest.invite.guestResponse.response == "no"])
+    neuter_guest = len([guest for guest in events if guest.invite.guestResponse is not None and guest.invite.guestResponse.response == "neuter"])
     pending_guest = total_guest - present_guest - absent_guest
     return templates.TemplateResponse("Event/wedding_dashboard/wedding_dashboard.html",{'request':request,'copyright':copyright,'events':events,'event':event,
-    'total_guest':total_guest,'total_guest_present':total_guest_present,'present_guest':present_guest,'pending_guest':pending_guest,'absent_guest':absent_guest})
+    'total_guest':total_guest,'total_guest_present':total_guest_present,'present_guest':present_guest,'pending_guest':pending_guest,'absent_guest':absent_guest,'neuter_guest':neuter_guest})
 
 @Root.get("/total_guest/{event_id}",name="wedding_dashboard")#la root pour le total des invites de l'evenement
 async def getWeddingDashboard(request:Request,event_id:str,db:AsyncSession = Depends(connecting)):
@@ -77,6 +78,17 @@ async def absent_guest(request:Request,event_id:str,db:AsyncSession = Depends(co
         return templates.TemplateResponse("Event/wedding_dashboard/dashboard_not_available.html",{'request':request})
     absent_guest = [guest for guest in event_res if guest.invite.guestResponse is not None and guest.invite.guestResponse.response == "no"]#list des invite qui ne seront pas present
     return templates.TemplateResponse("Event/wedding_dashboard/list/absent_guest.html",{'request':request,'absent_guest':absent_guest,'set_event':event})
+
+@Root.get("/neuter_guest/{event_id}",name="neuter_guest")#la root pour  les invites qui ne seront present a l'evenement
+async def absent_guest(request:Request,event_id:str,db:AsyncSession = Depends(connecting)):
+    res = await db.execute(select(Guest).where(Guest.event_id==event_id).options(selectinload(Guest.event),selectinload(Guest.invite).selectinload(Invite.guestResponse)))
+    event_res=res.scalars().all()
+    result = await db.execute(select(Event).where(Event.id==event_id))
+    event = result.scalars().first()
+    if not event_res:
+        return templates.TemplateResponse("Event/wedding_dashboard/dashboard_not_available.html",{'request':request})
+    neuter_guest = [guest for guest in event_res if guest.invite.guestResponse is not None and guest.invite.guestResponse.response == "neuter"]#list des invite qui ne seront pas present
+    return templates.TemplateResponse("Event/wedding_dashboard/list/neuter_guest.html",{'request':request,'neuter_guest':neuter_guest,'set_event':event})
 
 @Root.get("/pending_guest/{event_id}",name="pending_guest")#la root pour  les invites qui ne seront present a l'evenement
 async def absent_guest(request:Request,event_id:str,db:AsyncSession = Depends(connecting)):
