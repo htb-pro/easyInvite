@@ -114,6 +114,7 @@ async def GuestResponse(request:Request,guest_id:str ,event_id : str, response :
     year = today.year
     event_date = guest.event.date
     deadline = get_event_deadline(event_date)
+    event_img_path = None
     if not guest : #if the guest exist
         raise HTTPException(404,"l'invité introuvable")
     picture_dirs = Path(f"static/Pictures/{event_id}/") 

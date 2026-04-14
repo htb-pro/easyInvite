@@ -21,7 +21,7 @@ from db_setting import Base
 config = context.config
 
 # Lire l'URL depuis .env
-db_url = os.getenv("db_url_local")
+db_url = os.getenv("db_url")
 config.set_main_option("sqlalchemy.url", db_url.replace("+asyncpg",""))
 fileConfig(config.config_file_name)
 
