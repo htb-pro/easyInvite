@@ -28,3 +28,13 @@ EXPOSE 10000
 
 # Commande de lancement (ADAPTE si besoin)
 CMD ["uvicorn", "rooting:Apk", "--host", "0.0.0.0", "--port", "10000"]
+
+RUN apt-get update && apt-get install -y \
+    gcc \
+    pkg-config \
+    libcairo2-dev \
+    libpkgconf-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Maintenant, ton installation fonctionnera
+RUN pip install --no-cache-dir -r requirement.txt
