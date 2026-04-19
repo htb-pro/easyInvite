@@ -62,6 +62,16 @@
                     <p>{{Error}}</p>
                 </div>
             {% endif%}
+            {%if img_error %}
+                <div class="alert alert-danger">
+                    <p>{{img_error}}</p>
+                </div>
+            {% endif%}
+            {%if success %}
+                <div class="alert alert-success">
+                    <p>{{success}}</p>
+                </div>
+            {% endif%}
             <div class="mb-3">
                 <label for="lieu" class="form-label fw-semibold">Type d'evenement</label>
                 <select name="eventType" id="event_type" class="form-select">

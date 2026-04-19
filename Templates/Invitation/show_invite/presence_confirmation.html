@@ -67,9 +67,7 @@
 <div class="invitation-card text-center">
 
   <!-- Event Image -->
-    {%if is_img_exist %}
-        <img src="/{%if event_img %}{{event_img}}{%endif%}" class="img-fluid mb-5 shadow-lg rounded-circle"  style="width: 220px;height: 220px;object-fit:cover;border:8px solid white" alt="not found">
-    {%endif%}   
+        <img src="{%if event_img %}{{event_img}}{%else%}https://res.cloudinary.com/dggxtgzrm/image/upload/v1776580321/easyInvite_default_picture_i0ksts.jpg{%endif%}" class="img-fluid mb-5 shadow-lg rounded-circle"  style="width: 220px;height: 220px;object-fit:cover;border:8px solid white" alt="not found">
   <h3>confirmation de présence</h3>
   <!-- Event Title -->
   <p class="text-muted mb-4">Trés cher <b> {%if guest.guest_type == "Couple"%}couple{%endif%} {{guest.name}}</b> nous <b>{{event.couple_name}}</b> sommes ravis de vous compter parmi nos invités ! Merci de renseigner votre position  en cliquant sur <b>"je serai là ou "je ne serai pas là"</b>

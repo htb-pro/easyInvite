@@ -1,21 +1,18 @@
 #APIRouter permet juste l'organisation du code au lieu d' avoir tout les routes dans un fichier main oon cree les root separement
 from fastapi import Request,Form,Depends,HTTPException,APIRouter,UploadFile,File,Cookie
-from fastapi.responses import HTMLResponse,RedirectResponse,StreamingResponse
+from fastapi.responses import RedirectResponse,StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from uuid import uuid4
-import os,shutil
+import os,shutil,cloudinary,cloudinary.uploader
 from db_setting import engine,connecting
 from sqlalchemy.orm import selectinload
-from sqlalchemy import func
-from sqlalchemy.future import select
+from sqlalchemy import func,desc,select,asc
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.exc import IntegrityError
 from models import *
-from datetime import date
 from jose import jwt
 from typing import Optional
-from datetime import datetime,date
+from datetime import datetime
 from openpyxl import Workbook
 from io import BytesIO
 from Routers.loging import get_current_user_from_cookie
@@ -28,6 +25,15 @@ Root.mount("/static",StaticFiles(directory="static"),name="static")#ou sont stoc
 Pictures = "static/Pictures/{None}"
 os.makedirs("Pictures",exist_ok=True)
 
+Cloud_name = os.getenv("CLOUD_NAME")
+Cloud_api_key = os.getenv("CLOUD_API_KEY")
+Cloud_api_secret = os.getenv("CLOUD_API_SECRET")
+cloudinary.config(
+    cloud_name = Cloud_name,
+    api_key = Cloud_api_key,    
+    api_secret  = Cloud_api_secret,
+    secure = True
+)
 @Root.get("/research_event")
 async def searchEvent(request:Request,researched_event:str,db:AsyncSession = Depends(connecting)):
     get_event =(select(Event).where(Event.name.like(f"%{researched_event}%")).options(selectinload(Event.guests)))
@@ -51,10 +57,10 @@ async def getEventList(request:Request,  db:AsyncSession = Depends(connecting),a
         for user_group in user.groups:
             group_id = user_group.id
         if user_role == "admin":
-            get_event =await db.execute(select(Event).options(selectinload(Event.guests)))
+            get_event =await db.execute(select(Event).options(selectinload(Event.guests)).order_by(desc(Event.created_date)))
             events = get_event.scalars().all()
             return templates.TemplateResponse("Event/List/list_event.html",{'request':request,"events":events,'curent_user_role':user_role})
-    get_event =await db.execute(select(Event).where(Event.group_id == group_id).options(selectinload(Event.guests)))
+    get_event =await db.execute(select(Event).where(Event.group_id == group_id).options(selectinload(Event.guests)).order_by(desc(Event.created_date)))
     events = get_event.scalars().all()
     return templates.TemplateResponse("Event/List/list_event.html",{'request':request,"events":events,'curent_user_role':user_role})
 
@@ -93,9 +99,9 @@ def getEventForm(request:Request,user=Depends(permission_required("create_event"
 @Root.post("/create_event") #create an event
 async def creatEvent(request:Request,eventName:str = Form(...),
 eventType:str =Form(...), eventDate: datetime = Form(...),
-eventAddress:str = Form(),eventDescription: Optional[str] = Form(...),
+eventAddress:str = Form(),eventDescription: Optional[str] = Form(None),
 location:str = Form(...),
-photo:UploadFile = File(),
+photo:UploadFile = File(None),
 user=Depends(permission_required("create_event")),
 couple_name :str = Form(...),
 couple_phone_number :str = Form(...),
@@ -108,11 +114,12 @@ Db:AsyncSession = Depends(connecting)):
     user = user_res.scalars().first()
     group_id = None
     user_role = None #le role de l'utilisateur sera none par defaut pour eviter les erreurs
+    is_event_photo =  False
+    photo_url = None
+    photo_public_id = None
     if user.groups:
-        for group in user.groups:
-            group_id = group.id
-        for role in user.roles:
-            user_role = role.name
+        group_id = user.groups[0].id if user.groups else None
+        user_role = user.roles[0].name if user.roles else None
     try:
         if eventDate < datetime.now():
              return templates.TemplateResponse("Event/Forms/event_form.html",{'request':request,"dateError":' Entrez une date superieur a la date actuelle !!!',
@@ -121,30 +128,37 @@ Db:AsyncSession = Depends(connecting)):
         return templates.TemplateResponse("Event/Forms/event_form.html",{'request':request,"error":' Entrer une date correcte !!!',
         'eventName':eventName, 'eventType':eventType, 'eventDate':eventDate, 'eventAddress':eventAddress, 'eventDescription':eventDescription
         },status_code=400)
+    if photo and photo.filename:
+        if not photo.content_type or not photo.content_type.startswith("image/"):
+            return templates.TemplateResponse("Event/Forms/event_form.html",{'request':request,"img_error":' le fichier doit etre une image !!!',
+            'eventName':eventName, 'eventType':eventType, 'eventDate':eventDate, 'eventAddress':eventAddress, 'eventDescription':eventDescription
+            },status_code=400)
+    try:
+        if photo and photo.filename:
+            file_content = await photo.read()
+            upload_result = cloudinary.uploader.upload(file_content,folder = "EasyInvite/wedding_events",transformation = [{'width':1000,'height':1000,'crop':'limit'},{'quality':"auto"}])
+            photo_url = upload_result['secure_url']
+            photo_public_id = upload_result['public_id']
+    except Exception as e:
+        raise HTTPException(status_code=500,detail=f"Erreur lors du téléchargement de l'image: {str(e)}")
     newEvent = Event(
-        name = eventName,
-        type = eventType,
-        date = eventDate,
-        address = eventAddress,
-        description = eventDescription,
-        location = location,
-        couple_name = couple_name,
-        couple_phone_number = couple_phone_number,
-        created_by = user_id,
-        guest_present = is_active if is_active else None,
-        group_id = group_id,
-    )
+    name = eventName,
+    type = eventType,
+    date = eventDate,
+    address = eventAddress,
+    description = eventDescription,
+    location = location,
+    couple_name = couple_name,
+    couple_phone_number = couple_phone_number,
+    created_by = user_id,
+    guest_present = is_active if is_active else None,
+    group_id = group_id,
+    photo_url = photo_url if photo_url else None,
+    photo_public_id=photo_public_id if photo_public_id else None
+        )
     Db.add(newEvent)
     await Db.commit()
     await Db.refresh(newEvent)
-    event_img_doc = newEvent.id
-    event_picture = os.path.basename(photo.filename) #la phone
-    if event_picture:
-        Pictures = f"static/Pictures/{event_img_doc}"#l'adresse du stockage de l'image
-        os.makedirs(Pictures,exist_ok=True)#creer un dosier s'il n'existe pas 
-        filepath = os.path.join(Pictures,event_picture)#precision de l'adresse relative de l'image
-        with open(filepath,"wb") as buffer :
-            shutil.copyfileobj(photo.file,buffer)
     request.session["success"] = "🎉 Événement créé avec succès !"
     return RedirectResponse("/event_list",status_code=303)
 
@@ -153,12 +167,13 @@ async def editEvent(request:Request,event_id : str,user=Depends(permission_requi
     edit_Event = select(Event).where(Event.id == event_id)
     res = await db.execute(edit_Event)
     editEvent = res.scalars().first()
-    return templates.TemplateResponse("Event/Forms/edit_form.html",{'request':request,"event":editEvent})
+    success = request.session.pop("success",None)
+    return templates.TemplateResponse("Event/Forms/edit_form.html",{'request':request,"event":editEvent,"success":success})
 
 @Root.post("/edit_event/{event_id}")#la root pour modifier un evenement
 async def editEvent(request:Request,event_id : str,access_token = Cookie(None),eventName:str = Form(...),coupleName:str = Form(...),couple_phone_number:str = Form(...),eventType:str = Form(...),eventDate: str = Form(...),
                     eventAddress:str = Form(...),location:str = Form(...),eventDescription: Optional[str] = Form(None),
-                    eventState: str = Form(...),photo:UploadFile = File(),is_active:bool = Form(None),db:AsyncSession = Depends(connecting)
+                    eventState: str = Form(...),photo:UploadFile = File(None),is_active:bool = Form(None),db:AsyncSession = Depends(connecting)
                     ,user=Depends(permission_required("edit_event"))):
     edited_Event_Data = select(Event).where(Event.id == event_id)
     res = await db.execute(edited_Event_Data)
@@ -174,26 +189,34 @@ async def editEvent(request:Request,event_id : str,access_token = Cookie(None),e
     if user_role != "admin":
         groups_res = await db.execute(select(Group).where(Group.id == group_id))
         groups = groups_res.scalars().first()
-    loaded_image = photo.filename
-    if loaded_image :#si une photo a ete chargee
-        edited_event_img_doc = event_id
-        Pictures = f"static/Pictures/{edited_event_img_doc}"#l'adresse de l'emplacement ou il y aura l'image
-        os.makedirs(Pictures,exist_ok=True) #creer le dossier d'emplacement s'il n'existe pas
-        images = os.listdir(Pictures)# prends toutes les images se trouves dans static/pictures
-        for img in images: #pour une image existante dans le dossier 
-            os.remove(os.path.join(Pictures,img))#tu le supprime
-        file_path = os.path.join(Pictures,loaded_image)
-        with open(file_path,"wb") as buffer:
-                        shutil.copyfileobj(photo.file,buffer)
     try:
         parsed_modified_date = datetime.fromisoformat(eventDate)
         if(parsed_modified_date < datetime.now()):
             return templates.TemplateResponse("Event/Forms/edit_form.html",{'request':request,"dateError":'La date doit etre superieur a l\'actuelle !!!','event':editedEventData}, status_code=400)
     except (ValueError,TypeError):
         return templates.TemplateResponse("Event/Forms/edit_form.html",{'request':request,'error':'veillez entrer une date correcte','event':editedEventData},status_code=400)
-
     if not editedEventData:
         raise HTTPException(status_code=400,detail="Evenement intouvable")
+    event_photo_public_id = editedEventData.photo_public_id
+    photo_url = None
+    photo_public_id = None
+    if photo and photo.filename:#si la photo a ete envoye
+        if not photo.content_type or not photo.content_type.startswith("image/"):#si ce n'est pas une image
+            return templates.TemplateResponse("Event/Forms/edit_form.html",{'request':request,"img_error":' le fichier doit etre une image !!!','event':editedEventData},status_code=400)
+        try:
+            if event_photo_public_id:
+                cloudinary.uploader.destroy(event_photo_public_id)
+                print(f"Ancienne image avec public_id {event_photo_public_id} supprimée de Cloudinary.")
+                file_content = await photo.read()
+                upload_result =cloudinary.uploader.upload(file_content,folder = "EasyInvite/wedding_events",transformation = [{'width':1000,'height':1000,'crop':'limit'},{'quality':"auto"}])
+                photo_url= upload_result['secure_url']
+                photo_public_id = upload_result['public_id']
+            file_content = await photo.read()
+            upload_result =cloudinary.uploader.upload(file_content,folder = "EasyInvite/wedding_events",transformation = [{'width':1000,'height':1000,'crop':'limit'},{'quality':"auto"}])
+            photo_url= upload_result['secure_url']
+            photo_public_id = upload_result['public_id']
+        except Exception as e:
+            raise HTTPException(status_code=500,detail=f"Erreur lors du téléchargement de l'image: {str(e)}") 
     editedEventData.name = eventName
     editedEventData.couple_name = coupleName
     editedEventData.couple_phone_number = couple_phone_number
@@ -205,10 +228,13 @@ async def editEvent(request:Request,event_id : str,access_token = Cookie(None),e
     editedEventData.state = eventState
     editedEventData.guest_present = is_active if is_active else None
     editedEventData.created_by = user_id
+    editedEventData.photo_public_id = photo_public_id
+    editedEventData.photo_url = photo_url
     if user_role != "admin":
         edited_Event_Data.groups = [groups]
     edited_Event_Data.groups = []
     await db.commit()
+    request.session["success"] = "🎉 Événement modifié avec succès !"
     return RedirectResponse("/event_list",status_code=303)
 
 @Root.post("/delete_event/{event_id}")
@@ -218,12 +244,15 @@ async def deleteEvent(request:Request,event_id:str,user=Depends(permission_requi
     eventToDelete = res.scalars().first()
     if not eventToDelete:
         raise HTTPException(status_code=404,detail="cette evenement n'existe pas")
-    Pictures= f"static/Pictures/{event_id}"#dossier de l'image de l'evenement
-    is_dir_exist = os.path.exists(Pictures)#exist il ?
-    if is_dir_exist: #si oui 
-        shutil.rmtree(Pictures)#qu'il soit supprimer
+    Picture_to_be_deleted= eventToDelete.photo_public_id #recuprer l'addresse de l'image a supprimer
+    if Picture_to_be_deleted:
+        try:
+            cloudinary.uploader.destroy(Picture_to_be_deleted)
+        except Exception as e:
+            raise HTTPException(status_code=500,detail=f"Erreur lors de la suppression de l'image: {str(e)}")
     await db.delete(eventToDelete)
     await db.commit()
+    request.session["success"] = "🎉 Événement supprimé avec succès !"
     return RedirectResponse("/event_list",status_code=303)
 
 @Root.get("/download/list_guest/{event_id}/export_excel") #endpoint pour le telechargement du fichier des invités

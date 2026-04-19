@@ -95,6 +95,8 @@ class Event(Base): #event table
     created_by = Column(String,ForeignKey("users.id"))
     group_id= Column(String,ForeignKey("groups.id"))
     programme = Column(Text,nullable=True)
+    photo_url=Column(String(255),nullable=True)
+    photo_public_id=Column(String(255),nullable=True)
 
     guests = relationship("Guest",back_populates="event",cascade="all,delete")
     groups = relationship("Group",back_populates ="events")

@@ -34,33 +34,22 @@ async def getGuestInvite(request:Request,event_id:str ,guest_id : str ,db:AsyncS
     guestInvite =get_guest_invite.scalars().first() #le guest 
     event = guestInvite.event if guestInvite else None 
     invite = guestInvite.invite if guestInvite else None #l'invite
-    event_type = event.type
-    event_img_path =None
+    event_img = event.type
     if not event:
         return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
     copyright = datetime.now()
-    picture_dirs = Path(f"static/Pictures/{event_id}/") 
-    event_img = None
-    if os.path.exists(picture_dirs):
-        images = os.listdir(picture_dirs)
-    else:
-        images = []
-    if not picture_dirs:
+    event_img = event.photo_url
+    event_type = event.type#type d'evenement
+    if not event_id:
         return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
-    if  images:
-        for img in images :
-            event_img = img
-            break
-    if not event_img and event.type == "Mariage":
+    if not event_img and event.type == "Mariage":#s'il n'ya pas d'image et que c'est un mariage on affiche le template sans image
         return templates.TemplateResponse("Invitation/show_invite/wedding_event/wedding_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright})
-    if event_img:
-        event_img_path = f"static/Pictures/{event_id}/{event_img}"
     try:
         event= guestInvite.event.type
     except:
         return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
-    if event_type == "Mariage":
-        return templates.TemplateResponse("Invitation/show_invite/wedding_event/wedding_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright,'is_img_exist':images,"event_img":event_img_path})
+    if event_type == "Mariage": #si c'est un mariage et qu'il y a une image on affiche le template avec l'image
+        return templates.TemplateResponse("Invitation/show_invite/wedding_event/wedding_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright,"event_img":event_img})
     # elif event_type == "Concours":
     #     return templates.TemplateResponse("Invitation/show_invite/concours_event/concours_invite.html",{'request':request,'guest':guestInvite,'event':event,'copyright':copyright,'serie_number':serie_number,'ticket_number':ticket_number})
     
@@ -79,27 +68,15 @@ async def confirm_presence(request:Request,guest_id : str,event_id:str,db:AsyncS
     year = datetime.now().year
     if not guest:
         raise HTTPException(404,"guest not found")
-    event_img_path =None
     if not event:
         return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
     copyright = datetime.now()
-    picture_dirs = Path(f"static/Pictures/{event_id}/") 
-    event_img = None
-    if os.path.exists(picture_dirs):
-        images = os.listdir(picture_dirs)
-    else:
-        images = []
-    if not picture_dirs:
+    event_img = event.photo_url if event.photo_url else None
+    if not event_id:
         return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
-    if  images:
-        for img in images :
-            event_img = img
-            break
     if not event_img and event.type == "Mariage":
         return templates.TemplateResponse("Invitation/show_invite/presence_confirmation.html",{'request':request,"guest":guest,"event":event,'message':get_message,"copyright":year})
-    if event_img:
-        event_img_path = f"static/Pictures/{event_id}/{event_img}"
-    return templates.TemplateResponse("Invitation/show_invite/presence_confirmation.html",{'request':request,"guest":guest,"event":event,'message':get_message,'is_img_exist':images,'event_img':event_img_path,"copyright":year})
+    return templates.TemplateResponse("Invitation/show_invite/presence_confirmation.html",{'request':request,"guest":guest,"event":event,'message':get_message,'event_img':event_img,"copyright":year})
 
 @Root.post("/presence/confirmation/{guest_id}/{event_id}")
 async def GuestResponse(request:Request,guest_id:str ,event_id : str, response : str =Form(...),
@@ -117,21 +94,8 @@ async def GuestResponse(request:Request,guest_id:str ,event_id : str, response :
     event_img_path = None
     if not guest : #if the guest exist
         raise HTTPException(404,"l'invité introuvable")
-    picture_dirs = Path(f"static/Pictures/{event_id}/") 
-    event_img = None
-    if os.path.exists(picture_dirs):
-        images = os.listdir(picture_dirs)
-    else:
-        images = []
-    if not picture_dirs:
+    if not event:
         return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
-    if  images:
-        for img in images :
-            event_img = img
-            break
-    
-    if event_img:
-        event_img_path = f"static/Pictures/{event_id}/{event_img}"
     if today >  get_event_deadline(event_date):
        message = "la date limite pour la confirmation est dépassée"
        return templates.TemplateResponse("Invitation/show_invite/presence_confirmation.html",{'request':request,'guest':guest,"event":event,'is_img_exist':images,'event_img':event_img_path,'message':message,'deadline':deadline.isoformat()})

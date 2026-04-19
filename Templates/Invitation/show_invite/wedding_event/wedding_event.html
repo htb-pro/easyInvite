@@ -137,7 +137,7 @@
     </style>
 </head>
 <body>
-    <section class="hero-fullscreen" style="background-image: url('/{{ event_img }}');background-repeat : no-repeat;background-size:cover;background-position:center;">
+    <section class="hero-fullscreen" style="background-image: url('{%if event_img %}{{ event_img }}{%else%}https://res.cloudinary.com/dggxtgzrm/image/upload/v1776580321/easyInvite_default_picture_i0ksts.jpg{%endif%}');background-repeat : no-repeat;background-size:cover;background-position:center;">
         <div class="hero-content container text-center" data-aos="zoom-out" data-aos-duration="2000" style="position:absolute;bottom:50px;width:100%;background:rgba(0,0,0,0.3);">
             <div class="text-overlay">
                 <div class="motion-text scene-1">
@@ -172,10 +172,8 @@
     <section class="story-section text-center container">
         <div class="row justify-content-center" data-aos="fade-up">
             <div class="col-md-5">
-                {%if is_img_exist %}
-                    <img src="/{%if event_img %}{{event_img}}{%endif%}" class="img-fluid mb-5 shadow-lg rounded-circle"  style="width: 220px;height: 220px;object-fit:cover;border:8px solid white" alt="not found">
-                {%endif%}                
-                 <h1 class="display-5" style="font-family: 'Playfair Display', serif;font-size: 1.5rem;"> Bonjour et bienvenue<br> très cher(e) {%if guest.guest_type == "Couple"%}couple{%endif%} {{ guest.name }}</H1>
+                <img src="{%if event_img %}{{event_img}}{%else%}https://res.cloudinary.com/dggxtgzrm/image/upload/v1776580321/easyInvite_default_picture_i0ksts.jpg{%endif%}" class="img-fluid mb-5 shadow-lg rounded-circle"  style="width: 220px;height: 220px;object-fit:cover;border:8px solid white" alt="not found">
+                <h1 class="display-5" style="font-family: 'Playfair Display', serif;font-size: 1.5rem;"> Bonjour et bienvenue<br> très cher(e) {%if guest.guest_type == "Couple"%}couple{%endif%} {{ guest.name }}</H1>
                 <p class="text-muted" style="font-family: 'Playfair Display', serif; padding: 2px;">C'est avec une immense joie que nous vous invitons à célébrer notre événement spécial de {{guest.event.type}}.</p>
             </div>
         </div>

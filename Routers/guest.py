@@ -3,7 +3,7 @@ from fastapi import Request,Form,Depends,HTTPException,APIRouter,Query,Cookie,Re
 from fastapi.responses import HTMLResponse,RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select,and_,func
+from sqlalchemy import select,and_,func,desc
 from uuid import uuid4
 from db_setting import engine,connecting
 from sqlalchemy.orm import Session,selectinload
@@ -20,7 +20,6 @@ from app.security.permissions import permission_required
 from urllib.parse import quote
 from jose import jwt 
 from config import secret,algo
-from urllib.parse import quote
 
 Root = APIRouter(tags = ["easyInvite"],dependencies =[Depends(get_current_user_from_cookie)])
 templates = Jinja2Templates(directory="Templates")#ou sont stocker les templates
@@ -38,7 +37,7 @@ async def get_guest_list(request:Request,event_id:str,access_token = Cookie(None
     get_event_guest = select(Event).options(selectinload(Event.guests)).where(Event.id == event_id)#prendre l'evenement qui a des invites
     result = await db.execute(get_event_guest)
     event = result.scalars().first()
-    guest_res = await db.execute(select(Guest).where(Guest.event_id==event_id).options(selectinload(Guest.invite)))
+    guest_res = await db.execute(select(Guest).where(Guest.event_id==event_id).options(selectinload(Guest.invite)).order_by(desc(Guest.created_date)))#prendre les invites de l'evenement
     guests = guest_res.scalars().all()
     get_invite = await db.execute(select(Invite))
     invite = get_invite.scalars().all()
