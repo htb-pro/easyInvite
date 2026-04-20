@@ -43,12 +43,16 @@ async def getGuestInvite(request:Request,event_id:str ,guest_id : str ,db:AsyncS
     if not event_id:
         return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
     if not event_img and event.type == "Mariage":#s'il n'ya pas d'image et que c'est un mariage on affiche le template sans image
+        if event.language == "en":
+            return templates.TemplateResponse("Invitation/show_invite/wedding_event/en_wedding_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright})
         return templates.TemplateResponse("Invitation/show_invite/wedding_event/wedding_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright})
     try:
         event= guestInvite.event.type
     except:
         return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
     if event_type == "Mariage": #si c'est un mariage et qu'il y a une image on affiche le template avec l'image
+        if event.language == "en":
+            return templates.TemplateResponse("Invitation/show_invite/wedding_event/en_wedding_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright,"event_img":event_img})
         return templates.TemplateResponse("Invitation/show_invite/wedding_event/wedding_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright,"event_img":event_img})
     # elif event_type == "Concours":
     #     return templates.TemplateResponse("Invitation/show_invite/concours_event/concours_invite.html",{'request':request,'guest':guestInvite,'event':event,'copyright':copyright,'serie_number':serie_number,'ticket_number':ticket_number})
@@ -70,12 +74,15 @@ async def confirm_presence(request:Request,guest_id : str,event_id:str,db:AsyncS
         raise HTTPException(404,"guest not found")
     if not event:
         return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
-    copyright = datetime.now()
     event_img = event.photo_url if event.photo_url else None
     if not event_id:
         return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
     if not event_img and event.type == "Mariage":
+        if event.language == "en":
+            return templates.TemplateResponse("Invitation/show_invite/en_presence_confirmation.html",{'request':request,"guest":guest,"event":event,'message':get_message,"copyright":year})
         return templates.TemplateResponse("Invitation/show_invite/presence_confirmation.html",{'request':request,"guest":guest,"event":event,'message':get_message,"copyright":year})
+    if event.language == "en":
+        return templates.TemplateResponse("Invitation/show_invite/en_presence_confirmation.html",{'request':request,"guest":guest,"event":event,'message':get_message,"copyright":year})
     return templates.TemplateResponse("Invitation/show_invite/presence_confirmation.html",{'request':request,"guest":guest,"event":event,'message':get_message,'event_img':event_img,"copyright":year})
 
 @Root.post("/presence/confirmation/{guest_id}/{event_id}")
@@ -108,7 +115,10 @@ async def GuestResponse(request:Request,guest_id:str ,event_id : str, response :
         exist_response.invite_id = guest.invite.id
         exist_response.response = response
         exist_response.send_at = datetime.utcnow()
-        message =  "✅ Votre réponse a été mise à jour."
+        if event.language == "en":
+            message = "✅ Your response has been updated."
+        else:
+            message =  "✅ Votre réponse a été mise à jour."
         await db.commit()
     else: 
         #create a new one
@@ -120,7 +130,10 @@ async def GuestResponse(request:Request,guest_id:str ,event_id : str, response :
         db.add(presence)
         await db.commit()
         await db.refresh(presence)
-        message = "🎉 Votre présence a été enregistrée."
+        if event.language == "en":
+            message = "🎉 Your presence has been registered."
+        else:
+            message = "🎉 Votre présence a été enregistrée."
     request.session['message'] =message # prendre le message est l'envoyer vers get 
     return RedirectResponse(f'/presence/confirmation/{guest_id}/{event_id}',status_code = 303)
 

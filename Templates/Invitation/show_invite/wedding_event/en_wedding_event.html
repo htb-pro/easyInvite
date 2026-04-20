@@ -1,0 +1,108 @@
+{% extends "invitation/show_invite/wedding_event/wedding_event.html"%}
+{% block content %}
+<div class="text-overlay">
+                <div class="motion-text scene-1">
+                    <p class="date">GET READY </br>
+                    <span class="font-romance" style="font-size: 1.8rem;font-weight: bold;">{{guest.event.couple_name}}</span>
+                    <p class="text-uppercase tracking-widest">will unite for life</p>
+                </div>
+                <div class="motion-text scene-2">
+                    <h2 class="font-serif italic mb-4">{{guest.event.date.date()}}</br> at {{guest.event.date.time()}}</h2>
+                </div>
+                <div class="motion-text scene-3">
+                    <span class="font-romance" style="font-size: 1.5rem; ">Your presence</span>
+                    <p>is our most beautiful gift.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="container text-center">
+        <div class="row justify-content-center">
+            <div class="col-md-8 countdown-container" data-aos="fade-up">
+                <div class="row">
+                    <div class="col-3"><span class="count-unit" id="days">00</span><span class="count-label">Days</span></div>
+                    <div class="col-3 border-start"><span class="count-unit" id="hours">00</span><span class="count-label">Hours</span></div>
+                    <div class="col-3 border-start"><span class="count-unit" id="minutes">00</span><span class="count-label">Min</span></div>
+                    <div class="col-3 border-start"><span class="count-unit" id="seconds">00</span><span class="count-label">Sec</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="story-section text-center container">
+        <div class="row justify-content-center" data-aos="fade-up">
+            <div class="col-md-5">
+                <img src="{%if event_img %}{{event_img}}{%else%}https://res.cloudinary.com/dggxtgzrm/image/upload/v1776580321/easyInvite_default_picture_i0ksts.jpg{%endif%}" class="img-fluid mb-5 shadow-lg rounded-circle"  style="width: 220px;height: 220px;object-fit:cover;border:8px solid white" alt="not found">
+                <h1 class="display-5" style="font-family: 'Playfair Display', serif;font-size: 1.5rem;"> Hello dearest {%if guest.guest_type == "Couple"%}couple{%endif%} {{ guest.name }}</H1>
+                <p class="text-muted" style="font-family: 'Playfair Display', serif; padding: 2px;">We are delighted to invite you to celebrate our special {{guest.event.type}} event.Please find the event details below and confirm your attendance.<br>Notice : Please show your invite or QR code at the entrance.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="pb-5 container">
+        <div class="row g-4 justify-content-center">
+            <div class="col-md-5" data-aos="fade-right">
+                <div class="detail-box text-center">
+                    <div class="icon-circle">💒</div>
+                    <h4 class="font-serif fw-bold">Wedding Blessing</h4>
+                    <p class="text-terracotta fw-bold">11h00 Precise</p>
+                    <p class="font-serif"><strong>Joel Generation Ministry</strong><br></p>
+                </div>
+            </div>
+            <div class="col-md-5" data-aos="fade-left">
+                <div class="detail-box text-center">
+                    <div class="icon-circle">🥂</div>
+                    <h4 class="font-serif fw-bold">Reception and dancing</h4>
+                    <p class="text-terracotta fw-bold">{{guest.event.date.time().strftime("%H:%M")}}</p>
+                    <p class="font-serif">in the  <strong>{{guest.event.location}} venue</strong><br>located at the following address: <strong>{{guest.event.address}}</strong></p>
+                </div>
+            </div>
+            {%if guest.event.guest_present%}
+            <div class="col-md-5" data-aos="fade-right">
+                <div class="detail-box text-center">
+                    <div class="icon-circle">🎁</div>
+                    <h4 class="font-serif fw-bold">Gift</h4>
+                    <p class="font-serif">Your presence by our side is the most beautiful gift.
+                            If you wish to show your affection with a present, a cash contribution will be warmly appreciated."</p>
+                </div>
+            </div>
+            {%endif%}
+        </div>
+    </section>
+
+    <div class="container mt-5" data-aos="fade-left">
+    <div class="card shadow text-center p-4">
+
+        <h4 class="mb-3">🎟️ Your invite QR</h4>
+
+        <p class="text-muted">
+            Present this QR Code at the entrance of the event to confirm your presence and access the venue.
+        </p>
+
+        <!-- QR CODE -->
+        <div class="my-4">
+            <img src="/qr/{{ guest.event_id }}/{{guest.id}}" 
+                 alt="QR Code Invitation"
+                 class="img-fluid"
+                 style="max-width:150px;">
+        </div>
+
+        <!-- BOUTONS -->
+        <div class="d-flex justify-content-center gap-3">
+            <a href="/download/invite/{{guest.event_id}}/{{guest.id}}" 
+               class="btn text-muted">
+                ⬇ Download QR Code
+            </a>
+        </div>
+        <div class="confirm_presence my-3 d-flex justify-content-center">
+            <a href="/presence/confirmation/{{guest.id}}/{{guest.event_id}}" class="btn btn text-muted"onclick="document.getElementById('rsvp-area').scrollIntoView({behavior: 'smooth'})">Confirm your presence</a>
+        </div>
+    </div>
+</div>
+    <footer class="text-center py-3" data-aos="fade-up">
+        <p><i class="bi bi-telephone-fill"></i> +243 897 401 210 ou +243 991 152 067</p>
+        <p><i class="bi bi-telephone-fill"></i> +243 898 147 644 ou +243 970 784 320</p>
+        <p>&copy; easyInvite {{copyright.strftime('%Y')}}</p>
+    </footer>
+{% endblock %}

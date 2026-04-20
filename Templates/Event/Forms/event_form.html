@@ -43,8 +43,9 @@
 
     <!-- Header -->
     <div class="mb-4 text-center text-light">
-        <h4 class="fw-bold">📩 Créer un evenement</h4>
+        <h4 class="fw-bold">📩 Créer un evenement (Create event)</h4>
         <p class="text-light">Remplissez les informations ci-dessous pour la création d'un événement</p>
+        <p class="text-light">Fil below fields to create an event</p>
     </div>
 
     <!-- Formulaire -->
@@ -68,41 +69,48 @@
                 </div>
             {% endif%}
 <div class="mb-3">
-                <label for="lieu" class="form-label fw-semibold">Type d'evenement</label>
+                <label for="lieu" class="form-label fw-semibold">Type d'evenement (Event type)</label>
                 <select name="eventType" id="event_type" class="form-select">
                         <option selected >--choisir le type d'evenement--</option>
-                        <option value="Mariage" {%if eventType == "Mariage"%}selected{%endif%}>Mariage</option>
-                        <option value="Concours" {%if eventType == "Concours"%}selected{%endif%}>Concours</option>
-                        <option value="Anniversaire" {%if eventType == "Anniversaire"%}selected{%endif%}>Anniversaire</option>
+                        <option value="Mariage" {%if eventType == "Mariage"%}selected{%endif%}>Mariage (wedding)</option>
+                        <option value="Concours" {%if eventType == "Concours"%}selected{%endif%}>Concours </option>
+                        <option value="Anniversaire" {%if eventType == "Anniversaire"%}selected{%endif%}>Anniversaire (birth day)</option>
                         <option value="Conference" {%if eventType == "Conference"%}selected{%endif%}>Conference</option>
-                        <option value="Reunion" {%if eventType == "Reunion"%}selected{%endif%}>Reunion</option>
-                        <option value="Autres" {%if eventType == "Autres"%}selected{%endif%}>Autres</option>
+                        <option value="Reunion" {%if eventType == "Reunion"%}selected{%endif%}>Reunion (meeting)</option>
+                        <option value="Autres" {%if eventType == "Autres"%}selected{%endif%}>Autres (other)</option>
                 </select>
             </div>
-
+            <div class="mb-3 language_div">
+                <label for="language" class="form-label ">Language</label>
+                <select class="form-select" id="language" name="language" required>
+                    <option value="">shoisir la langue (chose language)</option>
+                    <option value="fr">French-francais</option>
+                    <option value="en">English-anglais</option>
+                </select>
+            </div>
             <!-- Titre de l'événement -->
             <div class="mb-3">
-                <label for="titre" class="form-label fw-semibold">Nom de l'événement</label>
+                <label for="titre" class="form-label fw-semibold">Nom de l'événement (Event name)</label>
                 <input type="text" class="form-control" id="titre" name="eventName" value="{{eventName}}" placeholder="Ex : Gala 2026" required>
             </div>
             <!-- nom du couple -->
             <div class="mb-3 couple_name">
-                <label for="titre" class="form-label fw-semibold">Nom du couple</label>
+                <label for="titre" class="form-label fw-semibold">Nom du couple (Couple's name)</label>
                 <input type="text" class="form-control" id="titre" name="couple_name" value="{{couple}}" placeholder="Ex : x et y" required>
             </div>
             <div class="mb-3 couple_number">
-                <label for="titre" class="form-label fw-semibold">Numéro de téléphone du couple</label>
+                <label for="titre" class="form-label fw-semibold">Numéro de téléphone du couple (Couple's phone number)</label>
                 <input type="text" class="form-control" id="titre" name="couple_phone_number"  placeholder="Ex : 24399xxxxxxx" required>
             </div>
             <!-- Date de l'événement -->
             <div class="mb-3">
-                <label for="datetime-local" class="form-label fw-semibold">Date de l'événement</label>
+                <label for="datetime-local" class="form-label fw-semibold">Date de l'événement (Event's date)</label>
                 <input type="datetime-local" class="form-control" id="date" name="eventDate" value="{{eventDate}}" required>
             </div>
 
             <!-- Lieu de l'événement -->
             <div class="mb-3">
-                <label for="Addresse" class="form-label fw-semibold">Addresse</label>
+                <label for="Addresse" class="form-label fw-semibold">Addresse (Address)</label>
                 <input type="text" class="form-control" id="lieu" name="eventAddress" placeholder=" Ex : av : xxx commune : xxx ville : xxx" value="{{eventAddress}}" required>
             </div>
             <!-- Titre de l'événement -->
@@ -113,6 +121,7 @@
              <!-- photo du couple -->
              <div class="mb-3 event_img">
                 <label class="form-label">Choisir une image du couple</label>
+                <label class="form-label">(chose the picture of couple)</label>
                 <input 
                     class="form-control "
                     type="file"
@@ -122,7 +131,7 @@
              <div class="mb-3 form-check">
                 <input type="checkbox" class="form-check-input" id="is_active" name="is_active">
                 <label class="form-check-label" for="is_active">
-                    cadeau en espèce
+                    cadeau en espèce (cash gift)
                 </label>
             </div>
             <!-- Description / Informations supplémentaires -->
@@ -133,7 +142,7 @@
             {%endblock%}
             <!-- Boutons -->
             <div class="d-grid gap-2">
-                <button type="submit" class="btn btn-primary rounded-pill">💾 Enregistrer l'évènement</button>
+                <button type="submit" class="btn btn-primary rounded-pill">💾 Enregistrer (submit)</button>
                 <a href="{{url_for('event_list')}}" class="btn btn-outline-secondary rounded-pill">↩️ Retour à la liste</a>
             </div>
 

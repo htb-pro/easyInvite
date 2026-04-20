@@ -107,6 +107,7 @@ couple_name :str = Form(...),
 couple_phone_number :str = Form(...),
 access_token =Cookie(None),
 is_active : bool = Form(None),#le cadeau
+language :str = Form(...),#la langue
 Db:AsyncSession = Depends(connecting)):
     res = jwt.decode(access_token,secret,algorithms=[algo])
     user_id = res.get("user")
@@ -154,7 +155,8 @@ Db:AsyncSession = Depends(connecting)):
     guest_present = is_active if is_active else None,
     group_id = group_id,
     photo_url = photo_url if photo_url else None,
-    photo_public_id=photo_public_id if photo_public_id else None
+    photo_public_id=photo_public_id if photo_public_id else None,
+    language=language
         )
     Db.add(newEvent)
     await Db.commit()
@@ -173,7 +175,7 @@ async def editEvent(request:Request,event_id : str,user=Depends(permission_requi
 @Root.post("/edit_event/{event_id}")#la root pour modifier un evenement
 async def editEvent(request:Request,event_id : str,access_token = Cookie(None),eventName:str = Form(...),coupleName:str = Form(...),couple_phone_number:str = Form(...),eventType:str = Form(...),eventDate: str = Form(...),
                     eventAddress:str = Form(...),location:str = Form(...),eventDescription: Optional[str] = Form(None),
-                    eventState: str = Form(...),photo:UploadFile = File(None),is_active:bool = Form(None),db:AsyncSession = Depends(connecting)
+                    eventState: str = Form(...),photo:UploadFile = File(None),is_active:bool = Form(None),language:str = Form(...),db:AsyncSession = Depends(connecting)
                     ,user=Depends(permission_required("edit_event"))):
     edited_Event_Data = select(Event).where(Event.id == event_id)
     res = await db.execute(edited_Event_Data)
@@ -230,6 +232,7 @@ async def editEvent(request:Request,event_id : str,access_token = Cookie(None),e
     editedEventData.created_by = user_id
     editedEventData.photo_public_id = photo_public_id
     editedEventData.photo_url = photo_url
+    editedEventData.language = language
     if user_role != "admin":
         edited_Event_Data.groups = [groups]
     edited_Event_Data.groups = []

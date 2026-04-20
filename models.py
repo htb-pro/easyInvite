@@ -97,6 +97,7 @@ class Event(Base): #event table
     programme = Column(Text,nullable=True)
     photo_url=Column(String(255),nullable=True)
     photo_public_id=Column(String(255),nullable=True)
+    language = Column(String(50),default="fr")#langue par defaut de l'evenement
 
     guests = relationship("Guest",back_populates="event",cascade="all,delete")
     groups = relationship("Group",back_populates ="events")

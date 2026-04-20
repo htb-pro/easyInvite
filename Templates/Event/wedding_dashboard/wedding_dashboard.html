@@ -33,13 +33,18 @@
 
     <!-- Header -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h3 class="fw-bold">Dashboard {{event.type}}</h3>
+        <h3 class="fw-bold">{%if event.language == "en"%}Dashboard {{event.type}}{%else%}Tableau de bord {%endif%}</h3>
         <button class="btn btn-primary">EasyInvite</button>
     </div>
 
     <!-- Stats Cards -->
     <div class="row g-4">
-        <p>Ce tableau de bord donne un état sur les invité de l'evenement <b>{{event.name}}</b> ça veut dire il determine combien seront là ou non à l'événement </p>
+        {%if event.language == "en"%}
+        <p>This dashboard provides an overview of the guests for the event <b>{{event.name}}</b>. It indicates how many will be present or absent at the event.</p>
+        {%else%}
+         <p>Ce tableau de bord donne un état sur les invité de l'evenement <b>{{event.name}}</b> ça veut dire il determine combien seront là ou non à l'événement </p>
+        {%endif%}
+        
         <div class="col-md-3">
             <div class="card shadow-sm p-3 stat-card">
                 <h6>Total invités</h6>
@@ -53,11 +58,11 @@
 
         <div class="col-md-3">
             <div class="card shadow-sm p-3 stat-card">
-                <h6>Présents</h6>
+                <h6>{%if event.language == "en"%}Present{%else%}Présents{%endif%}</h6>
                 <h3 class="fw-bold text-success"><i class="bi bi-check-circle text-success fs-2"></i> {{present_guest}}</h3>
-                <p> seront là</p>
+                <p> {%if event.language == "en"%}will be present{%else%}seront là{%endif%}</p>
                 <div class="detail">
-                    <a href="/present_guest/{{event.id}}" class="btn btn-success">Voir en detail</a>
+                    <a href="/present_guest/{{event.id}}" class="btn btn-success">{%if event.language == "en"%}View Details{%else%}Voir en detail{%endif%}</a>
                 </div>
             </div>
         </div>
@@ -66,9 +71,9 @@
             <div class="card shadow-sm p-3 stat-card">
                 <h6>Absents</h6>
                 <h3 class="fw-bold text-danger"> <i class="bi bi-x-circle text-danger fs-2"></i> {{absent_guest}} </h3>
-                <p>ne seront pas là</p>
+                <p> {%if event.language == "en"%}will not be present{%else%}ne seront pas là{%endif%}</p>
                 <div class="detail">
-                    <a href="/absent_guest/{{event.id}}" class="btn btn-danger">Voir en detail</a>
+                    <a href="/absent_guest/{{event.id}}" class="btn btn-danger">{%if event.language == "en"%}View Details{%else%}Voir en detail{%endif%}</a>
                 </div>
             </div>
         </div>
@@ -76,9 +81,9 @@
             <div class="card shadow-sm p-3 stat-card">
                 <h6>Abstenus</h6>
                 <h3 class="fw-bold text-secondary"> <i class="bi bi-dash-circle text-secondary"></i> {{neuter_guest}} </h3>
-                <p>Ceux qui n'ont pas de precision</p>
+                <p> {%if event.language == "en"%}Those who have not specified{%else%}Ceux qui n'ont pas de precision{%endif%}</p>
                 <div class="detail">
-                    <a href="/neuter_guest/{{event.id}}" class="btn btn-secondary">Voir en detail</a>
+                    <a href="/neuter_guest/{{event.id}}" class="btn btn-secondary">{%if event.language == "en"%}View Details{%else%}Voir en detail{%endif%}</a>
                 </div>
             </div>
         </div>
@@ -87,9 +92,9 @@
             <div class="card shadow-sm p-3 stat-card">
                 <h6>En attente</h6>
                 <h3 class="fw-bold text-warning"><i class="bi bi-hourglass fs-2"></i> {{pending_guest}} </h3>
-                <p>n'ont pas encore confirmer</p>
+                <p> {%if event.language == "en"%}Those who have not confirmed yet{%else%}Ceux qui n'ont pas encore confirmer{%endif%}</p>
                 <div class="detail">
-                    <a href="/pending_guest/{{event.id}}" class="btn btn-dark">Voir en detail</a>
+                    <a href="/pending_guest/{{event.id}}" class="btn btn-dark">{%if event.language == "en"%}View Details{%else%}Voir en detail{%endif%}</a>
                 </div>
             </div>
         </div>
@@ -98,11 +103,11 @@
      <div class="row g-4">
         <div class="col-md-3">
             <div class="card shadow-sm p-3 stat-card">
-                <h6>Total des invités présent dans la salle</h6>
+                <h6>{%if event.language == "en"%}Total Guests Present in the Venue{%else%}Total des invités présent dans la salle{%endif%}</h6>
                 <h3 class="fw-bold">{{total_guest_present}}/{{total_guest}}</h3>
                 <i class="bi bi-people text-primary fs-2"></i>
                 <div class="detail">
-                    <a href="/guest_present/{{event.id}}" class="btn btn-primary">Voir en detail</a>
+                    <a href="/guest_present/{{event.id}}" class="btn btn-primary">{%if event.language == "en"%}View Details{%else%}Voir en detail{%endif%}</a>
                 </div>
             </div>
         </div>
