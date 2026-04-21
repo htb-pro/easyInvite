@@ -74,7 +74,7 @@
         <input type="hidden" name="guest_id" value="{{guest.id}}">
         <!-- NAME -->
         <div class="mb-3">
-          <label class="form-label">Nom complet</label>
+          <label class="form-label">Nom complet (full name)</label>
           <input type="text" class="form-control" name="guestName" placeholder="ex : Jean Dupont " value="{{guest.name}}" required>
         </div>
 
@@ -83,8 +83,8 @@
           <label class="form-label">Type</label>
           <select class="form-select selectInput" name="guestType"  required>
             <option value="">-- {{guestType}} --</option>
-            <option value="Singleton" {%if guest.guest_type == 'Singleton' %}selected{%endif%} >Singleton</option>
-            <option value="Couple" {%if guest.guest_type == 'Couple' %}selected{%endif%}>Couple</option>
+            <option value="Singleton" {%if guest.guest_type == 'Singleton' %}selected{%endif%} >Singleton (single)</option>
+            <option value="Couple" {%if guest.guest_type == 'Couple' %}selected{%endif%}>Couple (couple)</option>
           </select>
         </div>
 
@@ -93,20 +93,20 @@
           <label class="form-label">Table</label>
           <input type="text" class="form-control" name="guestPlace" placeholder="ex : A1" value="{{guest.place}}" required>
         </div>
-
+        <!--
          <div class="mb-3">
           <label for="ticket_type" class="form-label">Type de billet</label>
         <select class="form-select" id="ticket_type" name="ticket_type" required>
             <option value="standard" {%if guest.invite.type == 'standard'%}selected{%endif%}>Standard</option>
             <option value="vip"{%if guest.invite.type == 'vip'%}selected{%endif%}>VIP</option>
           </select>
-        </div>
+        </div>-->
 
         <!--etat present ou absent-->
         <div class="mb-3">
-          <label class="form-label">Etat</label>
+          <label class="form-label">Etat </label>
           <select class="form-select selectInput" name="guestState"  required>
-            <option value="0" {%if not guest.is_present %}selected{%endif%}>Absent</option>
+            <option value="0" {%if not guest.is_present %}selected{%endif%}>Absent </option>
             <option value="1" {%if guest.is_present %}selected{%endif%}>Present</option>
           </select>
         </div>
@@ -115,12 +115,6 @@
         <div class="mb-3">
           <label class="form-label">Telephone *</label>
           <input type="number" class="form-control" maxlength="10" name="guestTel" placeholder="ex : 09900000000" value="{{guest.telephone}}" required>
-        </div>
-
-        <!-- mail -->
-        <div class="mb-3">
-          <label class="form-label">Adresse email </label>
-          <input type="email" class="form-control" name="guestEmail" placeholder="ex : user@example.com" value="{%if guest.email%}{{guest.email}}{%endif%}" >
         </div>
         
         <!-- SUBMIT -->

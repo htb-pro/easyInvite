@@ -87,7 +87,7 @@
         <!-- NAME -->
         <input type="hidden" value="{{event.type}}" class="event_type">
         <div class="mb-3">
-          <label class="form-label">Nom complet</label>
+          <label class="form-label">Nom complet (full name)</label>
           <input type="text" class="form-control" name="guestName" placeholder="ex : Jean Dupont " value="{{guestName}}" required>
         </div>
 
@@ -95,8 +95,8 @@
         <div class="mb-3 guest_type_div">
           <label class="form-label">Type</label>
           <select class="form-select selectInput" name="guestType"  required>
-            <option value="Singleton" {%if guestType == 'Singleton' %}selected{%endif%}>Singleton</option>
-            <option value="Couple" {% if guestType == 'Couple' %} selected {%endif%}>Couple</option>
+            <option value="Singleton" {%if guestType == 'Singleton' %}selected{%endif%}>Singleton (single)</option>
+            <option value="Couple" {% if guestType == 'Couple' %} selected {%endif%}>Couple (couple)</option>
           </select>
         </div>
 
@@ -116,16 +116,9 @@
 
         <!-- telephone -->
         <div class="mb-3">
-          <label class="form-label">Telephone *</label>
+          <label class="form-label">Telephone </label>
           <input type="number" class="form-control" maxlength="10" name="guestTel" placeholder="ex : 09900000000" value="{{guestTel}}" required>
         </div>
-
-        <!-- mail -->
-        <div class="mb-3">
-          <label class="form-label">Adresse email </label>
-          <input type="email" class="form-control" name="guestEmail" placeholder="ex : user@example.com" value="{{guestEmail}}" >
-        </div>
-        
         <!-- SUBMIT -->
         <div class="d-grid">
           <button type="submit" class="btn btn-send">

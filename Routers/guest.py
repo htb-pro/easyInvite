@@ -117,13 +117,13 @@ async def get_invited(request:Request,event_id:str,success:int | None = None,db:
 
 @Root.post('/create/{event_id}/guest')#get the guest register 
 async def newGuest(request:Request,event_id:str,guestName:str=Form(),guestType:str=Form(None),guestPlace:str = Form(None),
-                   guestTel:str=Form(),guestEmail:Optional[str]=Form(None),user=Depends(permission_required("create_guest")),db:AsyncSession = Depends(connecting)):
+                   guestTel:str=Form(),user=Depends(permission_required("create_guest")),db:AsyncSession = Depends(connecting)):
     select_event = (select(Event).where(Event.id==event_id).options(selectinload(Event.guests)))
     get_event = await db.execute(select_event)
     event = get_event.first()
     select_guest_tel =select(Guest).where(and_(Guest.telephone == guestTel,Guest.event_id == event_id))#verifier si le guest existe deja avec le meme numero ou email
     tel_res = await db.execute(select_guest_tel)
-    select_guest_mail =select(Guest).where(and_(Guest.email == guestEmail,Guest.event_id == event_id))#verifier si le guest existe deja avec le meme email
+    select_guest_mail =select(Guest).where(and_(Guest.event_id == event_id))#verifier si le guest existe deja avec le meme email
     email_res = await db.execute(select_guest_mail)
     is_guest_tel =tel_res.scalars().first()
     is_guest_email = email_res.scalars().first()
@@ -136,7 +136,6 @@ async def newGuest(request:Request,event_id:str,guestName:str=Form(),guestType:s
                      'guestType':guestType,
                      'guestPlace':guestPlace, 
                      'guestTel':guestTel,
-                     'guestEmail':guestEmail
                 }
     if not event :
         raise HTTPException(status_code=404,detail="Evenement introuvable")
@@ -144,17 +143,16 @@ async def newGuest(request:Request,event_id:str,guestName:str=Form(),guestType:s
                 error_message = 'un invité existe deja avec ce numero telephonique'
                 set_data(error_message)
                 return RedirectResponse(f'/create/{event_id}/guest',status_code=303)#renvoi erreur
-    if is_guest_email : 
-                error_message = 'un invité existe deja avec cet email'
-                set_data(error_message)
-                return RedirectResponse(f'/create/{event_id}/guest',status_code=303)#renvoi erreur
+    # if is_guest_email : 
+    #             error_message = 'un invité existe deja avec cet email'
+    #             set_data(error_message)
+    #             return RedirectResponse(f'/create/{event_id}/guest',status_code=303)#renvoi erreur
     
     guest = Guest(
         name = guestName,
         guest_type = guestType,
         place = guestPlace,
         telephone = guestTel,
-        email = guestEmail,
         event_id = event_id,
         qr_token = str(uuid4()),
         get_pass = guest_get_pass,
@@ -184,8 +182,8 @@ async def editGuest(request:Request,event_id:str,guest_id: str,user=Depends(perm
     return templates.TemplateResponse("Guest/Forms/edit_form.html",{'request':request,"guest":guest,'event':event},status_code=303)
 
 @Root.post("/edit_guest_form/{Event_id}")#edit guest form
-async def editGuestPost(request:Request,Event_id:str,guest_id:str = Form(...),guestName:str=Form(),guestType:str=Form(None),guestPlace : str = Form(None),
-                        guestState : int = Form(...),guestTel:str=Form(),guestEmail:Optional[str]=Form(None),
+async def editGuestPost(request:Request,Event_id:str,guest_id:str = Form(...),guestName:str=Form(...),guestType:str=Form(...),guestPlace : str = Form(...),
+                        guestState : int = Form(...),guestTel:str=Form(),
                         user=Depends(permission_required("edit_guest")),db:AsyncSession = Depends(connecting)):
     get_new_guest = select(Guest).where(Guest.id ==guest_id,Guest.event_id == Event_id).options(selectinload(Guest.invite)) #prepare le guest
     result = await db.execute(get_new_guest) #select le guest concerné
@@ -197,7 +195,6 @@ async def editGuestPost(request:Request,Event_id:str,guest_id:str = Form(...),gu
     new_guest.place = guestPlace
     new_guest.is_present = bool(guestState)
     new_guest.telephone = guestTel
-    new_guest.email = guestEmail
     try:
         await db.commit()
     except IntegrityError:

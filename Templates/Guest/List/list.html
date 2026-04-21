@@ -116,7 +116,7 @@
                         {%endif%}
                         <th>Statut</th>
                         <th>Téléphone</th>
-                        <th>Email</th>
+                        <!-- <th>Email</th> -->
                         <th>Creation</th>
                         <th>Actions</th>
                     </tr>
@@ -134,7 +134,7 @@
                         {%endif%}
                         <td> {% if guest.is_present %}Présent{%else%}Absent {%endif%}</td>
                         <td>{{guest.telephone}}</td>
-                        <td>{{guest.email}}</td>
+                        <!--<td>{{guest.email}}</td>-->
                         <td>  {{guest.created_date.strftime('%d-%m-%y')}} {{guest.created_date.strftime('%H:%M')}}</td>
                         <td class="d-flex justify-content-start  align-items-center">
                             {%if current_user_role == "admin" or current_user_role == "manager" %}                       
@@ -173,7 +173,7 @@
                             <small style="font-size:18px;">{{guest.type}}</small>
                             {%endif%}
                             <small style="font-size:18px;">{{guest.telephone}}</small></br>
-                            <small style="font-size:18px;">{{guest.email}}</small><br>
+                            <!--<small style="font-size:18px;">{{guest.email}}</small><br>-->
                             <small style="font-size:18px;">{{guest.created_date.strftime('%d-%m-%Y %H:%M' )}}</small>
                         </div>
                     </div>
