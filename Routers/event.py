@@ -3,8 +3,9 @@ from fastapi import Request,Form,Depends,HTTPException,APIRouter,UploadFile,File
 from fastapi.responses import RedirectResponse,StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
+from fastapi.concurrency import run_in_threadpool
 from uuid import uuid4
-import os,shutil,cloudinary,cloudinary.uploader
+import os,cloudinary,cloudinary.uploader
 from db_setting import engine,connecting
 from sqlalchemy.orm import selectinload
 from sqlalchemy import func,desc,select,asc
@@ -18,6 +19,7 @@ from io import BytesIO
 from Routers.loging import get_current_user_from_cookie
 from app.security.permissions import permission_required,has_permission
 from config import secret,algo
+from urllib.parse import quote
 
 Root = APIRouter(tags = ["easyInvite"],dependencies =[Depends(get_current_user_from_cookie)])
 templates = Jinja2Templates(directory="Templates")#ou sont stocker les templates
@@ -116,19 +118,13 @@ Db:AsyncSession = Depends(connecting)):
     group_id = None
     user_role = None #le role de l'utilisateur sera none par defaut pour eviter les erreurs
     is_event_photo =  False
-    photo_url = None
-    photo_public_id = None
+    photo_url,photo_public_id = None,None
     if user.groups:
         group_id = user.groups[0].id if user.groups else None
         user_role = user.roles[0].name if user.roles else None
-    try:
-        if eventDate < datetime.now():
-             return templates.TemplateResponse("Event/Forms/event_form.html",{'request':request,"dateError":' Entrez une date superieur a la date actuelle !!!',
-            'eventName':eventName, 'eventType':eventType, 'eventDate':eventDate, 'eventAddress':eventAddress, 'eventDescription':eventDescription}, status_code=400)
-    except (TypeError,ValueError):
-        return templates.TemplateResponse("Event/Forms/event_form.html",{'request':request,"error":' Entrer une date correcte !!!',
-        'eventName':eventName, 'eventType':eventType, 'eventDate':eventDate, 'eventAddress':eventAddress, 'eventDescription':eventDescription
-        },status_code=400)
+    if eventDate < datetime.now():
+        return templates.TemplateResponse("Event/Forms/event_form.html",{'request':request,"dateError":' Entrez une date superieur a la date actuelle ou entrer une date correcte  !!!',
+            'eventName':eventName, 'eventType':eventType,'couple_name':couple_name,'location':location,'is_active':is_active,'couple_phone_number':couple_phone_number, 'eventDate':eventDate, 'eventAddress':eventAddress, 'eventDescription':eventDescription}, status_code=400)
     if photo and photo.filename:
         if not photo.content_type or not photo.content_type.startswith("image/"):
             return templates.TemplateResponse("Event/Forms/event_form.html",{'request':request,"img_error":' le fichier doit etre une image !!!',
@@ -136,31 +132,34 @@ Db:AsyncSession = Depends(connecting)):
             },status_code=400)
     try:
         if photo and photo.filename:
-            file_content = await photo.read()
-            upload_result = cloudinary.uploader.upload(file_content,folder = "EasyInvite/wedding_events",transformation = [{'width':1000,'height':1000,'crop':'limit'},{'quality':"auto"}])
+            upload_result = await run_in_threadpool(cloudinary.uploader.upload,photo.file,folder = "EasyInvite/wedding_events",transformation = [{'width':1000,'height':1000,'crop':'limit'},{'quality':"auto"}])
             photo_url = upload_result['secure_url']
             photo_public_id = upload_result['public_id']
     except Exception as e:
         raise HTTPException(status_code=500,detail=f"Erreur lors du téléchargement de l'image: {str(e)}")
-    newEvent = Event(
-    name = eventName,
-    type = eventType,
-    date = eventDate,
-    address = eventAddress,
-    description = eventDescription,
-    location = location,
-    couple_name = couple_name,
-    couple_phone_number = couple_phone_number,
-    created_by = user_id,
-    guest_present = is_active if is_active else None,
-    group_id = group_id,
-    photo_url = photo_url if photo_url else None,
-    photo_public_id=photo_public_id if photo_public_id else None,
-    language=language
-        )
-    Db.add(newEvent)
-    await Db.commit()
-    await Db.refresh(newEvent)
+    try:
+        newEvent = Event(
+        name = eventName,
+        type = eventType,
+        date = eventDate,
+        address = eventAddress,
+        description = eventDescription,
+        location = location,
+        couple_name = couple_name,
+        couple_phone_number = couple_phone_number,
+        created_by = user_id,
+        guest_present = is_active if is_active else None,
+        group_id = group_id,
+        photo_url = photo_url if photo_url else None,
+        photo_public_id=photo_public_id if photo_public_id else None,
+        language=language
+            )
+        Db.add(newEvent)
+        await Db.commit()
+        await Db.refresh(newEvent)
+    except Exception :
+        await Db.rollback()
+        raise HTTPException(status_code=500,detail="Erreur lors de la création de l'événement")
     request.session["success"] = "🎉 Événement créé avec succès !"
     return RedirectResponse("/event_list",status_code=303)
 
@@ -200,21 +199,18 @@ async def editEvent(request:Request,event_id : str,access_token = Cookie(None),e
     if not editedEventData:
         raise HTTPException(status_code=400,detail="Evenement intouvable")
     event_photo_public_id = editedEventData.photo_public_id
-    photo_url = None
-    photo_public_id = None
+    photo_url = editedEventData.photo_url
+    photo_public_id = editedEventData.photo_public_id
     if photo and photo.filename:#si la photo a ete envoye
         if not photo.content_type or not photo.content_type.startswith("image/"):#si ce n'est pas une image
             return templates.TemplateResponse("Event/Forms/edit_form.html",{'request':request,"img_error":' le fichier doit etre une image !!!','event':editedEventData},status_code=400)
         try:
             if event_photo_public_id:
-                cloudinary.uploader.destroy(event_photo_public_id)
-                print(f"Ancienne image avec public_id {event_photo_public_id} supprimée de Cloudinary.")
-                file_content = await photo.read()
-                upload_result =cloudinary.uploader.upload(file_content,folder = "EasyInvite/wedding_events",transformation = [{'width':1000,'height':1000,'crop':'limit'},{'quality':"auto"}])
+                await run_in_threadpool(cloudinary.uploader.destroy,event_photo_public_id)
+                upload_result =await run_in_threadpool(cloudinary.uploader.upload,photo.file,folder = "EasyInvite/wedding_events",transformation = [{'width':1000,'height':1000,'crop':'limit'},{'quality':"auto"}])
                 photo_url= upload_result['secure_url']
                 photo_public_id = upload_result['public_id']
-            file_content = await photo.read()
-            upload_result =cloudinary.uploader.upload(file_content,folder = "EasyInvite/wedding_events",transformation = [{'width':1000,'height':1000,'crop':'limit'},{'quality':"auto"}])
+            upload_result =await run_in_threadpool(cloudinary.uploader.upload,photo.file,folder = "EasyInvite/wedding_events",transformation = [{'width':1000,'height':1000,'crop':'limit'},{'quality':"auto"}])
             photo_url= upload_result['secure_url']
             photo_public_id = upload_result['public_id']
         except Exception as e:
@@ -230,13 +226,17 @@ async def editEvent(request:Request,event_id : str,access_token = Cookie(None),e
     editedEventData.state = eventState
     editedEventData.guest_present = is_active if is_active else None
     editedEventData.created_by = user_id
-    editedEventData.photo_public_id = photo_public_id
-    editedEventData.photo_url = photo_url
+    editedEventData.photo_public_id = photo_public_id 
+    editedEventData.photo_url = photo_url  
     editedEventData.language = language
     if user_role != "admin":
         edited_Event_Data.groups = [groups]
     edited_Event_Data.groups = []
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise HTTPException(status_code=500,detail="Erreur lors de la modification de l'événement")
     request.session["success"] = "🎉 Événement modifié avec succès !"
     return RedirectResponse("/event_list",status_code=303)
 
@@ -248,28 +248,39 @@ async def deleteEvent(request:Request,event_id:str,user=Depends(permission_requi
     if not eventToDelete:
         raise HTTPException(status_code=404,detail="cette evenement n'existe pas")
     Picture_to_be_deleted= eventToDelete.photo_public_id #recuprer l'addresse de l'image a supprimer
+    try:
+        await db.delete(eventToDelete)
+    except Exception:
+        await db.rollback()
+        raise HTTPException(status_code=500,detail="Erreur lors de la suppression de l'événement")
     if Picture_to_be_deleted:
         try:
-            cloudinary.uploader.destroy(Picture_to_be_deleted)
+            await run_in_threadpool(cloudinary.uploader.destroy,Picture_to_be_deleted)
         except Exception as e:
             raise HTTPException(status_code=500,detail=f"Erreur lors de la suppression de l'image: {str(e)}")
-    await db.delete(eventToDelete)
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise HTTPException(status_code=500,detail="Erreur lors de la suppression de l'événement")
     request.session["success"] = "🎉 Événement supprimé avec succès !"
     return RedirectResponse("/event_list",status_code=303)
 
 @Root.get("/download/list_guest/{event_id}/export_excel") #endpoint pour le telechargement du fichier des invités
-async def downloadGuestList(request:Request,event_id:str,db:AsyncSession = Depends(connecting)):
-    event_list_guests =(select(Guest).where(Guest.event_id == event_id).options(selectinload(Guest.event)))
-    res = await db.execute(event_list_guests)
+async def downloadGuestList(request:Request,event_id:str,db:AsyncSession = Depends(connecting),user=permission_required("view_guest")):
+    event_res = await db.execute(select(Event).where(Event.id == event_id))
+    event = event_res.scalars().first()
+    if not event:
+        raise HTTPException(404,"event not found")
+    list_guests =(select(Guest).where(Guest.event_id == event_id).options(selectinload(Guest.event)))
+    res = await db.execute(list_guests)
     event_guests = res.scalars().all()
-    event = event_guests[0].event if event_guests else None
-    wb = Workbook() #create a workbook
-    ws = wb.active #active it
-    ws.title = "liste_des_invites" #filename
     if not event_guests :
         guestNotFound = True
         return templates.TemplateResponse("Event/Home/mainEventView.html",{'request':request,'guestNotFound':guestNotFound,"event":'',"guests":event_guests})
+    wb = Workbook() #create a workbook
+    ws = wb.active #active it
+    ws.title = "liste_des_invites" #filename
         #head of tables
     ws.append([
         "Nom de l'invité",
@@ -286,27 +297,32 @@ async def downloadGuestList(request:Request,event_id:str,db:AsyncSession = Depen
         else:
             presence = "absent"
         ws.append([
-            guest.name,
-            guest.telephone,
-            guest.email,
-            guest.guest_type,
-            guest.get_pass,
-            guest.place,
+            guest.name or "",
+            guest.telephone or "",
+            guest.email or "",
+            guest.guest_type or "",
+            guest.get_pass or "",
+            guest.place or "",
             presence 
             ])
-    file_stream = BytesIO()
-    wb.save(file_stream)
-    file_stream.seek(0)
+    file_stream = BytesIO() #create a stream in the memory (ram)
+    await run_in_threadpool(wb.save,file_stream) #save the workbook in the memory (ram)
+    file_stream.seek(0) #move the cursor to the beginning of the stream
+    safe_filename = quote(f"liste_des_invites_{event.name}.xlsx") #encode the filename to be safe for the header
     return StreamingResponse(
         file_stream,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={
-         "Content-Disposition": f"attachment; filename=liste_des_invites_{event.name}.xlsx"
+         "Content-Disposition": f"attachment; filename*='UTF-8''{safe_filename}"
         }
     )
 
 @Root.get("/download/presence/{event_id}/export_excel")#endpoint pour le telechargement du fichier de confirmation des invités
-async def getPresenceList(request:Request,event_id:str,db:AsyncSession = Depends(connecting)):
+async def getPresenceList(request:Request,event_id:str,db:AsyncSession = Depends(connecting),user=Depends(permission_required("view_guest"))):
+    event_res = await db.execute(select(Event).where(Event.id == event_id))
+    event = event_res.scalars().first()
+    if not event:
+        raise HTTPException(404,"event not found")
     curent_event_guests =(select(Guest).where(Guest.event_id == event_id).options(selectinload(Guest.event),selectinload(Guest.invite).selectinload(Invite.guestResponse)))
     res = await db.execute(curent_event_guests)
     event_guests = res.scalars().all()
@@ -326,18 +342,19 @@ async def getPresenceList(request:Request,event_id:str,db:AsyncSession = Depends
         if gst.invite and gst.invite.guestResponse:
             response = gst.invite.guestResponse.response
         ws.append([
-            gst.name,
-            gst.telephone,
+            gst.name or "inconnu",
+            gst.telephone or "N/A",
              response
          ])
     memory = BytesIO()
-    wb.save(memory) #save the sheet in memory (ram)
+    await run_in_threadpool(wb.save,memory) #save the workbook in the memory (ram)
     memory.seek(0)
+    safe_filename = quote(f"liste_des_presence_pour_event_{event.name}.xlsx") #encode the filename to be safe for the header
     return StreamingResponse(
          memory,
          media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
          headers={
-            "Content-Disposition": f"attachment; filename=liste_des_presence_pour_event_{event.name}.xlsx"
+            "Content-Disposition": f"attachment; filename*='UTF-8''{safe_filename}"
          }
      )
 

@@ -96,11 +96,11 @@
             <!-- nom du couple -->
             <div class="mb-3 couple_name">
                 <label for="titre" class="form-label fw-semibold">Nom du couple (Couple's name)</label>
-                <input type="text" class="form-control" id="titre" name="couple_name" value="{{couple}}" placeholder="Ex : x et y" required>
+                <input type="text" class="form-control" id="titre" name="couple_name" value="{{couple_name}}" placeholder="Ex : x et y" required>
             </div>
             <div class="mb-3 couple_number">
                 <label for="titre" class="form-label fw-semibold">Numéro de téléphone du couple (Couple's phone number)</label>
-                <input type="text" class="form-control" id="titre" name="couple_phone_number"  placeholder="Ex : 24399xxxxxxx" required>
+                <input type="text" class="form-control" id="titre" name="couple_phone_number" value="{{couple_phone_number}}"  placeholder="Ex : 24399xxxxxxx" required>
             </div>
             <!-- Date de l'événement -->
             <div class="mb-3">
@@ -116,7 +116,7 @@
             <!-- Titre de l'événement -->
              <div class="mb-3">
                 <label for="location" class="form-label fw-semibold">Salle</label>
-                <input type="text" class="form-control" id="location" name="location" placeholder=" Ex : salle du royaume" value="{{eventLocation}}" required>
+                <input type="text" class="form-control" id="location" name="location" placeholder=" Ex : salle du royaume" value="{{location}}" required>
             </div>
              <!-- photo du couple -->
              <div class="mb-3 event_img">
@@ -129,7 +129,7 @@
                     accept="image/*">
             </div>
              <div class="mb-3 form-check">
-                <input type="checkbox" class="form-check-input" id="is_active" name="is_active">
+                <input type="checkbox" class="form-check-input" id="is_active" name="is_active" value="{%if is_active%}checked{%endif%}">
                 <label class="form-check-label" for="is_active">
                     cadeau en espèce (cash gift)
                 </label>

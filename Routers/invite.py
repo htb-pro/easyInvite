@@ -9,7 +9,7 @@ import models
 from db_setting import engine,connecting
 from models import *
 from sqlalchemy.orm import selectinload
-import os, io , base64
+import os, io , base64,locale,pathlib,urllib.parse
 import zipfile
 from utils.Qr_Utils.qrCodeUtils import createInviteQrCode
 from pathlib import Path
@@ -35,8 +35,17 @@ async def getGuestInvite(request:Request,event_id:str ,guest_id : str ,db:AsyncS
     event = guestInvite.event if guestInvite else None 
     invite = guestInvite.invite if guestInvite else None #l'invite
     event_img = event.type
+    locale.setlocale(locale.LC_TIME,"fra_fra")#pour afficher le mois en francais
+    locale.setlocale(locale.LC_TIME,"fr_FR.UTF-8")
+    try:
+        locale.setlocale(locale.LC_TIME,"fr-FR.-UTF-8")
+    except:
+        locale.setlocale(locale.LC_TIME,"french")
     if not event:
         return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
+    safe_location = urllib.parse.quote(event.address)# 2. On encode l'adresse pour l'URL (remplace les espaces par des %20, etc.)
+    # 3. On génère le lien Google Maps complet
+    google_maps_url = f"https://www.google.com/maps/dir/?api=1&origin=My+location&destination={safe_location}"
     copyright = datetime.now()
     event_img = event.photo_url
     event_type = event.type#type d'evenement
@@ -44,19 +53,28 @@ async def getGuestInvite(request:Request,event_id:str ,guest_id : str ,db:AsyncS
         return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
     if not event_img and event.type == "Mariage":#s'il n'ya pas d'image et que c'est un mariage on affiche le template sans image
         if event.language == "en":
-            return templates.TemplateResponse("Invitation/show_invite/wedding_event/en_wedding_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright})
-        return templates.TemplateResponse("Invitation/show_invite/wedding_event/wedding_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright})
+            try:
+                locale.setlocale(locale.LC_TIME,"en-US.UTF-8")
+            except:
+                locale.setlocale(locale.LC_TIME,"english")
+            return templates.TemplateResponse("Invitation/show_invite/wedding_event/en_wedding_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright,'google_map':google_maps_url})
+        return templates.TemplateResponse("Invitation/show_invite/wedding_event/wedding_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright,'google_map':google_maps_url})
     try:
-        event= guestInvite.event.type
+        does_event_exist= guestInvite.event.type
     except:
         return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
     if event_type == "Mariage": #si c'est un mariage et qu'il y a une image on affiche le template avec l'image
-        if event.language == "en":
-            return templates.TemplateResponse("Invitation/show_invite/wedding_event/en_wedding_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright,"event_img":event_img})
-        return templates.TemplateResponse("Invitation/show_invite/wedding_event/wedding_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright,"event_img":event_img})
+        if event.language == "en": #si la langue de l'evenement est anglais on affiche le template en anglais sinon en francais
+            try:
+                locale.setlocale(locale.LC_TIME,"en-US.UTF-8")
+            except:
+                locale.setlocale(locale.LC_TIME,"english")
+            return templates.TemplateResponse("Invitation/show_invite/wedding_event/en_wedding_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright,"event_img":event_img,'google_map':google_maps_url})
+        return templates.TemplateResponse("Invitation/show_invite/wedding_event/wedding_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright,"event_img":event_img,'google_map':google_maps_url})
     # elif event_type == "Concours":
     #     return templates.TemplateResponse("Invitation/show_invite/concours_event/concours_invite.html",{'request':request,'guest':guestInvite,'event':event,'copyright':copyright,'serie_number':serie_number,'ticket_number':ticket_number})
-    
+
+
 @Root.get('/get_invite',name="invitation",response_class=HTMLResponse)#get the invite url
 def getInvite(request:Request):
     return templates.TemplateResponse("Invitation/List/list.html",{'request':request})
