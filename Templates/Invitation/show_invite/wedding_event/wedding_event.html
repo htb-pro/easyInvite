@@ -166,7 +166,7 @@
                     <p class="text-uppercase tracking-widest" style="font-family: 'Playfair Display', serif; ">vont s'unir pour la vie</p>
                 </div>
                 <div class="motion-text scene-2">
-                    <h2 class="font-serif italic mb-4">{{guest.event.date.date()}}</br> à partir de {{guest.event.date.time()}}</h2>
+                    <h2 class="font-serif italic mb-4">{{guest.event.date.date().strftime("%d-%m-%Y")}}</br> à partir de {{guest.event.date.time().strftime("%H:%M")}}</h2>
                 </div>
                 <div class="motion-text scene-3">
                     <span class="font-romance" style="font-size: 1.5rem; ">Votre présence</span>
@@ -199,12 +199,12 @@
         </div>
         <div class="row g-0 justify-content-center mt-2">
             <div class="row align-items-center ">
-                <div class="col-4 border-end">
+                <div class="col-4 border-end border-1 border-secondary ">
                     <div class="date-day">{{event.date.strftime("%d")}}</strong></div>
-                    <div class="date-month" style="font-family: 'Playfair Display'">{{event.date.strftime("%B")}}</div>
+                    <div class="date-month" style="font-family: 'Playfair Display'">{{event_month}}</div>
                 </div>
                 <div class="col-8">
-                    <h2 class="date-title h3 mb-1" style="font-family: 'Playfair Display'">{{event.date.strftime("%A")}}</h2>
+                    <h2 class="date-title h3 mb-1" style="font-family: 'Playfair Display'">{{event_day}}</h2>
                     <p class="mb-0 text-muted">À partir de <strong class="royal-accent">{{event.date.strftime("%H:%M")}}</strong></p>
                 </div>
                 <div class="row mt-2">

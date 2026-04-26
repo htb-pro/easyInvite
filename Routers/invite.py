@@ -23,6 +23,21 @@ def get_event_deadline(event_date:datetime): #setting a deadline
     deadline = event_date - timedelta(days=2)
     return deadline
 
+def get_day(dt:datetime):
+    if not dt:
+        return ""
+    days = ["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"]
+    # dt.weekday() donne un chiffre de 0 à 6
+    days_name = days[dt.weekday()]
+    return f"{days_name}"
+def get_month(dt:datetime):
+    if not dt:
+        return ""
+    months = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"]
+    # dt.month donne un chiffre de 1 à 12
+    months_name = months[dt.month - 1]
+    return f"{months_name}"
+
 @Root.get("/qr/{event_id}/{guest_id}")
 async def get_qr_img(event_id:str,guest_id:str):
     qr_image = createInviteQrCode(event_id,guest_id)
@@ -37,10 +52,6 @@ async def getGuestInvite(request:Request,event_id:str ,guest_id : str ,db:AsyncS
     event_img = event.type
     locale.setlocale(locale.LC_TIME,"fra_fra")#pour afficher le mois en francais
     locale.setlocale(locale.LC_TIME,"fr_FR.UTF-8")
-    try:
-        locale.setlocale(locale.LC_TIME,"fr-FR.-UTF-8")
-    except:
-        locale.setlocale(locale.LC_TIME,"french")
     if not event:
         return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
     safe_location = urllib.parse.quote(event.address)# 2. On encode l'adresse pour l'URL (remplace les espaces par des %20, etc.)
@@ -53,24 +64,16 @@ async def getGuestInvite(request:Request,event_id:str ,guest_id : str ,db:AsyncS
         return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
     if not event_img and event.type == "Mariage":#s'il n'ya pas d'image et que c'est un mariage on affiche le template sans image
         if event.language == "en":
-            try:
-                locale.setlocale(locale.LC_TIME,"en-US.UTF-8")
-            except:
-                locale.setlocale(locale.LC_TIME,"english")
             return templates.TemplateResponse("Invitation/show_invite/wedding_event/en_wedding_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright,'google_map':google_maps_url})
-        return templates.TemplateResponse("Invitation/show_invite/wedding_event/wedding_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright,'google_map':google_maps_url})
+        return templates.TemplateResponse("Invitation/show_invite/wedding_event/wedding_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright,'event_day':get_day(event.date),'event_month':get_month(event.date),'google_map':google_maps_url})
     try:
         does_event_exist= guestInvite.event.type
     except:
         return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
     if event_type == "Mariage": #si c'est un mariage et qu'il y a une image on affiche le template avec l'image
         if event.language == "en": #si la langue de l'evenement est anglais on affiche le template en anglais sinon en francais
-            try:
-                locale.setlocale(locale.LC_TIME,"en-US.UTF-8")
-            except:
-                locale.setlocale(locale.LC_TIME,"english")
             return templates.TemplateResponse("Invitation/show_invite/wedding_event/en_wedding_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright,"event_img":event_img,'google_map':google_maps_url})
-        return templates.TemplateResponse("Invitation/show_invite/wedding_event/wedding_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright,"event_img":event_img,'google_map':google_maps_url})
+        return templates.TemplateResponse("Invitation/show_invite/wedding_event/wedding_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright,"event_img":event_img,'event_day':get_day(event.date),'event_month':get_month(event.date),'google_map':google_maps_url})
     # elif event_type == "Concours":
     #     return templates.TemplateResponse("Invitation/show_invite/concours_event/concours_invite.html",{'request':request,'guest':guestInvite,'event':event,'copyright':copyright,'serie_number':serie_number,'ticket_number':ticket_number})
 
