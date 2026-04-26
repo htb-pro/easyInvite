@@ -9,7 +9,7 @@ import models
 from db_setting import engine,connecting
 from models import *
 from sqlalchemy.orm import selectinload
-import os, io , base64,locale,pathlib,urllib.parse
+import io ,urllib.parse
 import zipfile
 from utils.Qr_Utils.qrCodeUtils import createInviteQrCode
 from pathlib import Path
@@ -49,9 +49,7 @@ async def getGuestInvite(request:Request,event_id:str ,guest_id : str ,db:AsyncS
     guestInvite =get_guest_invite.scalars().first() #le guest 
     event = guestInvite.event if guestInvite else None 
     invite = guestInvite.invite if guestInvite else None #l'invite
-    event_img = event.type
-    locale.setlocale(locale.LC_TIME,"fra_fra")#pour afficher le mois en francais
-    locale.setlocale(locale.LC_TIME,"fr_FR.UTF-8")
+    event_img = event.type if event else None
     if not event:
         return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
     safe_location = urllib.parse.quote(event.address)# 2. On encode l'adresse pour l'URL (remplace les espaces par des %20, etc.)
