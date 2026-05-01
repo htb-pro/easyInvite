@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Démo Invitation | EasyInvite</title>
+    <link rel="stylesheet" href="/static/Css/bootstrap.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Playfair+Display:italic,wght@0,400;1,700&family=Montserrat:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f8f9fa; }
+        .invitation-card {
+            max-width: 450px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 25px;
+            overflow: hidden;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.1);
+        }
+        .hero-image {
+            width: 100%;
+            height: 400px;
+            position: relative;
+        }
+        .hero-overlay {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: linear-gradient(transparent, white);
+            height: 100px;
+        }
+        .content { padding: 30px; text-align: center; }
+        h1 { font-family: 'Playfair Display', serif; color: #D4AF37; font-size: 2.5rem; }
+        .names { font-size: 1.8rem; margin-bottom: 10px; }
+        .date-box {
+            background: #fdf8e6;
+            padding: 15px;
+            border-radius: 15px;
+            margin: 20px 0;
+            border: 1px dashed #D4AF37;
+        }
+        .btn-confirm {
+            background-color: #D4AF37;
+            color: white;
+            border-radius: 50px;
+            padding: 12px 30px;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 20px;
+            border: none;
+            transition: 0.3s;
+        }
+        .btn-confirm:hover { background-color: #B8962E; transform: scale(1.02); }
+        .location-link { color: #666; text-decoration: none; font-size: 0.9rem; }
+        .qr-mockup {
+            background: #eee;
+            width: 150px;
+            height: 150px;
+            margin: 20px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 10px;
+            border: 2px solid #D4AF37;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <div class="invitation-card">
+            
+            <div class="hero-image" style=" background: url('{%if event_img%}{{event_img}}{%else%}https://images.unsplash.com/photo-1519741497674-611481863552?q=80&w=2070{%endif%}') no-repeat center center/cover;">
+                <div class="hero-overlay"></div>
+            </div>
+
+            <div class="content">
+                <p class=" tracking-widest  text-muted" style="font-size: 1.2rem;font-family: 'Playfair Display', serif;">Le temps passe, les souvenirs restent,
+                     mais les grandes occasions se fêtent!<br> trés cher(e) <b>{{guest.name}}</b> nous avons le plaisir de vous 
+                    inviter à célébrer notre anniversaire le {{event.date.strftime("%d-%m-%Y")}}. <br>Votre présence serait le plus beau des cadeaux</p>
+                <h1 class="names">{{event.organizer}}</h1>
+                <p class="lead">Célèbre sa naissance</p>
+
+                <div class="date-box">
+                    <div class="row">
+                        <div class="col-4 border-end"><strong>{{event.date.strftime("%d")}}</strong><br><small>{{event_month}}</small></div>
+                        <div class="col-4 border-end"><strong>{{event.date.strftime("%H:%M")}}</strong><br><small>HEURE</small></div>
+                        <div class="col-4"><strong>{{event.date.strftime("%Y")}}</strong><br><small>ANNÉE</small></div>
+                    </div>
+                </div>
+
+                <p class="mb-1"><strong>Lieu :</strong> {{event.location}}</p>
+                <p class="mb-1"><strong>Addresse :</strong> {{event.address}}</p>
+                <a href="{{google_map}}" class="location-link"><i class="bi bi-geo-alt"></i> Voir l'itinéraire sur Maps</a>
+
+                <hr class="my-4">
+
+                <h5>🎟️ Votre Ticket d'Accès</h5>
+                        <!-- QR CODE -->
+                <div class="my-4">
+                    <img src="/qr/{{ guest.event_id }}/{{guest.id}}" 
+                        alt="QR Code Invitation"
+                        class="img-fluid"
+                        style="max-width:150px;">
+                </div>
+                <p class="small text-muted">Présentez ce code à l'entrée pour validation.</p>
+                <!-- BOUTONS -->
+                <div class="d-flex justify-content-center gap-3 mb-3">
+                    <a href="/download/invite/{{guest.event_id}}/{{guest.id}}" 
+                    class="btn btn-warning ">
+                        ⬇ Télécharger le QR Code
+                    </a>
+                </div>
+
+                <a href="/presence/confirmation/{{guest.id}}/{{guest.event_id}}" class="btn btn-warning">Confirmer ma présence</a>
+
+                <p class="mt-4 extra-small text-muted" style="font-size: 0.7rem;">Généré avec élégance par <strong>EasyInvite</strong></p>
+            </div>
+        </div>
+    </div>
+
+    <footer class="text-center py-3" data-aos="fade-up">
+        <p><i class="bi bi-telephone-fill"></i> +243 897 401 210 ou +243 991 152 067</p>
+        <p><i class="bi bi-telephone-fill"></i> +243 898 147 644 ou +243 970 784 320</p>
+        <p>&copy; easyInvite {{copyright.strftime('%Y')}}</p>
+    </footer>
+</body>
+</html>

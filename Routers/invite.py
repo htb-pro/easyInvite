@@ -47,11 +47,10 @@ async def get_qr_img(event_id:str,guest_id:str):
 async def getGuestInvite(request:Request,event_id:str ,guest_id : str ,db:AsyncSession = Depends(connecting)):
     get_guest_invite =await db.execute(select(Guest).where(Guest.id ==guest_id,Guest.event_id == event_id).options(selectinload(Guest.invite),selectinload(Guest.event))) #prepare le guest et son invite
     guestInvite =get_guest_invite.scalars().first() #le guest 
-    event = guestInvite.event if guestInvite else None 
-    invite = guestInvite.invite if guestInvite else None #l'invite
-    event_img = event.type if event else None
-    if not event:
+    if not guestInvite or not guestInvite.event:
         return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
+    event = guestInvite.event
+    invite = guestInvite.invite
     safe_location = urllib.parse.quote(event.address)# 2. On encode l'adresse pour l'URL (remplace les espaces par des %20, etc.)
     # 3. On génère le lien Google Maps complet
     google_maps_url = f"https://www.google.com/maps/dir/?api=1&origin=My+location&destination={safe_location}"
@@ -60,18 +59,14 @@ async def getGuestInvite(request:Request,event_id:str ,guest_id : str ,db:AsyncS
     event_type = event.type#type d'evenement
     if not event_id:
         return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
-    if not event_img and event.type == "Mariage":#s'il n'ya pas d'image et que c'est un mariage on affiche le template sans image
-        if event.language == "en":
-            return templates.TemplateResponse("Invitation/show_invite/wedding_event/en_wedding_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright,'google_map':google_maps_url})
-        return templates.TemplateResponse("Invitation/show_invite/wedding_event/wedding_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright,'event_day':get_day(event.date),'event_month':get_month(event.date),'google_map':google_maps_url})
-    try:
-        does_event_exist= guestInvite.event.type
-    except:
-        return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
     if event_type == "Mariage": #si c'est un mariage et qu'il y a une image on affiche le template avec l'image
         if event.language == "en": #si la langue de l'evenement est anglais on affiche le template en anglais sinon en francais
             return templates.TemplateResponse("Invitation/show_invite/wedding_event/en_wedding_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright,"event_img":event_img,'google_map':google_maps_url})
         return templates.TemplateResponse("Invitation/show_invite/wedding_event/wedding_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright,"event_img":event_img,'event_day':get_day(event.date),'event_month':get_month(event.date),'google_map':google_maps_url})
+    elif event_type == "birth_day":
+        return templates.TemplateResponse("Invitation/show_invite/birth_day_event/birthday_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright,"event_img":event_img,'event_day':get_day(event.date),'event_month':get_month(event.date),'google_map':google_maps_url})
+    elif event_type == "conference":
+        return templates.TemplateResponse("Invitation/show_invite/conference_event/conference_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright,"event_img":event_img,'event_day':get_day(event.date),'event_month':get_month(event.date),'google_map':google_maps_url})
     # elif event_type == "Concours":
     #     return templates.TemplateResponse("Invitation/show_invite/concours_event/concours_invite.html",{'request':request,'guest':guestInvite,'event':event,'copyright':copyright,'serie_number':serie_number,'ticket_number':ticket_number})
 
@@ -82,26 +77,18 @@ def getInvite(request:Request):
 
 @Root.get("/presence/confirmation/{guest_id}/{event_id}")
 async def confirm_presence(request:Request,guest_id : str,event_id:str,db:AsyncSession = Depends(connecting)):
-    get_guest = (select(Guest).where(Guest.id == guest_id,Guest.event_id == event_id).options(selectinload(Guest.invite).selectinload(Invite.guestResponse),selectinload(Guest.event)))
+    get_guest = (select(Guest).where(Guest.id == guest_id,Guest.event_id == event_id).options(selectinload(Guest.invite).options(selectinload(Invite.guestResponse)),selectinload(Guest.event)))
     result = await db.execute(get_guest)
     guest = result.scalars().first()
-    event_res = await db.execute(select(Event).where(Event.id == event_id).options(selectinload(Event.guests)))
-    event = event_res.scalars().first()
+    
     get_message = request.session.pop("message",None) #recupere le message envoye par post
     year = datetime.now().year
-    if not guest:
-        raise HTTPException(404,"guest not found")
-    if not event:
+    if not guest or not guest.event:
         return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
+    event = guest.event
     event_img = event.photo_url if event.photo_url else None
-    if not event_id:
-        return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
-    if not event_img and event.type == "Mariage":
-        if event.language == "en":
-            return templates.TemplateResponse("Invitation/show_invite/en_presence_confirmation.html",{'request':request,"guest":guest,"event":event,'message':get_message,"copyright":year})
-        return templates.TemplateResponse("Invitation/show_invite/presence_confirmation.html",{'request':request,"guest":guest,"event":event,'message':get_message,"copyright":year})
     if event.language == "en":
-        return templates.TemplateResponse("Invitation/show_invite/en_presence_confirmation.html",{'request':request,"guest":guest,"event":event,'message':get_message,"copyright":year})
+        return templates.TemplateResponse("Invitation/show_invite/en_presence_confirmation.html",{'request':request,"guest":guest,"event":event,'event_img':event_img,'message':get_message,"copyright":year})
     return templates.TemplateResponse("Invitation/show_invite/presence_confirmation.html",{'request':request,"guest":guest,"event":event,'message':get_message,'event_img':event_img,"copyright":year})
 
 @Root.post("/presence/confirmation/{guest_id}/{event_id}")
@@ -110,21 +97,18 @@ async def GuestResponse(request:Request,guest_id:str ,event_id : str, response :
     get_guest = (select(Guest).where(Guest.id == guest_id,Guest.event_id == event_id).options(selectinload(Guest.event),selectinload(Guest.invite)))
     result = await db.execute(get_guest)
     guest = result.scalars().first()
-    event_res = await db.execute(select(Event).where(Event.id == event_id).options(selectinload(Event.guests)))
-    event = event_res.scalars().first()
     message = ""
     today = datetime.now()
     year = today.year
+    event_img_path = None
+    if not guest or not guest.event:
+        return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
+    event = guest.event
     event_date = guest.event.date
     deadline = get_event_deadline(event_date)
-    event_img_path = None
-    if not guest : #if the guest exist
-        raise HTTPException(404,"l'invité introuvable")
-    if not event:
-        return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html",{'request':request})
     if today >  get_event_deadline(event_date):
        message = "la date limite pour la confirmation est dépassée"
-       return templates.TemplateResponse("Invitation/show_invite/presence_confirmation.html",{'request':request,'guest':guest,"event":event,'is_img_exist':images,'event_img':event_img_path,'message':message,'deadline':deadline.isoformat()})
+       return templates.TemplateResponse("Invitation/show_invite/presence_confirmation.html",{'request':request,'guest':guest,"event":event,'event_img':event_img_path,'message':message,'deadline':deadline.isoformat()})
     get_response = select(PresenceConfirmation).where(PresenceConfirmation.guest_id == guest_id) #get data of guest in presenceconfirmation
     response_result =await db.execute(get_response)
     exist_response = response_result.scalars().first() #get data of guest in presenceconfirmation
@@ -138,7 +122,6 @@ async def GuestResponse(request:Request,guest_id:str ,event_id : str, response :
             message = "✅ Your response has been updated."
         else:
             message =  "✅ Votre réponse a été mise à jour."
-        await db.commit()
     else: 
         #create a new one
         presence = PresenceConfirmation(
@@ -147,12 +130,15 @@ async def GuestResponse(request:Request,guest_id:str ,event_id : str, response :
             response = response
         )
         db.add(presence)
-        await db.commit()
-        await db.refresh(presence)
         if event.language == "en":
             message = "🎉 Your presence has been registered."
         else:
             message = "🎉 Votre présence a été enregistrée."
+    try:
+        await db.commit()
+    except Exception as e :
+        await db.rollback()
+        request.session['message'] = "❌ Une erreur technique est survenue."
     request.session['message'] =message # prendre le message est l'envoyer vers get 
     return RedirectResponse(f'/presence/confirmation/{guest_id}/{event_id}',status_code = 303)
 

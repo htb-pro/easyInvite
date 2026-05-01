@@ -57,9 +57,12 @@
 
 <div class="container py-3">
     <!-- Header -->
-    <div class="mb-3">
+    <div class="mb-3" style="position: relative;">
         <h5 class="fw-bold mb-0 text-light">📋 Invités </h5>
         <small class="text-light">Événement : {{event.name}}</small>
+        <div class="home mt-3">
+            <a href="{{url_for('main_page')}}" class="text-decoration-none text-primary"><i class="bi bi-house-check"></i> Accueil</a>
+        </div>
     </div>
 
     <!-- Stats compactes -->

@@ -62,16 +62,12 @@ async def send_whatsapp_redirect(event_id: str,guest_id: str, db: AsyncSession =
     # 1. Récupérer l'invité en BDD
     guest_res = await db.execute(select(Guest).where(Guest.id == guest_id,Guest.event_id == event_id))
     guest = guest_res.scalars().first()
-     
     if not guest:
         raise HTTPException(status_code=404, detail="Invité non trouvé")
-
     # 2. Préparer les données
     guest_get_pass = guest.get_pass
     invite_url = f"http://easyinvite-1.onrender.com/invite/{event_id}/{guest_id}/create"
     message = f"INVITATION OFFICIELLE\n\nBonjour {guest.name}, vous êtes invité à notre événement.\n\n voici votre jeton d'accès en cas de manque du qr code *{guest_get_pass}* \n\n cliquez sur le lien pour voir et télecharger votre invitation . \n\n*Note : si le lien n'est pas cliquable veillez enregistrer ce numero dans vos contacts ou s'implement repondre a ce message.* \n\nlien:{invite_url}"
-
-    
     # 3. Nettoyer le numéro (ne garder que les chiffres)
     # On suppose que le numéro est stocké avec l'indicatif pays (ex: 243...)
     clean_phone = "".join(filter(str.isdigit, guest.telephone))
@@ -120,13 +116,11 @@ async def newGuest(request:Request,event_id:str,guestName:str=Form(),guestType:s
                    guestTel:str=Form(),user=Depends(permission_required("create_guest")),db:AsyncSession = Depends(connecting)):
     select_event = (select(Event).where(Event.id==event_id).options(selectinload(Event.guests)))
     get_event = await db.execute(select_event)
-    event = get_event.first()
+    event = get_event.scalars().first()
     select_guest_tel =select(Guest).where(and_(Guest.telephone == guestTel,Guest.event_id == event_id))#verifier si le guest existe deja avec le meme numero ou email
     tel_res = await db.execute(select_guest_tel)
-    select_guest_mail =select(Guest).where(and_(Guest.event_id == event_id))#verifier si le guest existe deja avec le meme email
-    email_res = await db.execute(select_guest_mail)
+    #select_guest_mail =select(Guest).where(and_(Guest.event_id == event_id))#verifier si le guest existe deja avec le meme email
     is_guest_tel =tel_res.scalars().first()
-    is_guest_email = email_res.scalars().first()
     error_message = ""
     guest_get_pass = str(uuid4())[:8]
     def set_data(message):
@@ -143,11 +137,6 @@ async def newGuest(request:Request,event_id:str,guestName:str=Form(),guestType:s
                 error_message = 'un invité existe deja avec ce numero telephonique'
                 set_data(error_message)
                 return RedirectResponse(f'/create/{event_id}/guest',status_code=303)#renvoi erreur
-    # if is_guest_email : 
-    #             error_message = 'un invité existe deja avec cet email'
-    #             set_data(error_message)
-    #             return RedirectResponse(f'/create/{event_id}/guest',status_code=303)#renvoi erreur
-    
     guest = Guest(
         name = guestName,
         guest_type = guestType,
@@ -158,16 +147,17 @@ async def newGuest(request:Request,event_id:str,guestName:str=Form(),guestType:s
         get_pass = guest_get_pass,
     ) 
     db.add(guest)
-    await db.commit()
-    await db.refresh(guest)
+    await db.flush()
     new_invite = Invite(
     qr_token = str(uuid4()),
     guest_id = guest.id
     )
     db.add(new_invite)
-    await db.commit()
-    await db.refresh(guest)     
-    await db.refresh(new_invite)     
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()     
+        raise HTTPException(status_code=500, detail="Erreur lors de la création")   
     return RedirectResponse(url=f'/create/{event_id}/guest?success=1',status_code=303)#"success":success
 
 @Root.get("/edit_guest_form/{event_id}/{guest_id}")
@@ -199,7 +189,7 @@ async def editGuestPost(request:Request,Event_id:str,guest_id:str = Form(...),gu
         await db.commit()
     except IntegrityError:
         db.rollback()
-        return templates.TemplateResponse('Guest/Forms/form.html',{'request':request,'event':new_guest,'emailError':'un invité existe deja avec cet email', 'guestName':guestName, 'guestType':guestType, 'guestPlace':guestPlace,'guestTel':guestTel, 'guestEmail':guestEmail},status_code=400)
+        return templates.TemplateResponse('Guest/Forms/form.html',{'request':request,'event':new_guest, 'guestName':guestName, 'guestType':guestType, 'guestPlace':guestPlace,'guestTel':guestTel, },status_code=400)
     return RedirectResponse(f"/guest_list/{Event_id}",status_code=303)
 
 @Root.post('/delete_guest/{event_id}/guest')#root for deleting guest

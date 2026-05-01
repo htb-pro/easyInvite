@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invitation Conférence 2026</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Style pour l'image de fond centrée */
+        .conference-hero {
+            background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), 
+                              url('https://images.unsplash.com/photo-1540575861501-7ad05863f1fb?auto=format&fit=crop&w=1400&q=80');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            min-height: 60vh;
+            display: flex;
+            align-items: center;
+            color: white;
+        }
+
+        .card-ticket {
+            border-left: 5px solid #0d6efd;
+            border-radius: 10px;
+        }
+
+        .icon-box {
+            width: 50px;
+            height: 50px;
+            background: #e9ecef;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+        }
+    </style>
+</head>
+<body class="bg-light">
+
+    <header class="conference-hero text-center text-md-start">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8">
+                    <h1 class="display-3 fw-bold mb-4">{{event.name}}</h1>
+                    <p class="lead mb-5">{%if event.description%}{{event.description}}{%else%}Rejoignez-nous pour une journée d'échanges, de conférences inspirantes  de haut niveau.{%endif%}</p>
+                    <a href="/presence/confirmation/{{guest.id}}/{{guest.event_id}}" class="btn btn-primary btn-lg px-5 rounded-pill shadow">Réserver ma place</a>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <section class="container mt-n5 position-relative" style="z-index: 10;">
+        <div class="row g-4 justify-content-center">
+            <div class="col-md-4">
+                <div class="card shadow border-0 p-4 text-center h-100">
+                    <div class="icon-box mx-auto text-primary">📅</div>
+                    <h5 class="fw-bold">Date & Heure</h5>
+                    <p class="text-muted mb-0">{{event_day}} {{event.date.strftime("%d %m %Y")}}<br>À partir de {{event.date.strftime("%H:%M")}}</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow border-0 p-4 text-center h-100">
+                    <div class="icon-box mx-auto text-primary">📍</div>
+                    <h5 class="fw-bold">Lieu</h5>
+                    <p class="text-muted mb-0">{{event.location}}</p>
+                    <p class="text-muted mb-0">{{event.address}}</p>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card shadow border-0 p-4 text-center h-100">
+                    <div class="icon-box mx-auto text-primary">🎟️</div>
+                    <h5 class="fw-bold">Accès</h5>
+                    <p class="text-muted mb-0">Sur invitation uniquement<br>Badge numérique requis</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <main class="container my-5 py-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8 text-center">
+                {%if not event.greetings_message%}
+                <h2 class="mb-4">Bienvenue à trés cher {{guest.name}}</h2>
+                <p class="text-secondary fs-5 mb-5 text-start">
+                    Nous sommes ravis de vous accueillir pour cette édition de [Nom de la Conférence]. 
+                    Vous êtes ici car vous croyez, comme nous, que le dialogue est la clé des grandes transformations. 
+                    Durant ces prochaines heures, nous vous invitons à bousculer vos certitudes, à explorer de nouveaux horizons et à tisser les liens qui feront l'avenir de notre secteur. Merci d'être les acteurs de cet échange.
+                
+                {%else%}
+                <h2 class="mb-4">Votre Invitation Personnelle</h2>
+                <p class="text-secondary fs-5 mb-5">
+                    Nous avons le privilège de solliciter votre présence à cette conférence d'exception. En tant qu'acteur majeur de votre secteur, votre expertise enrichira nos débats sur les enjeux de demain.
+                </p>
+                </p>
+                {%endif%}
+                <hr class="w-25 mx-auto mb-5">
+                
+
+                <div class="card shadow text-center p-4">
+
+                    <h4 class="mb-3">🎟️ Votre QR Code d'invitation</h4>
+
+                    <p class="text-muted">
+                        Présentez ce QR Code à l'entrée de l'événement
+                    </p>
+
+                    <!-- QR CODE -->
+                    <div class="my-4">
+                        <img src="/qr/{{ guest.event_id }}/{{guest.id}}" 
+                            alt="QR Code Invitation"
+                            class="img-fluid"
+                            style="max-width:150px;">
+                    </div>
+
+                    <!-- BOUTONS -->
+                    <div class="d-flex justify-content-center gap-3">
+                        <a href="/download/invite/{{guest.event_id}}/{{guest.id}}" 
+                        class="btn btn-primary text-white">
+                            ⬇ Télécharger le QR Code
+                        </a>
+                    </div>
+                    <div class="confirm_presence my-3 d-flex justify-content-center">
+                        <a href="/presence/confirmation/{{guest.id}}/{{guest.event_id}}" class="btn btn-primary text-white"onclick="document.getElementById('rsvp-area').scrollIntoView({behavior: 'smooth'})">Confirmer ma présence</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="bg-dark text-white text-center py-4">
+        <small>&copy; {{copyright.year}} EasyInvite - Organisation Conférence</small>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

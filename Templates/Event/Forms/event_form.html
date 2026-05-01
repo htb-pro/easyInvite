@@ -68,16 +68,16 @@
                     <p>{{img_error}}</p>
                 </div>
             {% endif%}
-<div class="mb-3">
+            <div class="mb-3">
                 <label for="lieu" class="form-label fw-semibold">Type d'evenement (Event type)</label>
                 <select name="eventType" id="event_type" class="form-select">
                         <option selected >--choisir le type d'evenement--</option>
                         <option value="Mariage" {%if eventType == "Mariage"%}selected{%endif%}>Mariage (wedding)</option>
-                        <option value="Concours" {%if eventType == "Concours"%}selected{%endif%}>Concours </option>
-                        <option value="Anniversaire" {%if eventType == "Anniversaire"%}selected{%endif%}>Anniversaire (birth day)</option>
-                        <option value="Conference" {%if eventType == "Conference"%}selected{%endif%}>Conference</option>
-                        <option value="Reunion" {%if eventType == "Reunion"%}selected{%endif%}>Reunion (meeting)</option>
-                        <option value="Autres" {%if eventType == "Autres"%}selected{%endif%}>Autres (other)</option>
+                        <option value="concours" {%if eventType == "concours"%}selected{%endif%}>Concours</option>
+                        <option value="birth_day" {%if eventType == "birth_day"%}selected{%endif%}>Anniversaire (birth day)</option>
+                        <option value="conference" {%if eventType == "conference"%}selected{%endif%}>Conference</option>
+                        <option value="meeting" {%if eventType == "meeting"%}selected{%endif%}>Reunion (meeting)</option>
+                        <option value="other" {%if eventType == "other"%}selected{%endif%}>Autres (other)</option>
                 </select>
             </div>
             <div class="mb-3 language_div">
@@ -93,10 +93,15 @@
                 <label for="titre" class="form-label fw-semibold">Nom de l'événement (Event name)</label>
                 <input type="text" class="form-control" id="titre" name="eventName" value="{{eventName}}" placeholder="Ex : Gala 2026" required>
             </div>
+            <!-- nom de l'orgnisateur  de l'événement -->
+            <div class="mb-3 organizer">
+                <label for="titre" class="form-label fw-semibold">Organisateur (Organizer)</label>
+                <input type="text" class="form-control" id="organizer" name="organizer" value="{{organizer}}" placeholder="Ex : Gala 2026" required>
+            </div>
             <!-- nom du couple -->
             <div class="mb-3 couple_name">
                 <label for="titre" class="form-label fw-semibold">Nom du couple (Couple's name)</label>
-                <input type="text" class="form-control" id="titre" name="couple_name" value="{{couple_name}}" placeholder="Ex : x et y" required>
+                <input type="text" class="form-control" id="couple_name" name="couple_name" value="{{couple_name}}" placeholder="Ex : x et y" required>
             </div>
             <div class="mb-3 couple_number">
                 <label for="titre" class="form-label fw-semibold">Numéro de téléphone du couple (Couple's phone number)</label>
@@ -120,8 +125,8 @@
             </div>
              <!-- photo du couple -->
              <div class="mb-3 event_img">
-                <label class="form-label">Choisir une image du couple</label>
-                <label class="form-label">(chose the picture of couple)</label>
+                <label class="form-label">Choisir une image de l'evenement</label>
+                <label class="form-label">(chose the event picture)</label>
                 <input 
                     class="form-control "
                     type="file"
@@ -134,8 +139,13 @@
                     cadeau en espèce (cash gift)
                 </label>
             </div>
+            <!-- message de bienvenu -->
+            <div class="mb-3 greetings">
+                <label for="description" class="form-label fw-semibold">Message de bienvenu(greetings)(optionnel)</label>
+                <textarea class="form-control" id="description" name="greetings" value="{{greetings}}" rows="4" placeholder="message de bienvenu"></textarea>
+            </div>
             <!-- Description / Informations supplémentaires -->
-            <div class="mb-3">
+            <div class="mb-3 description">
                 <label for="description" class="form-label fw-semibold">Description (optionnel)</label>
                 <textarea class="form-control" id="description" name="eventDescription" value="{{eventDescription}}" rows="3" placeholder="Informations supplémentaires"></textarea>
             </div>

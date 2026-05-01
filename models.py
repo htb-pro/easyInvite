@@ -94,7 +94,8 @@ class Event(Base): #event table
     guest_present = Column(Boolean,default=False)
     created_by = Column(String,ForeignKey("users.id"))
     group_id= Column(String,ForeignKey("groups.id"))
-    programme = Column(Text,nullable=True)
+    organizer = Column(String(255))#organisateur d'evenement
+    greeting_message = Column(Text,nullable=True)#message d'accueil d'invite
     photo_url=Column(String(255),nullable=True)
     photo_public_id=Column(String(255),nullable=True)
     language = Column(String(50),default="fr")#langue par defaut de l'evenement

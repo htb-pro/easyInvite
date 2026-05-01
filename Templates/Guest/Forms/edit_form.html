@@ -65,12 +65,6 @@
     <div class="card-body">
       <input type="hidden" value="{{event.type}}" class="event_type">
       <form method="post" action="/edit_guest_form/{{event.id}}">
-        {% if emailError %}
-        <div class="alert alert-danger">
-                <p>{{emailError}}</p>
-          </div>
-        {%endif%}
-
         <input type="hidden" name="guest_id" value="{{guest.id}}">
         <!-- NAME -->
         <div class="mb-3">

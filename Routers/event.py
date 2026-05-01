@@ -105,11 +105,13 @@ eventAddress:str = Form(),eventDescription: Optional[str] = Form(None),
 location:str = Form(...),
 photo:UploadFile = File(None),
 user=Depends(permission_required("create_event")),
-couple_name :str = Form(...),
+couple_name :str = Form(None),
 couple_phone_number :str = Form(...),
 access_token =Cookie(None),
 is_active : bool = Form(None),#le cadeau
 language :str = Form(...),#la langue
+organizer :str = Form(None),#organisateeur
+greetings:str = Form(None),#message de bienvenu
 Db:AsyncSession = Depends(connecting)):
     res = jwt.decode(access_token,secret,algorithms=[algo])
     user_id = res.get("user")
@@ -124,7 +126,7 @@ Db:AsyncSession = Depends(connecting)):
         user_role = user.roles[0].name if user.roles else None
     if eventDate < datetime.now():
         return templates.TemplateResponse("Event/Forms/event_form.html",{'request':request,"dateError":' Entrez une date superieur a la date actuelle ou entrer une date correcte  !!!',
-            'eventName':eventName, 'eventType':eventType,'couple_name':couple_name,'location':location,'is_active':is_active,'couple_phone_number':couple_phone_number, 'eventDate':eventDate, 'eventAddress':eventAddress, 'eventDescription':eventDescription}, status_code=400)
+            'eventName':eventName, 'eventType':eventType,'couple_name':couple_name,'location':location,'is_active':is_active,'couple_phone_number':couple_phone_number, 'eventDate':eventDate, 'eventAddress':eventAddress,'organizer':organizer,'greetings':greetings, 'eventDescription':eventDescription}, status_code=400)
     if photo and photo.filename:
         if not photo.content_type or not photo.content_type.startswith("image/"):
             return templates.TemplateResponse("Event/Forms/event_form.html",{'request':request,"img_error":' le fichier doit etre une image !!!',
@@ -132,9 +134,22 @@ Db:AsyncSession = Depends(connecting)):
             },status_code=400)
     try:
         if photo and photo.filename:
-            upload_result = await run_in_threadpool(cloudinary.uploader.upload,photo.file,folder = "EasyInvite/wedding_events",transformation = [{'width':1000,'height':1000,'crop':'limit'},{'quality':"auto"}])
-            photo_url = upload_result['secure_url']
-            photo_public_id = upload_result['public_id']
+            if eventType =="Mariage":
+                upload_result = await run_in_threadpool(cloudinary.uploader.upload,photo.file,folder = "EasyInvite/wedding_events",transformation = [{'width':1000,'height':1000,'crop':'limit'},{'quality':"auto"}])
+                photo_url = upload_result['secure_url']
+                photo_public_id = upload_result['public_id']
+            elif eventType =="birth_day":
+                upload_result = await run_in_threadpool(cloudinary.uploader.upload,photo.file,folder = "EasyInvite/birth_day_events",transformation = [{'width':1000,'height':1000,'crop':'limit'},{'quality':"auto"}])
+                photo_url = upload_result['secure_url']
+                photo_public_id = upload_result['public_id']
+            elif eventType =="conference":
+                upload_result = await run_in_threadpool(cloudinary.uploader.upload,photo.file,folder = "EasyInvite/conference_events",transformation = [{'width':1000,'height':1000,'crop':'limit'},{'quality':"auto"}])
+                photo_url = upload_result['secure_url']
+                photo_public_id = upload_result['public_id']
+            elif eventType =="concours":
+                upload_result = await run_in_threadpool(cloudinary.uploader.upload,photo.file,folder = "EasyInvite/concours_events",transformation = [{'width':1000,'height':1000,'crop':'limit'},{'quality':"auto"}])
+                photo_url = upload_result['secure_url']
+                photo_public_id = upload_result['public_id']
     except Exception as e:
         raise HTTPException(status_code=500,detail=f"Erreur lors du téléchargement de l'image: {str(e)}")
     try:
@@ -152,7 +167,9 @@ Db:AsyncSession = Depends(connecting)):
         group_id = group_id,
         photo_url = photo_url if photo_url else None,
         photo_public_id=photo_public_id if photo_public_id else None,
-        language=language
+        language=language,
+        organizer=organizer,
+        greeting_message = greetings,
             )
         Db.add(newEvent)
         await Db.commit()
@@ -174,7 +191,7 @@ async def editEvent(request:Request,event_id : str,user=Depends(permission_requi
 @Root.post("/edit_event/{event_id}")#la root pour modifier un evenement
 async def editEvent(request:Request,event_id : str,access_token = Cookie(None),eventName:str = Form(...),coupleName:str = Form(...),couple_phone_number:str = Form(...),eventType:str = Form(...),eventDate: str = Form(...),
                     eventAddress:str = Form(...),location:str = Form(...),eventDescription: Optional[str] = Form(None),
-                    eventState: str = Form(...),photo:UploadFile = File(None),is_active:bool = Form(None),language:str = Form(...),db:AsyncSession = Depends(connecting)
+                    eventState: str = Form(...),photo:UploadFile = File(None),is_active:bool = Form(None),language:str = Form(...),organizer:str = Form(None),greetings:str = Form(None),db:AsyncSession = Depends(connecting)
                     ,user=Depends(permission_required("edit_event"))):
     edited_Event_Data = select(Event).where(Event.id == event_id)
     res = await db.execute(edited_Event_Data)
@@ -206,13 +223,24 @@ async def editEvent(request:Request,event_id : str,access_token = Cookie(None),e
             return templates.TemplateResponse("Event/Forms/edit_form.html",{'request':request,"img_error":' le fichier doit etre une image !!!','event':editedEventData},status_code=400)
         try:
             if event_photo_public_id:
-                await run_in_threadpool(cloudinary.uploader.destroy,event_photo_public_id)
+                if eventType =="Mariage":
+                    await run_in_threadpool(cloudinary.uploader.destroy,event_photo_public_id)
+                    upload_result =await run_in_threadpool(cloudinary.uploader.upload,photo.file,folder = "EasyInvite/wedding_events",transformation = [{'width':1000,'height':1000,'crop':'limit'},{'quality':"auto"}])
+                    photo_url= upload_result['secure_url']
+                    photo_public_id = upload_result['public_id']
+                elif eventType =="birth_day":
+                    await run_in_threadpool(cloudinary.uploader.destroy,event_photo_public_id)
+                    upload_result =await run_in_threadpool(cloudinary.uploader.upload,photo.file,folder = "EasyInvite/birth_day_events",transformation = [{'width':1000,'height':1000,'crop':'limit'},{'quality':"auto"}])
+                    photo_url= upload_result['secure_url']
+                    photo_public_id = upload_result['public_id']
+            if eventType == "Mariage" and not event_photo_public_id:
                 upload_result =await run_in_threadpool(cloudinary.uploader.upload,photo.file,folder = "EasyInvite/wedding_events",transformation = [{'width':1000,'height':1000,'crop':'limit'},{'quality':"auto"}])
                 photo_url= upload_result['secure_url']
                 photo_public_id = upload_result['public_id']
-            upload_result =await run_in_threadpool(cloudinary.uploader.upload,photo.file,folder = "EasyInvite/wedding_events",transformation = [{'width':1000,'height':1000,'crop':'limit'},{'quality':"auto"}])
-            photo_url= upload_result['secure_url']
-            photo_public_id = upload_result['public_id']
+            elif eventType == "birth_day" and not event_photo_public_id:
+                upload_result =await run_in_threadpool(cloudinary.uploader.upload,photo.file,folder = "EasyInvite/birth_day_events",transformation = [{'width':1000,'height':1000,'crop':'limit'},{'quality':"auto"}])
+                photo_url= upload_result['secure_url']
+                photo_public_id = upload_result['public_id']
         except Exception as e:
             raise HTTPException(status_code=500,detail=f"Erreur lors du téléchargement de l'image: {str(e)}") 
     editedEventData.name = eventName
@@ -228,7 +256,9 @@ async def editEvent(request:Request,event_id : str,access_token = Cookie(None),e
     editedEventData.created_by = user_id
     editedEventData.photo_public_id = photo_public_id 
     editedEventData.photo_url = photo_url  
+    editedEventData.organizer = organizer
     editedEventData.language = language
+    editedEventData.greeting_message = greetings
     if user_role != "admin":
         edited_Event_Data.groups = [groups]
     edited_Event_Data.groups = []
