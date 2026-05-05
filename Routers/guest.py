@@ -26,6 +26,22 @@ Root = APIRouter(tags = ["easyInvite"],dependencies =[Depends(get_current_user_f
 templates = Jinja2Templates(directory="Templates")#ou sont stocker les templates
 
 #--------------------About guest
+def get_day(dt:datetime):
+    if not dt:
+        return ""
+    days = ["lundi","mardi","mercredi","jeudi","vendredi","samedi","dimanche"]
+    # dt.weekday() donne un chiffre de 0 à 6
+    days_name = days[dt.weekday()]
+    return f"{days_name}"
+def get_month(dt:datetime):
+    if not dt:
+        return ""
+    months = ["janvier","février","mars","avril","mai","juin","juillet","août","septembre","octobre","novembre","décembre"]
+    # dt.month donne un chiffre de 1 à 12
+    months_name = months[dt.month - 1]
+    return f"{months_name}"
+
+
 @Root.get("/guest_list/{event_id}",name="guest_list") #get the guest list
 async def get_guest_list(request:Request,event_id:str,access_token = Cookie(None),db:AsyncSession = Depends(connecting)):
     current_res = jwt.decode(access_token,secret,algorithms = [algo])
@@ -63,12 +79,14 @@ async def send_whatsapp_redirect(event_id: str,guest_id: str, db: AsyncSession =
     # 1. Récupérer l'invité en BDD
     guest_res = await db.execute(select(Guest).where(Guest.id == guest_id,Guest.event_id == event_id))
     guest = guest_res.scalars().first()
-    if not guest:
+    event_res = await db.execute(select(Event).where(Event.id == event_id))
+    event = event_res.scalars().first()
+    if not event or not guest:
         raise HTTPException(status_code=404, detail="Invité non trouvé")
     # 2. Préparer les données
     guest_get_pass = guest.get_pass
     invite_url = f"http://easyinvite-1.onrender.com/invite/{event_id}/{guest_id}/create"
-    message = f"INVITATION OFFICIELLE\n\nBonjour {guest.name}, vous êtes invité à notre événement.\n\n voici votre jeton d'accès en cas de manque du qr code *{guest_get_pass}* \n\n cliquez sur le lien pour voir et télecharger votre invitation . \n\n*Note : si le lien n'est pas cliquable veillez enregistrer ce numero dans vos contacts ou s'implement repondre a ce message.* \n\nlien:{invite_url}"
+    message = f"INVITATION OFFICIELLE\n\nBonjour {guest.name}, nous avons l'honneur de vous inviter à notre événement de {event.type}, qui se tiendra en date du {get_day(event.date)} le {event.date.day}-{get_month(event.date)}-{event.date.year} a partir de {event.date.time()}.\n\n voici votre jeton d'accès en cas de manque du qr code *{guest_get_pass}* \n\n cliquez sur le lien pour voir et télecharger votre invitation . \n\n*Note : si le lien n'est pas cliquable veillez enregistrer ce numero dans vos contacts ou s'implement repondre a ce message.* \n\nlien:{invite_url}"
     # 3. Nettoyer le numéro (ne garder que les chiffres)
     # On suppose que le numéro est stocké avec l'indicatif pays (ex: 243...)
     clean_phone = "".join(filter(str.isdigit, guest.telephone))
@@ -84,12 +102,14 @@ async def send_whatsapp_redirect(event_id: str,guest_id: str, db: AsyncSession =
     # 1. Récupérer l'invité en BDD
     guest_res = await db.execute(select(Guest).where(Guest.id == guest_id,Guest.event_id == event_id))
     guest = guest_res.scalars().first()
-    if not guest:
-        raise HTTPException(status_code=404, detail="Invité non trouvé")
+    event_res = await db.execute(select(Event).where(Event.id == event_id))
+    event = event_res.scalars().first()
+    if not event or not guest:
+        raise HTTPException(status_code=404, detail="evenement ou Invité non trouvé")
     # 2. Préparer les données
     guest_get_pass = guest.get_pass
     invite_url = f"http://easyinvite-1.onrender.com/invite/{event_id}/{guest_id}/create"
-    message = f"INVITATION OFFICIELLE\n\nBonjour {guest.name}, vous êtes invité à notre événement.\n\n voici votre jeton d'accès*{guest_get_pass}* "
+    message = f"INVITATION OFFICIELLE\n\nBonjour {guest.name}, nous avons l'honneur de vous inviter à notre événement de {event.type} qui se tiendra en date du {get_day(event.date)} le {event.date.day}-{get_month(event.date)}-{event.date.year} a partir de {event.date.time()}.\n\n voici votre jeton d'accès a la salle*{guest_get_pass}* "
     # 3. Nettoyer le numéro (ne garder que les chiffres)
     # On suppose que le numéro est stocké avec l'indicatif pays (ex: 243...)
     clean_phone = "".join(filter(str.isdigit, guest.telephone))
