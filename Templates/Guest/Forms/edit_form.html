@@ -64,7 +64,7 @@
   <div class="card shadow-sm">
     <div class="card-body">
       <input type="hidden" value="{{event.type}}" class="event_type">
-      <form method="post" action="/edit_guest_form/{{event.id}}">
+      <form method="post" action="/edit_guest_form/{{event.id}}" enctype="multipart/form-data">
         <input type="hidden" name="guest_id" value="{{guest.id}}">
         <!-- NAME -->
         <div class="mb-3">
@@ -110,7 +110,16 @@
           <label class="form-label">Telephone *</label>
           <input type="number" class="form-control" maxlength="10" name="guestTel" placeholder="ex : 09900000000" value="{{guest.telephone}}" required>
         </div>
-        
+        <div class="mb-3">
+          <label for="event_photo" class="form-label fw-bold">Photo de l'invité</label>
+          <!-- accept="image/*" autorise tous les formats d'image -->
+          <input 
+              type="file" 
+              class="form-control" 
+              id="event_photo" 
+              name="photo" 
+              accept="image/*">
+        </div>
         <!-- SUBMIT -->
         <div class="d-grid">
           <button type="submit" class="btn btn-send">

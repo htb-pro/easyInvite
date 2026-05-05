@@ -145,6 +145,11 @@
                                     <i class="bi bi-whatsapp"></i>
                                 </a>
                             {%endif%}
+                            {%if current_user_role == "admin" or current_user_role == "manager" %}                       
+                                <a href="/sms_sharing_invite/{{event.id}}/{{guest.id}}"  class="btn btn-outline-light ">
+                                    <i class="bi bi-chat-left-text"></i>
+                                </a>
+                            {%endif%}
                             <a href="/guest/{{guest.id}}/{{event_id}}/detail"  class="btn btn-outline-light">👁</a>
                             {%if current_user_role == "admin" or current_user_role == "manager" %}
                             <a href="/invite/{{event_id}}/{{guest.id}}/create" class="btn btn-outline-light"><i class="bi bi-envelope me-1"></i></a>
@@ -196,6 +201,9 @@
                                 {%if current_user_role == "admin" or current_user_role == "manager" %}                     
                                 <a href="/share_invite/{{event.id}}/{{guest.id}}"  class="btn btn-outline-success ">
                                     <i class="bi bi-whatsapp"></i>
+                                </a>
+                                <a href="/sms_sharing_invite/{{event.id}}/{{guest.id}}"  class="btn btn-outline-light ">
+                                    <i class="bi bi-chat-left-text"></i>
                                 </a>
                                 <a href="/invite/{{event_id}}/{{guest.id}}/create" class="btn btn-outline-light"><i class="bi bi-envelope me-1"></i></a>
                                 <a href="/edit_guest_form/{{event_id}}/{{guest.id}}" class="btn btn-outline-light ms-2">✏</a>

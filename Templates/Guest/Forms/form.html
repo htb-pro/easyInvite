@@ -77,7 +77,7 @@
   <div class="card shadow-sm">
       <span class="mt-2 text-center"> 📩 Nouvel Invité</span>
     <div class="card-body">
-      <form method="post" action="/create/{{event.id}}/guest">
+      <form method="post" action="/create/{{event.id}}/guest" enctype="multipart/form-data">
      
         {% if uniqueValueError %}
         <div class="alert alert-danger">
@@ -119,6 +119,19 @@
           <label class="form-label">Telephone </label>
           <input type="number" class="form-control" maxlength="10" name="guestTel" placeholder="ex : 09900000000" value="{{guestTel}}" required>
         </div>
+
+        <div class="mb-3">
+          <label for="event_photo" class="form-label fw-bold">Photo de l'invité</label>
+          <!-- accept="image/*" autorise tous les formats d'image -->
+          <input 
+              type="file" 
+              class="form-control" 
+              id="event_photo" 
+              name="photo" 
+              accept="image/*">
+        </div>
+
+        
         <!-- SUBMIT -->
         <div class="d-grid">
           <button type="submit" class="btn btn-send">

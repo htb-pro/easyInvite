@@ -8,7 +8,7 @@ from uuid import uuid4
 import os,cloudinary,cloudinary.uploader
 from db_setting import engine,connecting
 from sqlalchemy.orm import selectinload
-from sqlalchemy import func,desc,select,asc
+from sqlalchemy import func,desc,select
 from sqlalchemy.ext.asyncio import AsyncSession
 from models import *
 from jose import jwt
@@ -225,14 +225,8 @@ async def editEvent(request:Request,event_id : str,access_token = Cookie(None),e
             if event_photo_public_id:
                 if eventType =="Mariage":
                     await run_in_threadpool(cloudinary.uploader.destroy,event_photo_public_id)
-                    upload_result =await run_in_threadpool(cloudinary.uploader.upload,photo.file,folder = "EasyInvite/wedding_events",transformation = [{'width':1000,'height':1000,'crop':'limit'},{'quality':"auto"}])
-                    photo_url= upload_result['secure_url']
-                    photo_public_id = upload_result['public_id']
                 elif eventType =="birth_day":
                     await run_in_threadpool(cloudinary.uploader.destroy,event_photo_public_id)
-                    upload_result =await run_in_threadpool(cloudinary.uploader.upload,photo.file,folder = "EasyInvite/birth_day_events",transformation = [{'width':1000,'height':1000,'crop':'limit'},{'quality':"auto"}])
-                    photo_url= upload_result['secure_url']
-                    photo_public_id = upload_result['public_id']
             if eventType == "Mariage" and not event_photo_public_id:
                 upload_result =await run_in_threadpool(cloudinary.uploader.upload,photo.file,folder = "EasyInvite/wedding_events",transformation = [{'width':1000,'height':1000,'crop':'limit'},{'quality':"auto"}])
                 photo_url= upload_result['secure_url']

@@ -116,7 +116,9 @@ class Guest(Base):
     is_present  = Column(Boolean,default=False)
     qr_token  = Column(String,unique=True,nullable=False,default=lambda : str(uuid4()))
     get_pass = Column(String,unique=True,default=lambda : str(uuid4()))
-
+    photo_url=Column(String(255),nullable=True)
+    photo_public_id=Column(String(255),nullable=True)
+    
     event = relationship("Event",back_populates="guests")
     invite = relationship("Invite",back_populates="guest",uselist = False,cascade="all,delete-orphan")
     __table_args__ = (

@@ -1,8 +1,9 @@
 #APIRouter permet juste l'organisation du code au lieu d' avoir tout les routes dans un fichier main oon cree les root separement
-from fastapi import Request,Form,Depends,HTTPException,APIRouter,Query,Cookie,Response
-from fastapi.responses import HTMLResponse,RedirectResponse
+from fastapi import Request,Form,Depends,HTTPException,APIRouter,Cookie,Form,UploadFile,File
+from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy import select,and_,func,desc
 from uuid import uuid4
 from db_setting import engine,connecting
@@ -11,7 +12,7 @@ from sqlalchemy.exc import IntegrityError
 from models import *
 from typing import Optional
 from datetime import datetime
-import os
+import cloudinary,cloudinary.uploader
 from pathlib import Path
 from utils.Qr_Utils.qrCodeUtils import createInviteQrCode
 import base64,urllib.parse
@@ -77,6 +78,26 @@ async def send_whatsapp_redirect(event_id: str,guest_id: str, db: AsyncSession =
     
     # 5. Rediriger l'utilisateur directement vers WhatsApp
     return RedirectResponse(url=whatsapp_url)
+#---------
+@Root.get("/sms_sharing_invite/{event_id}/{guest_id}")
+async def send_whatsapp_redirect(event_id: str,guest_id: str, db: AsyncSession = Depends(connecting)):
+    # 1. Récupérer l'invité en BDD
+    guest_res = await db.execute(select(Guest).where(Guest.id == guest_id,Guest.event_id == event_id))
+    guest = guest_res.scalars().first()
+    if not guest:
+        raise HTTPException(status_code=404, detail="Invité non trouvé")
+    # 2. Préparer les données
+    guest_get_pass = guest.get_pass
+    invite_url = f"http://easyinvite-1.onrender.com/invite/{event_id}/{guest_id}/create"
+    message = f"INVITATION OFFICIELLE\n\nBonjour {guest.name}, vous êtes invité à notre événement.\n\n voici votre jeton d'accès*{guest_get_pass}* "
+    # 3. Nettoyer le numéro (ne garder que les chiffres)
+    # On suppose que le numéro est stocké avec l'indicatif pays (ex: 243...)
+    clean_phone = "".join(filter(str.isdigit, guest.telephone))
+    # 4. Encoder le message pour l'URL
+    encoded_message = urllib.parse.quote(message)
+    sms_link = f"sms:{clean_phone}?body={encoded_message}"
+    # 5. Rediriger l'utilisateur directement vers WhatsApp
+    return RedirectResponse(url=sms_link)
     #---------
 
 @Root.get("/telephone/{event_id}") #la rechecher d'une donnee
@@ -111,9 +132,9 @@ async def get_invited(request:Request,event_id:str,success:int | None = None,db:
     form_data = request.session.pop('form_data',{})
     return templates.TemplateResponse("Guest/Forms/form.html",{'request':request,'event':event,'success':get_success,**form_data})
 
-@Root.post('/create/{event_id}/guest')#get the guest register 
-async def newGuest(request:Request,event_id:str,guestName:str=Form(),guestType:str=Form(None),guestPlace:str = Form(None),
-                   guestTel:str=Form(),user=Depends(permission_required("create_guest")),db:AsyncSession = Depends(connecting)):
+@Root.post('/create/{event_id}/guest')#create guest
+async def newGuest(request:Request,event_id:str,guestName:str=Form(...),guestType:str=Form(None),guestPlace:str = Form(None),
+                   guestTel:str=Form(...),photo : UploadFile = File(None) ,user=Depends(permission_required("create_guest")),db:AsyncSession = Depends(connecting)):
     select_event = (select(Event).where(Event.id==event_id).options(selectinload(Event.guests)))
     get_event = await db.execute(select_event)
     event = get_event.scalars().first()
@@ -122,6 +143,7 @@ async def newGuest(request:Request,event_id:str,guestName:str=Form(),guestType:s
     #select_guest_mail =select(Guest).where(and_(Guest.event_id == event_id))#verifier si le guest existe deja avec le meme email
     is_guest_tel =tel_res.scalars().first()
     error_message = ""
+    photo_url,photo_public_id = None,None
     guest_get_pass = str(uuid4())[:8]
     def set_data(message):
          request.session['form_data'] = {
@@ -137,6 +159,13 @@ async def newGuest(request:Request,event_id:str,guestName:str=Form(),guestType:s
                 error_message = 'un invité existe deja avec ce numero telephonique'
                 set_data(error_message)
                 return RedirectResponse(f'/create/{event_id}/guest',status_code=303)#renvoi erreur
+    try:
+        if photo and photo.filename:
+            upload_result = await run_in_threadpool(cloudinary.uploader.upload,photo.file,folder = "EasyInvite/guest_pictures",transformation = [{'width':600,'height':600,'crop':'fill','gravity':'face'},{'quality':"auto"}])
+            photo_url = upload_result['secure_url']
+            photo_public_id = upload_result['public_id']
+    except Exception as e:
+        raise HTTPException(status_code=500,detail=f"Erreur lors du téléchargement de l'image: {str(e)}")
     guest = Guest(
         name = guestName,
         guest_type = guestType,
@@ -145,7 +174,10 @@ async def newGuest(request:Request,event_id:str,guestName:str=Form(),guestType:s
         event_id = event_id,
         qr_token = str(uuid4()),
         get_pass = guest_get_pass,
+        photo_url = photo_url,
+        photo_public_id = photo_public_id
     ) 
+
     db.add(guest)
     await db.flush()
     new_invite = Invite(
@@ -174,22 +206,40 @@ async def editGuest(request:Request,event_id:str,guest_id: str,user=Depends(perm
 @Root.post("/edit_guest_form/{Event_id}")#edit guest form
 async def editGuestPost(request:Request,Event_id:str,guest_id:str = Form(...),guestName:str=Form(...),guestType:str=Form(...),guestPlace : str = Form(...),
                         guestState : int = Form(...),guestTel:str=Form(),
+                        photo:UploadFile=File(None),
                         user=Depends(permission_required("edit_guest")),db:AsyncSession = Depends(connecting)):
     get_new_guest = select(Guest).where(Guest.id ==guest_id,Guest.event_id == Event_id).options(selectinload(Guest.invite)) #prepare le guest
     result = await db.execute(get_new_guest) #select le guest concerné
-    new_guest = result.scalars().first()#recupere le guest concerné
-    if not new_guest:
+    guest = result.scalars().first()#recupere le guest concerné
+    if not guest:
         raise HTTPException (status_code = 404,detail = "Invite introuvable")
-    new_guest.name = guestName
-    new_guest.guest_type = guestType
-    new_guest.place = guestPlace
-    new_guest.is_present = bool(guestState)
-    new_guest.telephone = guestTel
+    photo_url,photo_public_id = guest.photo_url,guest.photo_public_id
+    if photo and photo.filename:#si la photo a ete envoye
+        if not photo.content_type or not photo.content_type.startswith("image/"):#si ce n'est pas une image
+            return templates.TemplateResponse("Event/Forms/edit_form.html",{'request':request,"img_error":' le fichier doit etre une image !!!','event':editedEventData},status_code=400)
+        try:
+            await photo.seek(0)
+            if photo_public_id:
+                await run_in_threadpool(cloudinary.uploader.destroy,photo_public_id)
+            upload_result =await run_in_threadpool(cloudinary.uploader.upload,photo.file,folder = "EasyInvite/guest_pictures",transformation = [{'width':600,'height':600,'crop':'fill','gravity':'face'},{'quality':"auto"}])
+            photo_url= upload_result['secure_url']
+            photo_public_id = upload_result['public_id']
+            
+        except Exception as e:
+            raise HTTPException(status_code=500,detail=f"Erreur lors du téléchargement de l'image: {str(e)}")
+
+    guest.name = guestName
+    guest.guest_type = guestType
+    guest.place = guestPlace
+    guest.is_present = bool(guestState)
+    guest.telephone = guestTel
+    guest.photo_url = photo_url
+    guest.photo_public_id = photo_public_id
     try:
         await db.commit()
     except IntegrityError:
         db.rollback()
-        return templates.TemplateResponse('Guest/Forms/form.html',{'request':request,'event':new_guest, 'guestName':guestName, 'guestType':guestType, 'guestPlace':guestPlace,'guestTel':guestTel, },status_code=400)
+        return templates.TemplateResponse('Guest/Forms/form.html',{'request':request,'event':guest, 'guestName':guestName, 'guestType':guestType, 'guestPlace':guestPlace,'guestTel':guestTel, },status_code=400)
     return RedirectResponse(f"/guest_list/{Event_id}",status_code=303)
 
 @Root.post('/delete_guest/{event_id}/guest')#root for deleting guest

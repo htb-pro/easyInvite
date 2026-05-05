@@ -72,6 +72,9 @@
         <h3 class="success" data-aos ="fade-up">Accès autorisé</h3>
         <h4 data-aos ="fade-up"> Bienvenue {{ guest.name }}🎉</h4>
         <p data-aos ="fade-up">Soyez le bienvenu a notre evenement </br>
+        {%if guest.photo_url %}
+        <img src="{{guest.photo_url}}" class="img-fluid mb-1 shadow-lg mt-3"  style="width: 230px;height: 220px;border:8px solid white" alt="not found">
+        {%endif%}
             <hr>
      <div data-aos="fade-down">
         <p class="text-start">Evenement: <b>{{ event_name }}</b></span></p>
