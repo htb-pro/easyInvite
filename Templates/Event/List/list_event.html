@@ -84,7 +84,7 @@
                             <small class="text-muted" style="font-size : 15px;">Creation :{{event.created_date.strftime('%d-%m-%Y %H:%M')}}</small><br>
                             <small class="text-muted" style="font-size : 15px;">Date de l'evenement {{event.date}} </small><br>
                             <small class="text-muted" style="font-size : 15px;">Addresse : {{event.address}} </small><br>
-                            <small class="text-muted" style="font-size : 15px;">Invités : <b>{{event.guests | length}}</b></small>
+                            <small class="text-muted" style="font-size : 15px;">{%if event.type == "other"%}Billets : <b></b></small>{%else%}Invités : <b>{{event.guests | length}}</b></small>{%endif%}
                         </div>
                         {% if event.state == "en attente"%}
                             <span class="badge bg-warning text-dark" style="font-size:15px;">{{event.state}}</span>

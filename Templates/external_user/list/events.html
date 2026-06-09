@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EasyInvite - Événements</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body { background-color: #f8f9fa; }
+        .hero {  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%), url('https://images.unsplash.com/photo-1501386761578-e35c9d80d2d1?auto=format&fit=crop&q=80&w=1600'); background-size: cover; background-position: center; color: white; padding: 100px 0; }
+        .event-card { transition: 0.3s; border-radius: 15px; overflow: hidden; }
+        .event-card:hover { transform: translateY(-10px); box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-dark sticky-top">
+    <div class="container">
+        <a class="navbar-brand fw-bold" href="#"><i class="bi bi-ticket-detailed me-2 text-gold"></i> E-Ticket</a>
+        {%if user %}
+        <a class="navbar-brand fw-bold " href="/my_account">{{user}} <i style="font-size: 25px;" class="bi bi-person-circle "></i> </a>
+        {%else%}
+        <a href="/auth/login" class="btn btn-outline-danger text-light">
+            <i class="bi bi-box-arrow-right"></i> Se connecter
+        </a>
+        {%endif%}
+    </div>
+</nav>
+
+<header class="hero text-center">
+    <div class="container">
+        <h1 class="display-3 fw-bold">Vos événements préférés</h1>
+        <p class="lead">Réservez vos places en toute sécurité.</p>
+    </div>
+</header>
+ <div class="row my-3 justify-content-center">
+        <div class="col-md-8">
+            <form class="d-flex gap-2" action="/get/event_name" method="get">
+                <input class="form-control form-control-sm" type="search" name="event_name" placeholder="Rechercher un événement...">
+                <button class="btn btn-primary btn" type="submit" >Rechercher</button>
+            </form>
+        </div>
+    </div>
+<div class="container my-5">
+    <div class="row g-4">
+        {% for event in events %}
+        <div class="col-md-4">
+            <div class="card event-card h-100">
+                {%if event.photo_url %}
+                <img src="{{ event.photo_url }}" class="card-img-top w-100" style="height: 200px;object-fit: cover;" alt="...">
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title fw-bold">{{ event.name }}</h5>
+                    <p class="text-muted small"><i class="bi bi-calendar-event"></i> Date : {{ event.date.strftime("%d-%m-%Y") }} a partir de {{ event.date.strftime("%H:%M") }}</p>
+                    <p class="card-text">{% if event.description %}{{ event.description[:100] }}...{% endif %}</p>
+                    {% if event.ticket_prices %}
+                    {%for ticket in event.ticket_prices %}
+                    <p class="card-text"><span>{{ ticket.ticket_type.capitalize() }} : {{ ticket.price|int }} {{ ticket.device }}</span></p>
+                    {% endfor %}
+                    {%endif%}
+                </div>
+                <div class="card-footer bg-transparent border-0 pb-3">
+                    <a href="/event/details/{{ event.id }}" class="btn btn-primary w-100">Voir les détails</a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12 text-center">
+            <p>Aucun événement disponible pour le moment.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+        <div class="row">
+            <div class="col">
+                <nav class="mt-4">
+                    <ul class="pagination justify-content-center">
+                    <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ page - 1 }}">Précédent</a>
+                    </li>
+                    {% for p in range(1, total_pages + 1) %}
+                    {% if p == 1 or p == total_pages or (p >= page - 1 and p <= page + 1) %}
+                    <li class="page-item {% if page == p %}active{% endif %}">
+                    <a class="page-link" href="?page={{ p }}">{{ p }}</a>
+                    </li>
+                    {% elif p == page - 2 or p == page + 2 %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                    {% endfor %}
+                    <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ page + 1 }}">Suivant</a>
+                    </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+
+<footer class="bg-dark text-white py-4 mt-5">
+    <div class="container text-center">
+        <p>&copy; {{copyright}} EasyInvite - Plateforme de billetterie intelligente</p>
+    </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

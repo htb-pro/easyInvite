@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mes Billets - easyInvite</title>
+    <link href="/static/Css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    <script src="/static/Js/user_message.js"></script>
+    <style>
+        body {
+            background-color: #0B0B0B;
+            color: #F8F9FA;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+        .navbar-brand {
+            color: #D4AF37 !important;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .text-gold {
+            color: #D4AF37 !important;
+        }
+        .card-order {
+            background-color: #121212;
+            border: 1px solid #2A2A2A;
+            border-radius: 12px;
+            transition: transform 0.2s, border-color 0.2s;
+        }
+        .card-order:hover {
+            border-color: #D4AF37;
+        }
+        .btn-gold {
+            background-color: #D4AF37;
+            color: #0B0B0B;
+            font-weight: 600;
+            border: 1px solid #D4AF37;
+            transition: all 0.3s ease;
+        }
+        .btn-gold:hover {
+            background-color: transparent;
+            color: #D4AF37;
+        }
+        .status-badge {
+            font-size: 0.85rem;
+            padding: 6px 12px;
+            border-radius: 50px;
+        }
+        .badge-pending {
+            background-color: rgba(255, 193, 7, 0.15);
+            color: #ffc107;
+            border: 1px solid rgba(255, 193, 7, 0.3);
+        }
+        .badge-completed {
+            background-color: rgba(25, 135, 84, 0.15);
+            color: #198754;
+            border: 1px solid rgba(25, 135, 84, 0.3);
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark bg-black border-bottom border-secondary border-opacity-25 mb-5">
+    <div class="container">
+        <a class="navbar-brand" href="#"><i class="bi bi-envelope-heart-fill me-2"></i>EasyInvite</a>
+    </div>
+</nav>
+
+<div class="container my-5" >
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <h2 class="mb-4 text-center text-lg-start"><i class="bi bi-ticket-detailed me-2 text-gold"></i>Ma commande & billets</h2>
+            <p class="text-white-50 mb-4">Retrouvez ici vos billets pour l'événement. Dès que votre paiement est validé par notre équipe, votre bouton de téléchargement s'activent instantanément.</p>
+            <small class="text-light mb-3"><b>Urgence</b>: +243 991 xxxxxx</small>
+            <div hx-get="/check_order_status/{{order.id}}" 
+            hx-get="/check_order_status/{{order.id}}" hx-trigger="load" hx-swap="outerHTML" ">
+                {% include "order/message/partials/card.html" %}
+                <div id="toast-container" class="position-fixed bottom-0 end-0 p-3" style="z-index: 11">
+                    <div id="downloadToast" class="toast align-items-center text-white bg-success border-0" role="alert">
+                        <div class="d-flex">
+                            <div class="toast-body">
+                                <i class="bi bi-check-circle me-2"></i> Téléchargement lancé ! Vérifiez votre dossier de téléchargements.
+                            </div>
+                            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>
+<script src="/static/Js/bootstrap.bundle.js"></script>
+<script src="https://unpkg.com/htmx.org"></script>
+</body>
+</html>

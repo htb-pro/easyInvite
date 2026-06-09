@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded",function(){//au chargement de la page de la tu fais
     const event_type = document.querySelector(".event_type");
     const guest_type_div = document.querySelector(".guest_type_div");
+    const guest_name = document.querySelector(".guest_name label");
     const guest_table_div = document.querySelector(".guest_table_div");
     const guest_table_input = document.querySelector(".guest_table_div > input");
     const ticket_type = document.querySelector(".ticket_type_div");
@@ -10,8 +11,15 @@ document.addEventListener("DOMContentLoaded",function(){//au chargement de la pa
             guest_table_div.style.display = "None";
             guest_table_input.required = false;
         }
+        else if (event_type.value ==="other"){
+            guest_name.textContent = "Nom du participant"
+            guest_type_div.style.display = "None";
+            guest_table_div.style.display = "None";
+            ticket_type.style.display = "none";
+            guest_table_input.required =false;
+            guest_table_input.required = false;
+        }
         else{
-
             guest_type_div.style.display = "block";
             guest_table_div.style.display = "block";
             ticket_type.style.display = "None";

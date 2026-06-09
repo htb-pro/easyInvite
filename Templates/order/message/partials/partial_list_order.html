@@ -1,0 +1,146 @@
+
+<div class="d-none d-md-block" style="position:relative; z-index:1;">
+    <nav class="navbar bg-primary text-white px-3">
+        <span class="navbar-brand mb-0 h5 text-white">Liste des commandes</span>
+        {% if current_user_role in ["admin", "manager"] %}
+            <a href="#" class="btn btn-light btn-sm"><i class="bi bi-plus"></i> Ajouter</a>
+        {% endif %}
+    </nav>
+    <div class="table-view">
+        {% if orders %}
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Client</th>
+                        <th>Telephone</th>
+                        <th>Type de billet</th>
+                        <th>Nombre</th>
+                        <th>Montant</th>
+                        <th>Transaction id</th>
+                        <th>Creation</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </tr>
+            </thead>
+            <tbody>
+                
+                {% for order in orders %}
+                <tr>
+                    <td>{{ order.buyer_name }}</td>
+                    <td>{{ order.buyer_number }}</td>
+                    <td>{{order.ticket_type}}</td>
+                    <td>{{order.ticket_quantity}}</td>
+                    <td> {{order.total_amount}}</td>
+                    <td>{{order.transaction_id}}</td>
+                    <td>{{order.creation.strftime('%d-%m-%y')}} {{order.creation.strftime('%H:%M')}}</td>
+                    <td>{%if order.paid%} <span class="btn btn-success"><i class="bi bi-check"></i></span>{%else%}<span class="btn btn-danger"><i class="bi bi-x"></i></span>{%endif%}</td>
+                    <td class="d-flex justify-content-start  align-items-center">
+                        <a href="/detail/order/{{order.id}}"  class="btn btn-outline-light">👁</a>
+                        {%if current_user_role == "admin" or current_user_role == "manager" %} <!--rien que adm et manage peuvent faire ses actions-->
+                        <a href="/edit_order_form/{{event.id}}/{{order.id}}" class="btn btn-outline-light">✏</a>
+                        {%endif%}
+                        {%if current_user_role == "admin" %}
+                        <form action="/delete_order/{{order.id}}" method="post">
+                            <button type="submit" onclick="return confirm('voulez-vous supprimer cet invité ???')" class="btn btn-danger">🗑</button>
+                        </form>
+                        {%endif%}
+                    </td>
+                     {% endfor %}
+                </tr>
+            </tbody>
+        </table>
+        <div class="row">
+            <div class="col">
+                <nav class="mt-4">
+                    <ul class="pagination justify-content-center">
+                    <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ page - 1 }}">Précédent</a>
+                    </li>
+                    {% for p in range(1, total_pages + 1) %}
+                    {% if p == 1 or p == total_pages or (p >= page - 1 and p <= page + 1) %}
+                    <li class="page-item {% if page == p %}active{% endif %}">
+                    <a class="page-link" href="?page={{ p }}">{{ p }}</a>
+                    </li>
+                    {% elif p == page - 2 or p == page + 2 %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                    {% endfor %}
+                    <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ page + 1 }}">Suivant</a>
+                    </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-clipboard-plus fs-1 text-secondary"></i>
+                <h6 class="fw-bold text-light">Aucune commande pour le moment</h6>
+            </div>
+        {% endif %}
+</div>
+    
+
+
+<div class="d-md-none">
+    {% if orders %}
+        {% for order in orders %}
+    <div class="card mb-2 shadow-sm rounded-4" style="background-color:rgba(255,255,255,0.2); color:white;">
+        <div class="card-body">
+            <h3 class="fw-bold mb-1">Client : {{order.buyer_name}}</h3>
+            <small class="text-light" style="font-size:18px;">Telephone : {{order.buyer_number}}</small></br>
+            <small class="text-light" style="font-size:18px;">Nombre billet : {{order.ticket_quantity}}</small></br>
+            <small class="text-light" style="font-size:18px;">Montant : {{order.total_amount}}</small></br>
+            <!--<small style="font-size:18px;"></small><br>-->
+            <small class="text-light" style="font-size:18px;">{{order.creation.strftime('%d-%m-%y')}} {{order.creation.strftime('%H:%M')}}</small>
+            <p>Etat : <strong class="mb-2">{% if order.paid %}<i class="bi bi-check-circle-fill text-success"></i> déjà payé{%else%}<i class="bi bi-x-circle-fill text-danger"></i> Pas encore payé{%endif%}</strong></p>
+            <hr class="my-2">
+            <div class="btn-group btn-group-sm">
+                <small class="d-flex justify-content-center ">
+                    <a href="/detail/order/{{order.id}}"  class="btn btn-outline-light">👁</a>
+                    {%if current_user_role == "admin" or current_user_role == "manager" %}                     
+                    <a href="/edit_order_form/{{event.id}}/{{order.id}}" class="btn btn-outline-light">✏</a>
+                    <form action="/delete_order/{{order.id}}" method="post">
+                            <button type="submit" onclick="return confirm('voulez-vous supprimer cet invité ???')" class="btn btn-outline-danger">🗑</button>
+                    </form>
+                    {%endif%}
+                </small>
+            </div>
+        </div>
+    </div>
+        {% endfor %}
+      <!-- Pagination -->
+    <div class="row">
+        <div class="col">
+            <nav class="mt-4">
+                  <ul class="pagination justify-content-center">
+                  <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+                  <a class="page-link" href="?page={{ page - 1 }}">Précédent</a>
+                 </li>
+                 {% for p in range(1, total_pages + 1) %}
+                 {% if p == 1 or p == total_pages or (p >= page - 1 and p <= page + 1) %}
+                 <li class="page-item {% if page == p %}active{% endif %}">
+                 <a class="page-link" href="?page={{ p }}">{{ p }}</a>
+                 </li>
+                 {% elif p == page - 2 or p == page + 2 %}
+                 <li class="page-item disabled"><span class="page-link">...</span></li>
+                 {% endif %}
+                 {% endfor %}
+                 <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+                 <a class="page-link" href="?page={{ page + 1 }}">Suivant</a>
+                 </li>
+                 </ul>
+            </nav>
+         </div>
+    </div>
+    {% else %}
+        <div class="text-center py-5">
+            <i class="bi bi-clipboard-plus fs-1 text-secondary"></i>
+            <h6 class="fw-bold text-light">Aucune commande pour le moment</h6>
+        </div>
+    {% endif %}
+</div>
+<div>
+  

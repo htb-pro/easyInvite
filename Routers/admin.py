@@ -1,14 +1,15 @@
-from fastapi import Request,APIRouter,Form,Depends
+from fastapi import Request,APIRouter,Form,Depends,HTTPException
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
-from models import Group,Role,Permission,User,Event,Guest
-from sqlalchemy import select,func
+from models import Group,Role,Permission,Event,Guest,Order
+from sqlalchemy import select,func,delete
 from sqlalchemy.orm import selectinload
 from db_setting import connecting,AsyncSessionLocal
 from sqlalchemy.ext.asyncio import AsyncSession
 from schemas import Group as group_schemas
 from Routers.loging import get_current_user_from_cookie,admin_required
-import os
+from app.security.permissions import permission_required
+import os,shutil
 
 Root = APIRouter(tags = ["easyInvite"],dependencies =[Depends(get_current_user_from_cookie),Depends(admin_required)])
 templates= Jinja2Templates(directory="Templates")
@@ -48,7 +49,9 @@ async def get_event_list(request:Request,db:AsyncSession = Depends(connecting)):
         query = query.where(Event.name == event_name)
     event_res = await db.execute(query)
     events = event_res.scalars().all()
-    return templates.TemplateResponse("Authentification/admin/event/list.html",{'request':request,'events':events})
+    success_delation = request.session.pop('orders_deleted_message',None)
+    not_found = request.session.pop('orders_not_found_message',None)
+    return templates.TemplateResponse("Authentification/admin/event/list.html",{'request':request,'not_found_message':not_found,'delation_message':success_delation,'events':events})
 
 @Root.get("/access_management/create_form",name = "access_manager")
 def get_create_groupe_form(request:Request):
@@ -132,7 +135,7 @@ async def get_params_view(request:Request):
     return templates.TemplateResponse("Authentification/admin/setting_admin_option.html",{'request':request})
 
 @Root.post("/admin/delete_event/{event_id}")
-async def deleteEvent(request:Request,event_id:str,db:AsyncSession = Depends(connecting)):
+async def deleteEvent(request:Request,event_id:str,db:AsyncSession = Depends(connecting),user = Depends(permission_required("delete_event"))):
     event_to_delete =select(Event).where(Event.id==event_id)
     res = await db.execute(event_to_delete)
     eventToDelete = res.scalars().first()
@@ -145,3 +148,41 @@ async def deleteEvent(request:Request,event_id:str,db:AsyncSession = Depends(con
     await db.delete(eventToDelete)
     await db.commit()
     return RedirectResponse("/admin_dashboard",status_code=303)
+
+@Root.get("/delete_all_order/{event_id}")
+async def delete_orders(request: Request, event_id: str, db: AsyncSession = Depends(connecting),user = Depends(permission_required("delete_order"))):
+    # 1. Utilisation de l'instruction DELETE native de SQLAlchemy (plus rapide)
+    stmt = delete(Order).where(Order.event_id == event_id)
+    result = await db.execute(stmt)
+    
+    # 2. Vérification si quelque chose a été supprimé
+    if result.rowcount == 0:
+        request.session['orders_not_found_message']="Aucune commande trouvée pour cet événement"
+        return RedirectResponse("/admin_list_event", status_code=303)
+    try:
+    # 3. Validation
+        await db.commit()
+    except:
+        await db.rollback()
+        raise HTTPException(status_code=500,detail="erreur lors de la supressions")
+    request.session['orders_deleted_message'] = "toutes les commandes on ete supprimer avec succé"
+    return RedirectResponse("/admin_list_event", status_code=303)
+
+@Root.get("/delete_all_guests/{event_id}")
+async def delete_guests(request: Request, event_id: str, db: AsyncSession = Depends(connecting),user = Depends(permission_required("delete_guest"))):
+    # 1. Utilisation de l'instruction DELETE native de SQLAlchemy (plus rapide)
+    stmt = delete(Guest).where(Guest.event_id == event_id)
+    result = await db.execute(stmt)
+    
+    # 2. Vérification si quelque chose a été supprimé
+    if result.rowcount == 0:
+        request.session['orders_not_found_message']="Aucun evenment trouvée "
+        return RedirectResponse("/admin_list_event", status_code=303)
+    try:
+    # 3. Validation
+        await db.commit()
+    except:
+        await db.rollback()
+        raise HTTPException(status_code=500,detail="erreur lors de la supressions")
+    request.session['orders_deleted_message'] = "tous les invites on ete supprimer avec succé"
+    return RedirectResponse("/admin_list_event", status_code=303)

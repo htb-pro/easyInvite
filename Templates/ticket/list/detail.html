@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Détail de l'événement</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <!-- Bootstrap 5 -->
+  <link rel="stylesheet" href="/static/Css/bootstrap.min.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+  <script src="static/Js/bootstrap.bundle.js"></script>
+</head>
+<style>
+    body {
+        font-family: "Segoe UI", system-ui, sans-serif;
+        min-height: 100vh;
+        background-color: #0b1c2d;
+        position: relative;
+        overflow-x: hidden;
+        }
+
+        /* ===== BACKGROUND GEOMETRIQUE ===== */
+        body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background:
+            linear-gradient(135deg, rgba(255,255,255,0.03) 25%, transparent 25%) -60px 0,
+            linear-gradient(225deg, rgba(255,255,255,0.03) 25%, transparent 25%) -60px 0,
+            linear-gradient(315deg, rgba(255,255,255,0.03) 25%, transparent 25%),
+            linear-gradient(45deg, rgba(255,255,255,0.03) 25%, transparent 25%);
+        background-size: 120px 120px;
+        z-index: 0;
+        }
+
+        .card {
+            border-radius: 15px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+            padding: 20px;
+            background : rgb(255,255,255,0.2);
+            color :rgb(236, 236, 236);
+            position: relative;
+            z-index: 1;
+        }
+        .badge
+        {
+            width:100px;
+            height:100px;
+            font-size:15px;
+            padding-top:50% ;
+        }
+</style>
+<body>
+
+        <div class="container py-4 d-flex flex-column align-items-center justify-content-center" >
+    <!-- Carte principale -->
+            <div class="card shadow-sm col-12 col-lg-6">
+                  <!-- Bouton retour -->
+            <div class="mb-3 " style="position: relative;">
+                <a class="btn btn-outline-primary text-light btn-sm" href="/list_tickets/{{event.id}}" >
+                    ← Retour à la liste
+                </a>
+            </div>
+                <div class="card-body">
+
+                    <!-- Titre -->
+                    <h2 class="card-title mb-3">
+                      {{ ticket.get_pass }}
+                        
+                    </h2>
+                    <!-- Infos principales -->
+                        <div class="col-md-6 mb-2 d-flex" >
+                            <div class="first_div">
+                                <p>Nom de l'acheteur :  <strong class="mb-4"> {{ ticket.participator_name }}</strong></p>
+                                <p>Numero :  <strong class="mb-4">{% if ticket.participator_number %}{{ ticket.participator_number}}{% endif %} </strong></p>
+                                <p>Type de billet : <strong class="mb-2">{% if ticket.type %}{{ ticket.type }}{%else%}{{ticket.orders.ticket_type}}{% endif %}</strong></p>
+                                <p>Etat : <strong class="mb-2">{% if ticket.is_scanned %}<i class="bi bi-check-circle text-success"></i> déjà scanné{%else%}<i class="bi bi-x-circle text-danger"></i> Pas encore scanné{%endif%}</strong></p>
+                                <p>Date de commande : <strong class="mb-2">{{ ticket.creation.strftime("%d-%m-%Y")}} {{ ticket.creation.strftime("%H-:%M")}}</strong></p>
+                                
+                            </div>
+                            
+                    </div>
+
+                    <!-- Actions -->
+                    <div class="d-flex gap-2">
+                        <a href="/edit/ticket/{{event.id}}/{{ticket.id}}" class="btn btn-outline-light">✏ Modifier</a>
+                        {%if current_user_role == "admin"%}
+                        <form action="/delete_ticket/{{ ticket.id }}" method="post">
+                            <button type="submit" onclick="return confirm ('voulez-vous supprimer cet evenement')" class="btn btn-danger">
+                                Supprimer
+                            </button>
+                        </form>
+                        {%endif%}
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+</body>
+</html>

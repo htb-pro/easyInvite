@@ -43,7 +43,7 @@ def get_month(dt:datetime):
 
 
 @Root.get("/guest_list/{event_id}",name="guest_list") #get the guest list
-async def get_guest_list(request:Request,event_id:str,access_token = Cookie(None),db:AsyncSession = Depends(connecting)):
+async def get_guest_list(request:Request,event_id:str,access_token = Cookie(None),db:AsyncSession = Depends(connecting),user = Depends(permission_required("view_guest"))):
     current_res = jwt.decode(access_token,secret,algorithms = [algo])
     user_id = current_res.get("user")
     if user_id:
@@ -66,13 +66,16 @@ async def get_guest_list(request:Request,event_id:str,access_token = Cookie(None
     get_absent_guest = absent_res.scalars().all()#guest nombre qui sont absent
     present_guest = len(get_present_guest)
     absent_guest = len(get_absent_guest)
+    ticket_res = await db.execute(select(Ticket).where(Ticket.event_id == event_id))
+    tickets = ticket_res.scalars().all()
     #variable contenant message whatsapp
     
     if not event :
         raise HTTPException(404,"aucun evenement trouvé")
     if not guests :
         return templates.TemplateResponse("Guest/List/notFound.html",{'request':request,"Error":'404','event':event})
-    return templates.TemplateResponse("Guest/List/list.html",{'request':request,'invite':invite,'event':event,'guests':guests,'event_id':event_id,'present_guest':present_guest,'absent_guest':absent_guest,'current_user_role':user_role},status_code=303)
+    return templates.TemplateResponse("Guest/List/list.html",{'request':request,'invite':invite,'event':event,'guests':guests,'event_id':event_id,'present_guest':present_guest,'absent_guest':absent_guest,'current_user_role':user_role,'tickets':tickets},status_code=303)
+
 
 @Root.get("/share_invite/{event_id}/{guest_id}")
 async def send_whatsapp_redirect(event_id: str,guest_id: str, db: AsyncSession = Depends(connecting)):
@@ -121,7 +124,7 @@ async def send_whatsapp_redirect(event_id: str,guest_id: str, db: AsyncSession =
     #---------
 
 @Root.get("/telephone/{event_id}") #la rechecher d'une donnee
-async def searchEvent(request:Request,event_id :str,telephone:str = None,db:AsyncSession = Depends(connecting)):
+async def searchEvent(request:Request,event_id :str,telephone:str = None,db:AsyncSession = Depends(connecting),user = Depends(permission_required("view_guest"))):
     query =select(Guest).where(Guest.event_id==event_id)
     if telephone:
         query = query.where(Guest.telephone.like(f"%{telephone}%"))

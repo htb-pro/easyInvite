@@ -67,7 +67,7 @@
       <form method="post" action="/edit_guest_form/{{event.id}}" enctype="multipart/form-data">
         <input type="hidden" name="guest_id" value="{{guest.id}}">
         <!-- NAME -->
-        <div class="mb-3">
+        <div class="mb-3 guest_name">
           <label class="form-label">Nom complet (full name)</label>
           <input type="text" class="form-control" name="guestName" placeholder="ex : Jean Dupont " value="{{guest.name}}" required>
         </div>

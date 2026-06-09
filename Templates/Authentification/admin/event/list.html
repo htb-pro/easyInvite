@@ -8,6 +8,22 @@
 </head>
 <body>
 {% block content %}
+{% if delation_message %}
+  <div class="toast show position-fixed top-0 end-0 m-3" style="z-index: 1055;">
+    <div class="toast-body bg-success text-white d-flex justify-content-between align-items-center">
+      <span>{{ delation_message }}</span>
+      <button type="button" class="btn-close btn-close-white ms-2" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+   {% endif %}
+{% if not_found_message %}
+  <div class="toast show position-fixed top-0 end-0 m-3" style="z-index: 1055;">
+    <div class="toast-body bg-danger text-white d-flex justify-content-between align-items-center">
+      <span>{{ not_found_message }}</span>
+      <button type="button" class="btn-close btn-close-white ms-2" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+   {% endif %}
 <div class="col-md-4" style="position: relative;">
     <form action="/admin_list_event" method="get" class=" d-flex">
         <input type="text" name="event_name" id="event" class="form-control" placeholder="barre de recherche">
@@ -60,6 +76,18 @@
                     <a href="/edit_event/{{event.id}}" class="btn btn-sm btn-outline-warning">
                     <i class="bi bi-pencil"></i>
                     </a>
+                    <a href="/ticket/{{event.id}}"  class="btn btn-outline-success text-dark">
+                        Set ticket
+                    </a>
+                    {% if event.type == "other"%}
+                    <a href="/delete_all_order/{{event.id}}"  class="btn btn-outline-danger text-dark" onclick="return confirm('Voulez-vous vraiment supprimer toutes les commandes de cet evenement')">
+                        delete_all_order
+                    </a>
+                    {% else %}
+                    <a href="/delete_all_guests/{{event.id}}"  class="btn btn-outline-danger text-dark" onclick="return confirm('Voulez-vous vraiment supprimer toutes les commandes de cet evenement')">
+                        delete_all_guests
+                    </a>
+                    {%endif%}
                     </td>
                     </tr>
                     {%endfor%}
@@ -69,6 +97,19 @@
         </div>
     </div>
 </div>
+<script>
+    setTimeout(() => {
+        const alert = document.querySelector(".toast");
+        if (alert) {
+            alert.classList.remove("show");
+            alert.classList.add("fade");
+            setTimeout(() => alert.remove(), 700);
+        }
+    }, 3000); // disparaît après 6 secondes
+</script>
 {%endblock%}
+
+
 </body>
 </html>
+

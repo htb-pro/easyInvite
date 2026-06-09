@@ -40,6 +40,12 @@ document.addEventListener("DOMContentLoaded", function() {
             description.style.display = "none"
             greetings.style.display = "block"
         } 
+        else if(event_type.value === "other") {
+            couple_field.style.display = "none";
+            present_field.style.display = "none";
+            couple_input_field.required =  false;
+            couple_number.textContent = "numero organisateur"
+        } 
          else {
             couple_field.style.display = "block";
             img_field.style.display = "block";

@@ -13,7 +13,6 @@ import io ,urllib.parse
 import zipfile
 from utils.Qr_Utils.qrCodeUtils import createInviteQrCode
 from pathlib import Path
-from utils.Qr_Utils.qrCodeUtils import createInviteQrCode
 
 Root = APIRouter()
 picture_dirs = Path("static/Pictures/{None}/")
@@ -38,9 +37,9 @@ def get_month(dt:datetime):
     months_name = months[dt.month - 1]
     return f"{months_name}"
 
-@Root.get("/qr/{event_id}/{guest_id}")
+@Root.get("/qr/{event_id}/{guest_id}")#pour l'image du qr_code sur l'invitation
 async def get_qr_img(event_id:str,guest_id:str):
-    qr_image = createInviteQrCode(event_id,guest_id)
+    qr_image = createInviteQrCode(guest_id)
     return StreamingResponse(qr_image,media_type = "image/png") 
 
 @Root.get('/invite/{event_id}/{guest_id}/create')#endpoint pour la l'invitation
@@ -67,9 +66,13 @@ async def getGuestInvite(request:Request,event_id:str ,guest_id : str ,db:AsyncS
         return templates.TemplateResponse("Invitation/show_invite/birth_day_event/birthday_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright,"event_img":event_img,'event_day':get_day(event.date),'event_month':get_month(event.date),'google_map':google_maps_url})
     elif event_type == "conference":
         return templates.TemplateResponse("Invitation/show_invite/conference_event/conference_event.html",{'request':request,'guest':guestInvite,'invite':invite,'event':event,'copyright':copyright,"event_img":event_img,'event_day':get_day(event.date),'event_month':get_month(event.date),'google_map':google_maps_url})
-    # elif event_type == "Concours":
-    #     return templates.TemplateResponse("Invitation/show_invite/concours_event/concours_invite.html",{'request':request,'guest':guestInvite,'event':event,'copyright':copyright,'serie_number':serie_number,'ticket_number':ticket_number})
+    elif event_type == "other":
+         return templates.TemplateResponse("Invitation/show_invite/other/ticket.html",{'request':request,'guest':guestInvite,'event':event,'event_day':get_day(event.date),'event_month':get_month(event.date),'copyright':copyright})
 
+
+@Root.get('/transfer_message',name="message")
+async def show_transfer_message(request:Request):
+    return templates.TemplateResponse("Invitation/show_invite/other/message.html",{'request':request})
 
 @Root.get('/get_invite',name="invitation",response_class=HTMLResponse)#get the invite url
 def getInvite(request:Request):
@@ -152,10 +155,11 @@ async def get_guest_invite(event_id:str,guest_id :str,db:AsyncSession =Depends(c
     guest_id = guest_id
     phone = guest.telephone
     guest_phone = phone[:-4] +"xxxx"
-    buffer = createInviteQrCode(event,guest_id)
+    buffer = createInviteQrCode(guest_id)
     return StreamingResponse(buffer,media_type = "image/png",headers = {"content-Disposition":f"attachment;filename=event_{guest_name}-{guest_phone}.png"})
 @Root.get('/download/invite/{event_id}')#telecharger toutes les invitations(Qrcodes)
 async def getInviteFile(event_id:str,db:AsyncSession = Depends(connecting)):
+
     invites = select(Invite).where(Invite.event_id == event_id).options(selectinload(Invite.guest).selectinload(Guest.event))
     res = await db.execute(invites)
     event_guests = res.scalars().all()
@@ -182,3 +186,16 @@ async def getInviteFile(event_id:str,db:AsyncSession = Depends(connecting)):
         raise HTTPException(404,"invité n'existe pas")
     memory = createQrCode(guest_token)
     return StreamingResponse(memory,media_type = "image/png",headers={"content-Disposition":f"attachment;filename={guest_name}.png"})
+
+
+
+#-----------------------------------Ticket template------------------------------
+@Root.get('/ticket/view/{event_id}/{ticket_id}')#endpoint pour le billet
+async def get_ticket(request:Request,event_id:str,ticket_id:str ,db:AsyncSession = Depends(connecting)):
+    res =  await db.execute(select(Ticket).where(Ticket.id == ticket_id).options(selectinload(Ticket.events),selectinload(Ticket.orders)))
+    ticket = res.scalars().first()
+    if not ticket  :
+        raise HTTPException(status_code = 404,detail="event ou ticket introuvable")
+    copyright = datetime.now()
+    ticket_number = f"{ticket.number:03d}"
+    return templates.TemplateResponse("Invitation/show_invite/other/ticket.html",{'request':request,'ticket':ticket,'ticket_number':ticket_number,'event_day':get_day(ticket.events.date),'copyright':copyright})

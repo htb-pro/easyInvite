@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Réservation de Billet - easyInvite</title>
+    <link href="/static/Css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f4f6f9;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .form-card {
+            max-width: 650px;
+            margin: 40px auto;
+            background: white;
+            border: none;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+        }
+        .operator-badge {
+            border: 2px solid #dee2e6;
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+            background-color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container px-3">
+    <div class="card form-card p-4 p-md-5">
+        
+        <div class="text-center mb-4">
+            <h2 class="fw-bold text-primary">Payement</h2>
+            
+        </div>
+        <p class="text-muted">Complétez le formulaire et effectuez votre paiement pour recevoir le(s) billet(s) pour l'événement <strong>{% if event %}{{event.name}}{%endif%}</strong>.</p>
+        <form action="/make_order/{{event.id}}" method="POST">
+            {%if exist_message%}
+                <div class="alert alert-danger is-invalid">
+                    {{exist_message}}
+                </div>
+                {%endif%}
+            {%if invalid_phone_number%}
+                <div class="alert alert-danger">
+                    {{invalid_phone_number}}
+                </div>
+            {%endif%}
+            <h5 class="fw-bold text-primary mb-3"><i class="bi bi-person-circle me-2"></i>1. Vos Informations</h5>
+            <input type="hidden" name="csrf_token" value="{{csrf_token}}">
+            <div class="mb-3">
+                <label for="nom_invite" class="form-label fw-semibold">Nom complet</label>
+                <input type="text" class="form-control" id="nom_invite" name="buyer_name" value="{{buyer_name}}" placeholder="Ex: heritier tshim" required>
+            </div>
+
+            <div class="row">
+                <div class=" mb-3">
+                    <label for="telephone" class="form-label fw-semibold">Numéro de téléphone</label>
+                    <input type="tel" class="form-control {%if invalid_phone_number %} is-invalid border-danger {%endif%}" id="telephone" name="buyer_phone" value="{{buyer_phone}}" placeholder="Ex: 0812345678" required>
+                    {%if exist_message%}
+                    <div class="invalid-feedback">
+                        {{exist_message}}
+                    </div>
+                    {%endif%}
+                </div>
+                 <div class="col-12 col-md-6 mb-3">
+                <label for="ticket_type" class="form-label">Type de billet</label>
+                <select name="ticket_type" id="" class="form-control">
+                    <option value="">--Choisir le type de billet--</option>
+                    {% for ticket in event.ticket_prices %}
+                    <option value="{{ticket.ticket_type}}" {%if ticket.ticket_type == ticket_type %}selected{%endif%}>{{ticket.ticket_type}} {{ticket.price|int}} {{ticket.device}}</option>
+                    {%endfor%}                
+                </select>
+            </div>
+                <div class="col-12 col-md-6 mb-3">
+                <label for="amount" class="form-label">Nombre de billets</label>
+                <input type="number" class="form-control" id="amount" name="quantity" {%if quantity %}value="{{quantity}}"{%endif%} value="1" min="1" required>
+            </div>
+            </div>
+
+            <hr class="my-4 text-muted">
+
+            <h5 class="fw-bold text-primary mb-3"><i class="bi bi-wallet2 me-2"></i>2. Instructions de Paiement</h5>
+            <p class="text-muted small">Veuillez envoyer le montant du billet  sur l'un de nos comptes marchands ci-dessous avant de soumettre ce formulaire :</p>
+            
+            <div class="row g-2 mb-4">
+                <div class="col-12 col-lg-4">
+                    <div class="operator-badge">
+                        <span class="fw-bold text-danger d-block">M-Pesa</span>
+                        <small class="text-muted">081XXXXXXX</small>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-4">
+                    <div class="operator-badge">
+                        <span class="fw-bold text-danger d-block">Airtel Money</span>
+                        <small class="text-muted">099XXXXXXX</small>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-4">
+                    <div class="operator-badge">
+                        <span class="fw-bold text-warning d-block">Orange Money</span>
+                        <small class="text-muted">089XXXXXXX</small>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="my-4 text-muted">
+
+            <h5 class="fw-bold text-primary mb-3"><i class="bi bi-shield-check me-2"></i>3. Validation du Transfert</h5>
+            
+            <div class="mb-4">
+                </div>
+                    <label for="transaction_id" class="form-label fw-semibold">ID de Transaction / Référence du SMS</label>
+                    <input type="text" class="form-control bg-light border-primary {%if exist_message %}is-invalid border-danger{%endif%}" id="transaction_id" name="transaction_id" value="{{transaction_id}}" placeholder="Ex: MP260521.1610.A00123" required>
+                    {%if exist_message%}
+                    <div class="invalid-feedback">
+                        {{exist_message}}
+                    </div>
+                    {%endif%}
+                    <div class="form-text text-muted">
+                        <i class="bi bi-info-circle-fill text-primary me-1"></i> Copiez exactement le code de référence reçu par SMS après votre transfert. Notre équipe le validera sous peu.
+                    </div>
+                    <div class="mt-2 p-3  small ">
+                    <p><span class="text-warning"><i class="bi bi-lightbulb-fill "></i></span><span class="text-secondary-50 mb-2"><strong>Où trouver cet ID ?</strong></span></p>
+                    <p class="text-secondary-50 mb-0">Après votre transfert, vous recevez un SMS de confirmation. L'ID de transaction (ou code de transfert) ressemble à ceci :</p>
+                    <div class="d-flex flex-column mt-2 gap-2 text-secondary">
+                    <div class="d-flex">
+                            <span class="me-2" style="white-space: nowrap;">Orange Money :</span>
+                            <strong class="font-monospace ">MP260602.1029.A12345</strong>
+                        </div>
+                        <div class="d-flex">
+                            <span class="me-2" style="white-space: nowrap;">Airtel Money :</span>
+                            <strong class="font-monospace ">TID:260602.1029.A12345</strong>
+                        </div>
+                        <div class="d-flex">
+                            <span class="me-2" style="white-space: nowrap;">M-Pesa-> :</span>
+                            <strong class="font-monospace ">-</strong>
+                        </div>
+                    </div>
+                </div>
+                
+
+            <div class="d-grid gap-2 mt-4">
+                <button type="submit" class="btn btn-primary btn-lg fw-bold">
+                    <i class="bi bi-check-circle me-2"></i>Confirmer
+                </button>
+            </div>
+
+        </form>
+        
+        <div class="text-center mt-4">
+            <p class="mb-0 text-muted small">Un problème ? Contactez notre support WhatsApp au <strong>+243 XXXXXXXXX</strong></p>
+        </div>
+    </div>
+</div>
+<script>
+    setTimeout(() => {
+        const alert = document.querySelector(".alert");
+        if (alert) {
+            alert.classList.remove("show");
+            alert.classList.add("fade");
+            setTimeout(() => alert.remove(), 500);
+        }
+    }, 3000); // disparaît après 3 secondes
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

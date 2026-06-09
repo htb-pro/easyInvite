@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Inscription Réussie - easyInvite</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="/static/Css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container vh-100 d-flex justify-content-center align-items-center">
+    <div class="card shadow-lg border-0 text-center p-5" style="max-width: 550px; border-radius: 15px;">
+        
+        <div class="text-success display-1 mb-4">
+            ✓
+        </div>
+        
+        <h2 class="fw-bold text-dark mb-3">Inscription Enregistrée !</h2>
+        
+        <p class="text-muted fs-6">
+            Votre demande d'inscription liée à la transaction <strong class="text-primary">{{ transaction_id }}</strong> a bien été soumise à notre système.
+        </p>
+        
+        <hr class="my-4 text-muted">
+        
+        <div class="text-start bg-light p-3 rounded mb-4">
+            <h6 class="fw-bold text-secondary mb-2">📥 Prochaine étape :</h6>
+            <p class="small text-muted mb-1">
+                Notre équipe valide actuellement votre paiement. Dès confirmation, votre <strong>billet électronique (QR Code)</strong> vous sera envoyé automatiquement par :
+            </p>
+            <ul class="small text-muted ps-3 mb-0">
+                <li>SMS / WhatsApp</li>
+            </ul>
+        </div>
+        
+        <p class="small text-danger fw-semibold mb-4">
+            ⌛ Temps d'attente estimé : moins de 15 minutes.
+        </p>
+
+        <!-- <a href="/ticket" class="btn btn-primary btn-lg w-100" style="border-radius: 8px;">
+            Retour à l'accueil
+        </a> -->
+    </div>
+</div>
+
+</body>
+</html>

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Réservation Enregistrée - easyInvite</title>
+    <link href="/static/Css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .success-card {
+            max-width: 600px;
+            margin: 60px auto;
+            background: white;
+            border: none;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+        }
+        .icon-circle {
+            width: 80px;
+            height: 80px;
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px auto;
+            font-size: 2.5rem;
+        }
+        .step-number {
+            width: 30px;
+            height: 30px;
+            background-color: #0d6efd;
+            color: white;
+            border-radius: 50%;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container px-3">
+    <div class="card success-card p-4 p-md-5 text-center">
+        
+        <div class="icon-circle">
+            <i class="bi bi-check2-circle"></i>
+        </div>
+
+        <h2 class="fw-bold text-dark mb-2">Formulaire Validé !</h2>
+        <p class="text-muted mb-4">Votre demande de réservation pour la <strong>Conférence Annuelle</strong> a bien été enregistrée sous la référence <code class="fw-bold">#EI-99X2026</code>.</p>
+        
+        <div class="alert alert-warning text-start mb-4" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <strong>Dernière étape :</strong> Votre billet sécurisé avec QR Code vous sera envoyé par email dès confirmation de votre paiement.
+        </div>
+
+        <div class="text-start border rounded p-3 bg-light mb-4">
+            <h5 class="fw-bold mb-3 text-primary"><i class="bi bi-wallet2 me-2"></i>Comment finaliser votre paiement ?</h5>
+            
+            <div class="d-flex align-items-start mb-3">
+                <span class="step-number">1</span>
+                <div>
+                    <strong>Envoyez le montant du billet</strong> (ex: 150 CDF) sur l'un de nos comptes marchands :
+                    <ul class="list-unstyled mt-2 mb-0 sm-text">
+                        <li><i class="bi bi-phone me-1 text-danger"></i> <strong>M-Pesa :</strong> 081XXXXXXX (Nom du compte)</li>
+                        <li><i class="bi bi-phone me-1 text-danger"></i> <strong>Airtel Money :</strong> 099XXXXXXX</li>
+                        <li><i class="bi bi-phone me-1 text-warning"></i> <strong>Orange Money :</strong> 089XXXXXXX</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="d-flex align-items-start">
+                <span class="step-number">2</span>
+                <div>
+                    <strong>Envoyez l'ID de transaction</strong> reçu par SMS ainsi que votre référence de réservation à notre service client WhatsApp pour validation instantanée :
+                    <div class="mt-2">
+                        <a href="https://wa.me/243XXXXXXXXX?text=Bonjour,%20je%20souhaite%20valider%20ma%20réservation%20#EI-99X2026" class="btn btn-success btn-sm" target="_blank">
+                            <i class="bi bi-whatsapp me-2"></i>Envoyer sur WhatsApp
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-grid gap-2">
+            <a href="/" class="btn btn-outline-secondary">Retour à l'accueil</a>
+        </div>
+        
+        <p class="mt-4 mb-0 text-muted small">Besoin d'aide ? Contactez le support à support@easyinvite.com</p>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

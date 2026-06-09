@@ -75,7 +75,22 @@ body {
 </style>
 </head>
 <body>
-
+{% if wrong_token_message %}
+  <div class="toast show position-fixed top-0 end-0 m-3" style="z-index: 1055;">
+    <div class="toast-body bg-danger text-white d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-x-circle"></i> {{ wrong_token_message }}</span>
+      <button type="button" class="btn-close btn-close-white ms-2" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+{% endif %}
+{% if valid_token_message %}
+  <div class="toast show position-fixed top-0 end-0 m-3" style="z-index: 1055;">
+    <div class="toast-body bg-success text-white d-flex justify-content-between align-items-center">
+      <span><i class="bi bi-check-circle"></i> {{ valid_token_message }}</span>
+      <button type="button" class="btn-close btn-close-white ms-2" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+{% endif %}
 <nav class="navbar navbar-dark bg-primary">
     <div class="container-fluid">
         <span class="navbar-brand">
@@ -85,7 +100,13 @@ body {
     </div>
 </nav>
 <div class="container d-flex justify-content-center align-items-center" style="position: relative;">
+        {% if wrong_token_message %}
+        <button type="button" id="show-form" class="col-12  col-md-12 col-lg-6 mt-5 btn btn-danger ">
+        {% elif valid_token_message %}
+        <button type="button" id="show-form" class="col-12  col-md-12 col-lg-6 mt-5 btn btn-success ">
+        {% else %}
         <button type="button" id="show-form" class="col-12  col-md-12 col-lg-6 mt-5 btn btn-primary ">
+        {%endif%}
             <span><i class="bi bi-chevron-down"></i> Vérifier le code d'accès</span>
         </button>
 </div>
@@ -96,7 +117,13 @@ body {
             <h5 class="fw-bold mb-3 text-light">Entree le code d'accès</h5>
             <p class="text-light" style="font-size: 45px;"><i class="bi bi-shield-lock"></i></p>
             <form method="post" action="/checkIn/get_pass">
-                <input type="text" name="guest_getPass" class="form-control mb-3" placeholder="Entrez le code d'acces pour " required>
+                {% if wrong_token_message%}
+                <p class="text-danger">{{wrong_token_message}}</p>
+                {%endif%}
+                {% if valid_token_message%}
+                <p class="text-success">{{valid_token_message}}</p>
+                {%endif%}
+                <input type="text" name="token" class="form-control mb-3" placeholder="Entrez le code d'acces pour " required>
                 <button type="submit" class="btn btn-primary w-100">
                     <i class="bi bi-check-circle me-2"></i>
                     Vérifier
@@ -121,6 +148,16 @@ body {
     AOS.init({
         delay:"400"
     })
+</script>
+<script>
+    setTimeout(() => {
+        const alert = document.querySelector(".toast");
+        if (alert) {
+            alert.classList.remove("show");
+            alert.classList.add("fade");
+            setTimeout(() => alert.remove(), 700);
+        }
+    }, 6000); // disparaît après 6 secondes
 </script>
 </body>
 </html>

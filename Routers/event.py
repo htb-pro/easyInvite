@@ -37,7 +37,7 @@ cloudinary.config(
     secure = True
 )
 @Root.get("/research_event")
-async def searchEvent(request:Request,researched_event:str,db:AsyncSession = Depends(connecting)):
+async def searchEvent(request:Request,researched_event:str,db:AsyncSession = Depends(connecting),user = Depends(permission_required("view_event"))):
     get_event =(select(Event).where(Event.name.like(f"%{researched_event}%")).options(selectinload(Event.guests)))
     result = await db.execute(get_event)
     event = result.scalars().all()
@@ -62,14 +62,15 @@ async def getEventList(request:Request,  db:AsyncSession = Depends(connecting),a
             get_event =await db.execute(select(Event).options(selectinload(Event.guests)).order_by(desc(Event.created_date)))
             events = get_event.scalars().all()
             return templates.TemplateResponse("Event/List/list_event.html",{'request':request,"events":events,'curent_user_role':user_role})
-    get_event =await db.execute(select(Event).where(Event.group_id == group_id).options(selectinload(Event.guests)).order_by(desc(Event.created_date)))
+    get_event =await db.execute(select(Event).where(Event.group_id == group_id).options(selectinload(Event.guests),selectinload(Event.tickets)).order_by(desc(Event.created_date)))
     events = get_event.scalars().all()
     return templates.TemplateResponse("Event/List/list_event.html",{'request':request,"events":events,'curent_user_role':user_role})
 
 @Root.get("/event_description/{event_id}",name="main_event")#get the mainEventView
 async def getEventForm(request:Request,event_id :str,
+                       page:int = 1,
                        access_token=Cookie(None),
-                       db:AsyncSession = Depends(connecting)):
+                       db:AsyncSession = Depends(connecting),user = Depends(permission_required("view_event"))):
     current_res = jwt.decode(access_token,secret,algorithms=[algo])
     user_id = current_res.get("user")
     user_res = await db.execute(select(User).where(User.id == user_id).options(selectinload(User.roles),selectinload(User.groups)))
@@ -80,10 +81,26 @@ async def getEventForm(request:Request,event_id :str,
     get_guests = await db.execute(select_event)
     event = get_guests.scalars().first()
     total =len(event.guests)
-    return templates.TemplateResponse("Event/Home/mainEventView.html",{'request':request,"event":event,"total":total,'current_user_role':user_role})
+    #-----------------------pagination
+    total_ticket = (await db.execute(select(func.count()).select_from(Ticket).where(Ticket.event_id == event_id))).scalar() or 0
+    per_page = 50 #notre d'items par page
+    offset = (page - 1) * per_page #decalage
+    total_pages = (total_ticket + per_page - 1) // per_page #le nombre total de page
+    stmt = (
+    select(Ticket)
+    .where(Ticket.event_id == event_id)
+    .order_by(desc(Ticket.creation))  # Ferme la parenthèse de desc() ET de order_by() ici
+    .offset(offset)
+    .limit(per_page)
+    .options(selectinload(Ticket.orders)) # Vérifie si c'est 'order' ou 'orders' dans ton modèle
+)
+    ticket_res = await db.execute(stmt)
+    tickets = ticket_res.scalars().all()
+    return templates.TemplateResponse("Event/Home/mainEventView.html",{'request':request,
+    "tickets":tickets,"event":event,"total":total,'current_user_role':user_role,'total_pages': total_pages, 'page': page,})
 
 @Root.get("/detail/event/{event_id}")#la root pour voir les detail d'un event
-async def eventDetail(request:Request,event_id : str,access_token = Cookie(None),db:AsyncSession = Depends(connecting)):
+async def eventDetail(request:Request,event_id : str,access_token = Cookie(None),db:AsyncSession = Depends(connecting),user = Depends(permission_required("view_event"))):
     res = jwt.decode(access_token,secret,algorithms=[algo])
     user_id = res.get("user")
     user_res = await db.execute(select(User).where(User.id == user_id).options(selectinload(User.roles),selectinload(User.groups)))
@@ -97,6 +114,15 @@ async def eventDetail(request:Request,event_id : str,access_token = Cookie(None)
 @Root.get("/event_form",name="event_form")#event form request
 def getEventForm(request:Request,user=Depends(permission_required("create_event"))):
     return templates.TemplateResponse("Event/Forms/event_form.html",{'request':request})
+#------------------------------------------l'addresse du dossier de stockage des image
+FOLDER_MAPPING = {
+    "Mariage": "EasyInvite/wedding_events",
+    "birth_day": "EasyInvite/birth_day_events",
+    "conference": "EasyInvite/conference_events",
+    "concours": "EasyInvite/concours_events"
+}
+DEFAULT_FOLDER = "EasyInvite/ticket_pictures"
+#------------------------------------------
 
 @Root.post("/create_event") #create an event
 async def creatEvent(request:Request,eventName:str = Form(...),
@@ -112,7 +138,8 @@ is_active : bool = Form(None),#le cadeau
 language :str = Form(...),#la langue
 organizer :str = Form(None),#organisateeur
 greetings:str = Form(None),#message de bienvenu
-Db:AsyncSession = Depends(connecting)):
+Db:AsyncSession = Depends(connecting),
+):
     res = jwt.decode(access_token,secret,algorithms=[algo])
     user_id = res.get("user")
     user_res = await Db.execute(select(User).where(User.id == user_id).options(selectinload(User.groups),selectinload(User.roles)))
@@ -134,24 +161,15 @@ Db:AsyncSession = Depends(connecting)):
             },status_code=400)
     try:
         if photo and photo.filename:
-            if eventType =="Mariage":
-                upload_result = await run_in_threadpool(cloudinary.uploader.upload,photo.file,folder = "EasyInvite/wedding_events",transformation = [{'width':1000,'height':1000,'crop':'limit'},{'quality':"auto"}])
-                photo_url = upload_result['secure_url']
-                photo_public_id = upload_result['public_id']
-            elif eventType =="birth_day":
-                upload_result = await run_in_threadpool(cloudinary.uploader.upload,photo.file,folder = "EasyInvite/birth_day_events",transformation = [{'width':1000,'height':1000,'crop':'limit'},{'quality':"auto"}])
-                photo_url = upload_result['secure_url']
-                photo_public_id = upload_result['public_id']
-            elif eventType =="conference":
-                upload_result = await run_in_threadpool(cloudinary.uploader.upload,photo.file,folder = "EasyInvite/conference_events",transformation = [{'width':1000,'height':1000,'crop':'limit'},{'quality':"auto"}])
-                photo_url = upload_result['secure_url']
-                photo_public_id = upload_result['public_id']
-            elif eventType =="concours":
-                upload_result = await run_in_threadpool(cloudinary.uploader.upload,photo.file,folder = "EasyInvite/concours_events",transformation = [{'width':1000,'height':1000,'crop':'limit'},{'quality':"auto"}])
-                photo_url = upload_result['secure_url']
-                photo_public_id = upload_result['public_id']
+            target_folder = FOLDER_MAPPING.get(eventType,DEFAULT_FOLDER)
+            upload_result = await run_in_threadpool(
+                cloudinary.uploader.upload, photo.file, folder=target_folder,
+                transformation=[{'width': 1000, 'height': 1000, 'crop': 'limit'}, {'quality': "auto"}]
+            )
+            photo_url = upload_result['secure_url']
+            photo_public_id = upload_result['public_id']
     except Exception as e:
-        raise HTTPException(status_code=500,detail=f"Erreur lors du téléchargement de l'image: {str(e)}")
+        raise HTTPException(status_code=500,detail=f"Erreur lors du chargement de l'image: {str(e)}")
     try:
         newEvent = Event(
         name = eventName,
@@ -222,19 +240,15 @@ async def editEvent(request:Request,event_id : str,access_token = Cookie(None),e
         if not photo.content_type or not photo.content_type.startswith("image/"):#si ce n'est pas une image
             return templates.TemplateResponse("Event/Forms/edit_form.html",{'request':request,"img_error":' le fichier doit etre une image !!!','event':editedEventData},status_code=400)
         try:
+            target_folder = FOLDER_MAPPING.get(eventType,DEFAULT_FOLDER)
             if event_photo_public_id:
-                if eventType =="Mariage":
-                    await run_in_threadpool(cloudinary.uploader.destroy,event_photo_public_id)
-                elif eventType =="birth_day":
-                    await run_in_threadpool(cloudinary.uploader.destroy,event_photo_public_id)
-            if eventType == "Mariage" and not event_photo_public_id:
-                upload_result =await run_in_threadpool(cloudinary.uploader.upload,photo.file,folder = "EasyInvite/wedding_events",transformation = [{'width':1000,'height':1000,'crop':'limit'},{'quality':"auto"}])
-                photo_url= upload_result['secure_url']
-                photo_public_id = upload_result['public_id']
-            elif eventType == "birth_day" and not event_photo_public_id:
-                upload_result =await run_in_threadpool(cloudinary.uploader.upload,photo.file,folder = "EasyInvite/birth_day_events",transformation = [{'width':1000,'height':1000,'crop':'limit'},{'quality':"auto"}])
-                photo_url= upload_result['secure_url']
-                photo_public_id = upload_result['public_id']
+                await run_in_threadpool(cloudinary.uploader.destroy,event_photo_public_id)
+            upload_result = await run_in_threadpool(
+                cloudinary.uploader.upload, photo.file, folder=target_folder,
+                transformation=[{'width': 1000, 'height': 1000, 'crop': 'limit'}, {'quality': "auto"}]
+            )
+            photo_url = upload_result['secure_url']
+            photo_public_id = upload_result['public_id']
         except Exception as e:
             raise HTTPException(status_code=500,detail=f"Erreur lors du téléchargement de l'image: {str(e)}") 
     editedEventData.name = eventName

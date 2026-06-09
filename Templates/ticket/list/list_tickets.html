@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Invités</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap 5 -->
+    <link rel="stylesheet" href="/static/Css/bootstrap.min.css">
+        <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+        <!-- Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        @media (min-width : 716px){
+            .mobile-list{
+                display: none;
+            }
+        }
+        body {
+        font-family: "Segoe UI", system-ui, sans-serif;
+        min-height: 100vh;
+        background-color: #0b1c2d;
+        position: relative;
+        overflow-x: hidden;
+        }
+
+        /* ===== BACKGROUND GEOMETRIQUE ===== */
+        body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background:
+            linear-gradient(135deg, rgba(255,255,255,0.03) 25%, transparent 25%) -60px 0,
+            linear-gradient(225deg, rgba(255,255,255,0.03) 25%, transparent 25%) -60px 0,
+            linear-gradient(315deg, rgba(255,255,255,0.03) 25%, transparent 25%),
+            linear-gradient(45deg, rgba(255,255,255,0.03) 25%, transparent 25%);
+        background-size: 120px 120px;
+        z-index: 0;
+        }
+
+        .table th 
+        {
+            background-color: rgb(255,255,255,0.3); 
+            border-color :rgb(255,255,255,0.3);
+            color:white;
+        }
+        .table td 
+        {
+            background-color: rgb(255,255,255,0.3); 
+            border-color :rgb(255,255,255,0.3);
+            color:white;
+        }
+    </style>
+</head>
+<body>
+           
+        
+<div class="container py-3">
+    <!-- Header -->
+    <div class="mb-3" style="position: relative;">
+        <h5 class="fw-bold mb-0 text-light">📋 Billet </h5>
+        <small class="text-light">Événement : {{event.name}}</small>
+        <div class="home mt-3">
+            <a href="{{url_for('main_page')}}" class="text-decoration-none text-primary"><i class="bi bi-house-check"></i> Accueil</a>
+        </div>
+    </div>
+
+    <!-- Stats compactes -->
+    <div class="row g-2 mb-3">
+        <div class="col-4 text-center">
+            <div class="bg-white rounded-3 p-2 shadow-sm">
+                <strong></strong><br>
+                <small>Total : {{total_ticket }} </small>
+            </div>
+        </div>
+        <div class="col-4 text-center">
+            <div class="bg-white rounded-3 p-2 shadow-sm">
+                <strong class="text-success"></strong><br>
+                <small>Présents : {{total_scanned_tickets }}</small>
+            </div>
+        </div>
+        <div class="col-4 text-center">
+            <div class="bg-white rounded-3 p-2 shadow-sm">
+                <strong class="text-secondary"></strong><br>
+                <small>Absent : {{total_unscanned_tickets}}</small>
+            </div>
+        </div>
+    </div>
+
+    <!--barre de recherche-->
+    <form class="mb-3 d-flex" method="get" action="/ticket/participator_number/{{event.id}}" style="position:relative;z-index:1;">
+        <input type="text" class="form-control me-2" placeholder="Rechercher un invité" name="participator_phone">
+        <button type="submit" class="btn btn-primary">🔍</button>
+    </form>
+    {% if deleting_message %} <!-- message a affichier lors qu'un ticket est supprimer-->
+  <div class="toast show position-fixed top-0 end-0 m-3" style="z-index: 1055;">
+    <div class="toast-body bg-success text-white d-flex justify-content-between align-items-center">
+      <span>{{ deleting_message }}</span>
+      <button type="button" class="btn-close btn-close-white ms-2" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+   {% endif %}
+    
+     {%if edit_ticket_message %} <!-- message a affichier lors qu'un ticket est modifie-->
+            <div class="toast show position-fixed top-0 end-0 m-3" style="z-index: 1055;">
+            <div class="toast-body bg-success text-white d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-check-circle"></i> {{edit_ticket_message}}</span>
+            <button type="button" class="btn-close btn-close-white ms-2" data-bs-dismiss="toast"></button>
+            </div>
+        </div>
+            {%endif%}
+    <!-- Liste invités -->
+    <div class="d-none  d-md-block d-lg-block" style="position:relative;z-index : 1;">
+            <nav class="navbar bg-primary text-white px-3">
+                <span class="navbar-brand mb-0 h5 text-white">
+                    Liste des billets
+                </span>
+                {%if current_user_role == "admin" or current_user_role == "manager" %}
+                <a href="/create/{{event.id}}/ticket" class="btn btn-light btn-sm">
+                    <i class="bi bi-plus"></i>Ajouter
+                </a>
+                {%endif%}
+            </nav>
+        <div class="table-view">
+        <div class="table-view">
+            <table class="table table-striped">
+                {% if tickets %}
+                <thead>
+                    <tr>
+                        <th>Nom du Participant</th>
+                        <th>Numero</th>
+                        <th>Type de billet</th> 
+                        <th>Qr token</th> 
+                        <th>Get_pass</th>
+                        <th>Etat</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>   
+                    
+                    {% for ticket in tickets%}
+                <tbody>
+                    <tr>
+                        <td>{{ ticket.participator_name  }}</td>
+                        <td>{{ ticket.participator_number  }}</td>
+                        <td>{{ ticket.orders.ticket_type}}</td>
+                        <td>{{ ticket.qr_token   }}</td>
+                        <td>{{ ticket.get_pass }}</td>
+                        <td>{% if ticket.is_scanned %}Oui{%else%}Non{%endif%}</td>
+                        <td class="d-flex justify-content-start  align-items-center">
+                            {%if current_user_role == "admin" or current_user_role == "manager" %}                       
+                                <a href="/share_invite/{{event.id}}/{{ticket.id}}"  class="btn btn-outline-success ">
+                                    <i class="bi bi-whatsapp"></i>
+                                </a>
+                            {%endif%}
+                            <a href="/ticket/view/{{ticket.id}}"  class="btn btn-outline-light">👁</a>
+                            {%if current_user_role == "admin" or current_user_role == "manager" %}
+                            <a href="/edit/ticket/{{event.id}}/{{ticket.id}}" class="btn btn-outline-light">✏</a>
+                            {%endif%}
+                            {%if current_user_role == "admin"%}
+                            <a href="/ticket/view/{{event.id}}/{{ticket.id}}" class="btn btn-outline-light"><i class="bi bi-envelope me-1"></i></a>
+                            <form action="/delete_ticket/{{ticket.id}}" method="post">
+                                <input type="hidden" name="event_id" value="{{ticket.event_id}}">
+                                <button type="submit" onclick="return confirm('voulez-vous supprimer ce billet ???')" class="btn btn-outline-danger">🗑</button>
+                            </form>
+                            {%endif%}
+                        </td>
+                    </tr> {% endfor %}
+                    
+                    {% else %}
+            <div class="text-center py-5">
+                <i class="bi bi-clipboard-plus fs-1 text-secondary"></i>
+                <h6 class="fw-bold text-light">Aucun billet trouvé </h6>
+            </div>
+        {% endif %}
+                </tbody> 
+                
+            </table>
+                <div class="row">
+                <div class="col">
+                    <nav class="mt-4">
+                        <ul class="pagination justify-content-center">
+                        <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+                        <a class="page-link" href="?page={{ page - 1 }}">Précédent</a>
+                        </li>
+                        {% for p in range(1, total_pages + 1) %}
+                        {% if p == 1 or p == total_pages or (p >= page - 1 and p <= page + 1) %}
+                        <li class="page-item {% if page == p %}active{% endif %}">
+                        <a class="page-link" href="?page={{ p }}">{{ p }}</a>
+                        </li>
+                        {% elif p == page - 2 or p == page + 2 %}
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                        {% endif %}
+                        {% endfor %}
+                        <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+                        <a class="page-link" href="?page={{ page + 1 }}">Suivant</a>
+                        </li>
+                        </ul>
+                    </nav>
+                </div>
+            </div>
+        </div> 
+          
+    </div>
+</div>
+
+<div class="d-block d-md-none d-lg-none d-xl-none">
+    <div class="container mobile-list">
+        {%if tickets%}
+        {% for ticket in tickets%}
+        <div class="card mb-2 shadow-sm rounded-4"  style="background-color:rgb(255,255,255,0.2);color:white;">
+            <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <h3 class="fw-bold mb-1">{{ticket.participator_name}}</h3>
+                            <small style="font-size:18px;">type de billet : {{ticket.type}}</small><br>
+                            <small style="font-size:18px;">Code d'acces : {{ticket.get_pass}}</small></br>
+                        </div>
+                    </div>
+                    <hr class="my-2">
+                    <div class="d-flex flex-column justify-content-between ">
+            
+                        <small class="text-muted" style="font-size:18px;">{% if ticket.scanned %}<i class="bi bi-check-circle-fill text-success"></i> Scanné {%else%}<span class="text-danger"><i class="bi bi-x-circle-fill "></i> Non scanné</span>{%endif%}</small></br>
+                        <div class="btn-group btn-group-sm">
+                            <small class="d-flex justify-content-center ">
+                                
+                                <a href="/guest/{{ticket.id}}/{{event_id}}/detail"  class="btn btn-outline-light">👁</a>
+                                {%if current_user_role == "admin" or current_user_role == "manager" %}                     
+                                <a href="/share_invite/{{event.id}}/{{ticket.id}}"  class="btn btn-outline-success ">
+                                    <i class="bi bi-whatsapp"></i>
+                                </a>
+                                <a href="/sms_sharing_invite/{{event.id}}/{{ticket.id}}"  class="btn btn-outline-light ">
+                                    <i class="bi bi-chat-left-text"></i>
+                                </a>
+                                <a href="/invite/{{event_id}}/{{ticket.id}}/create" class="btn btn-outline-light"><i class="bi bi-envelope me-1"></i></a>
+                                <a href="/edit_guest_form/{{event.id}}/{{ticket.id}}" class="btn btn-outline-light ms-2">✏</a>
+                                <form action="/delete_guest/{{event_id}}/guest" method="post" class="ms-2">
+                                    <input type="hidden" name="guest_id" value="{{ticket.id}}">
+                                    <button type="submit" onclick="return confirm('voulez-vous supprimer cet invité ???')" class="btn btn-outline-danger">🗑</button>
+                                </form>
+                                {%endif%}
+                            </small>
+                        </div>
+                    </div>
+            </div>
+        </div>
+         {%endfor%}
+                {% else %}
+                <div class="mb-3 text-center">
+                    <i class="bi bi-clipboard-plus fs-1 text-secondary"></i>
+                    <h6 class="fw-bold text-light">Aucun billet trouvé</h6>
+                </div>
+                
+                
+                   
+                    {%endif%}
+    </div>
+
+            <!-- Pagination -->
+            <nav class="mt-4 d-block d-md-none">
+                <ul class="pagination justify-content-center pagination-sm">
+                    <li class="page-item"><a class="page-link" href="#">←</a></li>
+                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                    <li class="page-item"><a class="page-link" href="#">2</a></li>
+                    <li class="page-item"><a class="page-link" href="#">3</a></li>
+                    <li class="page-item"><a class="page-link" href="#">→</a></li>
+                </ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<script>
+    setTimeout(() => {
+        // 1. Gestion de l'alerte
+        const alertElement = document.querySelector(".alert");
+        if (alertElement) {
+            alertElement.classList.remove("show");
+            alertElement.classList.add("fade");
+            setTimeout(() => alertElement.remove(), 500);
+        } 
+        // 2. Gestion du toast (Utilisation de 'else if')
+        else {
+            const toastElement = document.querySelector(".toast");
+            if (toastElement) {
+                toastElement.classList.remove("show");
+                toastElement.classList.add("fade");
+                setTimeout(() => toastElement.remove(), 700);
+            }
+        }
+    }, 3000); 
+</script>
+</body>
+</html>
+
+
+
+

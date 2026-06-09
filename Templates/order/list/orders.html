@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>orders</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- Bootstrap 5 -->
+    <link rel="stylesheet" href="/static/Css/bootstrap.min.css">
+        <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+        <!-- Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        
+        body {
+        font-family: "Segoe UI", system-ui, sans-serif;
+        min-height: 100vh;
+        background-color: #0b1c2d;
+        position: relative;
+        overflow-x: hidden;
+        }
+
+        /* ===== BACKGROUND GEOMETRIQUE ===== */
+        body::before {
+        content: "";
+        position: fixed;
+        inset: 0;
+        background:
+            linear-gradient(135deg, rgba(255,255,255,0.03) 25%, transparent 25%) -60px 0,
+            linear-gradient(225deg, rgba(255,255,255,0.03) 25%, transparent 25%) -60px 0,
+            linear-gradient(315deg, rgba(255,255,255,0.03) 25%, transparent 25%),
+            linear-gradient(45deg, rgba(255,255,255,0.03) 25%, transparent 25%);
+        background-size: 120px 120px;
+        z-index: 0;
+        }
+
+        .table th 
+        {
+            background-color: rgb(255,255,255,0.3); 
+            border-color :rgb(255,255,255,0.3);
+            color:white;
+        }
+        .table td 
+        {
+            background-color: rgb(255,255,255,0.3); 
+            border-color :rgb(255,255,255,0.3);
+            color:white;
+        }
+    </style>
+</head>
+<body >
+
+<div class="container py-3">
+    <!-- Header -->
+    <div class="mb-3" style="position: relative;">
+        <h5 class="fw-bold mb-0 text-light">📋 Commandes </h5>
+        <small class="text-light">Événement : {{event.name}}</small>
+        <div class="home mt-3">
+            <a href="{{url_for('main_page')}}" class="text-decoration-none text-primary"><i class="bi bi-house-check"></i> Accueil</a>
+        </div>
+    </div>
+
+    <!-- Stats compactes -->
+    <div class="row g-2 mb-3">
+        <div class="col-4 text-center">
+            <div class="bg-white rounded-3 p-2 shadow-sm" >
+                <strong></strong><br>
+                <small>Total : {{total_order}} </small>
+            </div>
+        </div>
+        {% if  current_user_role == "admin"%}
+        <div class="col-4 text-center">
+            <div class="bg-white rounded-3 p-2 shadow-sm">
+                <strong class="text-success"></strong><br>
+                <small>Traités : {{done_order}}</small>
+            </div>
+        </div>
+        <div class="col-4 text-center">
+            <div class="bg-white rounded-3 p-2 shadow-sm">
+                <strong class="text-secondary"></strong><br>
+                <small>En attende : {{undone_order}}</small>
+            </div>
+        </div>
+        {%endif%}
+    </div>
+
+    <!--barre de recherche-->
+    <form class="mb-3 d-flex" method="get" action="/participator_phone/{{event.id}}" style="position:relative;z-index:1;">
+        <input type="text" class="form-control me-2" placeholder="Rechercher un invité" name="participator_phone">
+        <button type="submit" class="btn btn-primary">🔍</button>
+    </form>
+    
+    <!-- Liste invités -->
+    
+{% if deleting_message %}
+  <div class="toast show position-fixed top-0 end-0 m-3" style="z-index: 1055;">
+    <div class="toast-body bg-success text-white d-flex justify-content-between align-items-center">
+      <span>{{ deleting_message }}</span>
+      <button type="button" class="btn-close btn-close-white ms-2" data-bs-dismiss="toast"></button>
+    </div>
+  </div>
+   {% endif %}
+  <div id="table-container" 
+     hx-get="/get_orders_table/{{ event.id }}?page={{ page }}" 
+     hx-trigger="every 5s" 
+     hx-swap="innerHTML">
+    
+  {% include "/order/message/partials/partial_list_order.html" %}
+  </div>
+</div>
+
+<script src="https://unpkg.com/htmx.org"></script>
+<script>
+    setTimeout(() => {
+        const alert = document.querySelector(".toast");
+        if (alert) {
+            alert.classList.remove("show");
+            alert.classList.add("fade");
+            setTimeout(() => alert.remove(), 700);
+        }
+    }, 3000); // disparaît après 6 secondes
+</script>
+</body>
+</html>
