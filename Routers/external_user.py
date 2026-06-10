@@ -1,18 +1,22 @@
 from datetime import datetime
 from fastapi import APIRouter, Request, Form,Depends,Cookie,HTTPException,status
-from fastapi.responses import HTMLResponse, RedirectResponse,Response 
+from fastapi.responses import HTMLResponse, RedirectResponse,Response ,StreamingResponse,JSONResponse
 from fastapi.staticfiles import StaticFiles 
 from fastapi.templating import Jinja2Templates  
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, asc, desc
 from sqlalchemy.orm import selectinload
 from db_setting import connecting
-from config import secret, algo
-import jwt,random
+from config import secret, algo,REDIS_SETTINGS
+import jwt,random,io
 from models import User, Order, Event,ExternalUser,OTP
 from app.security.permissions import permission_required
 from datetime import datetime, timedelta,timezone
 from utils.sms_setting.sms_utils import send_otp_sms
+from utils.redis_config import redis_conn
+from uuid import UUID
+from arq import create_pool
+
 templates = Jinja2Templates(directory="Templates")
 Root = APIRouter()
 Root.mount("/static",StaticFiles(directory="static"),name="static")#ou sont stocker les fichier static
@@ -39,14 +43,15 @@ async def search_event(request:Request,event_name:str,page:int = 1,db:AsyncSessi
         'copyright': copyright,
     })
 
-@Root.get("/event/list", response_class=HTMLResponse)
+@Root.get("/event/list", response_class=HTMLResponse)#list des evenement
 async def get_list_of_events(request: Request,  page: int = 1, db: AsyncSession = Depends(connecting)):
     #------------
-    user_number = None
+    user_name = None
     current_user_id = request.cookies.get("session_user_id")
     if current_user_id:
         user = (await db.execute(select(ExternalUser).where(ExternalUser.id == current_user_id))).scalars().first()
-        user_number = user.phone_number
+        if user:
+            user_name = user.name
      # 2. Pagination
     per_page = 10 #notre d'items par page
     offset = (page - 1) * per_page #decalage
@@ -67,7 +72,7 @@ async def get_list_of_events(request: Request,  page: int = 1, db: AsyncSession 
         'page': page,
         'events': events,
         'copyright': copyright,
-        'user': user_number
+        'user': user_name
     })
 
 @Root.get("/event/details/{event_id}")#la root pour voir les detail d'un event
@@ -128,7 +133,7 @@ async def mon_compte_participant(
         {
             "request": request, 
             "orders": orders,
-            "user_phone": current_user.phone_number # Permet d'afficher "0991..." dans la navbar
+            "user_name": current_user.name # Permet d'afficher "0991..." dans la navbar
         }
     )
 
@@ -172,6 +177,7 @@ async def login_page(request: Request, db: AsyncSession = Depends(connecting)):
 @Root.post("/auth/request-otp")
 async def request_otp(
     phone: str = Form(...), 
+    name: str = Form(...), 
     db: AsyncSession = Depends(connecting)
 ):
     # 1. Validation et Nettoyage strict du numéro
@@ -196,7 +202,7 @@ async def request_otp(
         user = res.scalars().first()
         
         if not user:
-            user = ExternalUser(phone_number=clean_phone)
+            user = ExternalUser(phone_number=clean_phone,name=name)
             db.add(user)
             await db.flush() # Assure la génération de user.id
             
@@ -216,11 +222,12 @@ async def request_otp(
             db.add(current_otp)
             
         # 🔥 ENVOI DU SMS VIA AFRICA'S TALKING (Avec await et sans accolades)
-        sms_sent = await send_otp_sms(clean_phone, generated_otp)
+        #sms_sent = await send_otp_sms(clean_phone, generated_otp)
+        print(f"==============={clean_phone}, {generated_otp}")
         
-        if not sms_sent:
-            # Optionnel : Tu peux choisir de bloquer ou de logger si le SMS échoue
-            print(f"⚠️ Alerte : Le SMS n'a pas pu être envoyé à {clean_phone}")
+        # if not sms_sent:
+        #     # Optionnel : Tu peux choisir de bloquer ou de logger si le SMS échoue
+        #     print(f"⚠️ Alerte : Le SMS n'a pas pu être envoyé à {clean_phone}")
             
         await db.commit()
         
@@ -311,6 +318,7 @@ async def verify_otp(
 
 @Root.get("/auth/logout")
 async def logout(request: Request):
+
     # 1. Préparation de la redirection vers la page de login
     response = RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
     
@@ -321,3 +329,84 @@ async def logout(request: Request):
     request.session.clear()
     
     return response
+
+#-----------------------------------------------external_user ticket
+@Root.get("/download/ticket/{ticket_id}/{order_id}")#telechargement d'un billet 
+async def download_single_ticket(  
+    ticket_id: UUID, 
+    order_id: UUID, 
+    request: Request, 
+    db: AsyncSession = Depends(connecting)
+):
+    result = await db.execute(select(Order).where(Order.id == str(order_id)))
+    order = result.scalar_one_or_none()
+    if not order or not order.paid:
+        raise HTTPException(status_code=403, detail="Commande invalide ou non payée.")
+
+    # 🎯 2. CORRECTION CLÉ REDIS : Utilise la même clé que le Worker ('ticket_pdf_cache:')
+    pdf_bytes = await redis_conn.get(f"ticket_pdf_cache:{ticket_id}")
+    
+    if not pdf_bytes:
+        # SÉCURITÉ ABSOLUE : Initialisation du pool ARQ au besoin
+        if not hasattr(request.app.state, "arq_pool") or request.app.state.arq_pool is None:
+            print("⚠️ [ROUTE] arq_pool était None, initialisation manuelle en cours...")
+            request.app.state.arq_pool = await create_pool(REDIS_SETTINGS)
+            
+        pool = request.app.state.arq_pool
+        
+        # 🎯 3. CORRECTION DU NOM DE LA TÂCHE ARQ : appeler 'generate_ticket_pdf_task'
+        # Et on lui passe bien les arguments attendus par ton worker unitaire !
+        await pool.enqueue_job('generate_ticket_pdf_task', str(ticket_id), str(order_id))
+        print(f"🚀 [ROUTE] Tâche envoyée avec succès pour le ticket unique {ticket_id}")
+        
+        return templates.TemplateResponse(
+            "order/message/partials/waiting_page.html", 
+            {"request": request, "ticket_id": ticket_id, "order_id": order_id},
+            status_code=202 # On peut quand même garder le statut 202
+        )
+    
+    # 🎯 4. CORRECTION FILENAME : Le fichier ne contient qu'UN seul billet, on le nomme d'après le ticket_id
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes), 
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=Billet_{ticket_id}.pdf"}
+    )
+
+#la route de telechargement de tous les billets d'une commmande
+@Root.get("/download/order/{order_id}")
+async def download_all_order_tickets(
+    order_id: UUID, 
+    request: Request, 
+    db: AsyncSession = Depends(connecting)
+):
+    # ... tes vérifications de commande habituelles (order.paid, etc.) ...
+
+    # 1. Vérification dans le cache Redis
+    pdf_bytes = await redis_conn.get(f"pdf_cache:{order_id}")
+    
+    if not pdf_bytes:
+        # 🎯 SÉCURITÉ ABSOLUE : Si le state est None, on crée le pool à la volée !
+        if not hasattr(request.app.state, "arq_pool") or request.app.state.arq_pool is None:
+            print("⚠️ [ROUTE] arq_pool était None, initialisation manuelle en cours...")
+            request.app.state.arq_pool = await create_pool(REDIS_SETTINGS)
+            
+        # Maintenant, on est sûr à 100% qu'il n'est plus None !
+        pool = request.app.state.arq_pool
+        
+        # 2. Envoi de la tâche au Worker ARQ
+        await pool.enqueue_job('generate_pdf_task', str(order_id))
+        print(f"🚀 [ROUTE] Tâche envoyée avec succès pour la commande {order_id}")
+        
+        # 3. Retour de la salle d'attente (VWR)
+        return templates.TemplateResponse(
+            "order/message/partials/waiting_page_order.html", 
+            {"request": request, "order_id": order_id},
+            status_code=202 # On peut quand même garder le statut 202
+        )
+    
+    # 4. SCÉNARIO B : Le PDF est prêt ! On le distribue au format binaire
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes), 
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename=Billets_Commande_{order_id}.pdf"}
+    )

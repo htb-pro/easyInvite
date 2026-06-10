@@ -19,21 +19,21 @@
     <div class="card waiting-card p-5 text-center">
         <div class="spinner-border text-orange mb-4" style="width: 3rem; height: 3rem;" role="status"></div>
         
-        <h2 class="fw-bold mb-3 text-light">Préparation de votre billet</h2>
+        <h2 class="fw-bold mb-3 text-white">Préparation de votre billet</h2>
         <p class="text-secondary">Le serveur dessine vos accès uniques. Merci de ne pas fermer cette page.</p>
         
         <div class="progress mt-4" style="height: 12px; background-color: #2d2d2d;">
             <div class="progress-bar progress-bar-striped progress-bar-animated progress-bar-orange" style="width: 100%"></div>
         </div>
         
-        <p id="status-text" class="mt-4 small text-white">Vérification de la disponibilité dans 5 secondes...</p>
+        <p id="status-text" class="mt-4 small text-light">Vérification de la disponibilité dans 5 secondes...</p>
     </div>
 </div>
 
 <script>
     const ticketId = "{{ ticket_id }}";
     const orderId = "{{ order_id }}";
-    const targetUrl = `/download/ticket/${ticketId}/${orderId}`;
+    const targetUrl = `/download/order/${orderId}`;
     let countdown = 5;
 
     // Compte à rebours visuel pour l'utilisateur

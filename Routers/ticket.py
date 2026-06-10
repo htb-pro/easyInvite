@@ -106,7 +106,7 @@ async def scan_ticket(ticket_id: str, db: AsyncSession = Depends(connecting)):
     
     return {"valid": True, "name": ticket.participator_name, "ticket_id": ticket.id}
 
-@Root.get("/ticket/view/{ticket_id}")
+@Root.get("/ticket/view/{ticket_id}")#ticket detail
 async def get_ticket_info(request:Request,ticket_id:str,access_token = Cookie(None),db:AsyncSession=Depends(connecting),user= Depends(permission_required("view_ticket"))):
     current_res = jwt.decode(access_token,secret,algorithms = [algo])
     user_id = current_res.get("user")
@@ -236,8 +236,8 @@ async def get_submitted_form(request:Request,event_id:str ,ticket_type:str = For
     return RedirectResponse(url=f"/ticket/{event_id}",status_code=303)
 
 #-------------------------downloading
-async def generate_order_pdf_in_memory(order_id: str, db: AsyncSession) -> io.BytesIO:
-    # 1. Récupération des données nécessaires
+async def generate_ticket_pdf_in_memory(ticket_id:str,order_id: str, db: AsyncSession) -> io.BytesIO:#telechargement d'un seul billet
+    # 1. Récupération de la commande et de l'événement lié
     result = await db.execute(
         select(Order)
         .where(Order.id == order_id)
@@ -247,30 +247,33 @@ async def generate_order_pdf_in_memory(order_id: str, db: AsyncSession) -> io.By
     if not order:
         raise ValueError("Commande introuvable.")
 
-    result_tickets = await db.execute(select(Ticket).where(Ticket.order_id == order_id))
-    tickets = result_tickets.scalars().all()
+    # 2. Récupération de TOUS les tickets associés à cette commande
+    result_tickets = await db.execute(select(Ticket).where(Ticket.order_id == order_id,Ticket.id == ticket_id))
+    ticket = result_tickets.scalars().first()
     
-    # 2. GÉNÉRATION DES QR CODES (C'est ici que tu avais peur qu'ils manquent)
-    for ticket in tickets:
-        qr_base64 = generer_qr_code_base64(ticket.qr_token)
-        # On injecte la propriété dynamique nécessaire au HTML
-        ticket.qr_code_base64 = f"data:image/png;base64,{qr_base64}"
+    if not ticket:
+        raise ValueError("Aucun ticket trouvé pour cette commande.")
 
-    # 3. Rendu du template HTML
-    # On passe bien les tickets AVEC leurs QR codes générés
-    template = env.get_template("Invitation/show_invite/other/ticket.html")
+    # 3. Génération des QR codes uniques pour CHAQUE ticket
+    # On utilise le token unique propre à chaque ticket en BDD
+    qr_base64 = generer_qr_code_base64(ticket.qr_token)
+    # On crée dynamiquement l'attribut que le HTML va lire dans la boucle
+    ticket.qr_code_base64 = f"data:image/png;base64,{qr_base64}"
+
+    # 4. Rendu du template global avec la liste complète
+    template = env.get_template("Invitation/show_invite/other/pdf_ticket.html")
     html_content = template.render(
         bg_image_base64=get_base64_bg_image(),
-        tickets=tickets,  # Contient maintenant l'attribut .qr_code_base64 sur chaque ticket
-        event_name=order.events.name,
-        event_date=order.events.date.date() if order.events.date else "Date inconnue",
-        event_time=order.events.date.time() if order.events.date else "00:00",
-        event_location=order.events.location,
-        event_address=order.events.address,
+        ticket=ticket,  # 🔥 On passe la liste complète ici
+        event_name=order.events.name if order.events else "Événement",
+        event_date=order.events.date.date() if order.events and order.events.date else "Date inconnue",
+        event_time=order.events.date.time() if order.events and order.events.date else "00:00",
+        event_location=order.events.location if order.events else "Lieu inconnu",
+        event_address=order.events.address if order.events else "",
         ticket_type=order.ticket_type
     )
     
-    # 4. Conversion en PDF
+    # 5. Compilation par xhtml2pdf (pisa)
     pdf_buffer = io.BytesIO()
     pisa_status = pisa.CreatePDF(
         io.StringIO(html_content), 
@@ -279,62 +282,64 @@ async def generate_order_pdf_in_memory(order_id: str, db: AsyncSession) -> io.By
     )
     
     if pisa_status.err:
-        raise RuntimeError("Échec de la compilation PDF")
+        raise RuntimeError(f"Échec de la compilation PDF via xhtml2pdf: {pisa_status.err}")
         
     pdf_buffer.seek(0)
     return pdf_buffer
 
-#la route de telechargement des billet 
-@Root.get("/download/order/{order_id}")
-async def download_all_order_tickets(order_id: UUID, db: AsyncSession = Depends(connecting)):
-    # 1. On récupère la commande en base
-    result = await db.execute(select(Order).where(Order.id == str(order_id)))
+async def generate_order_pdf_in_memory(order_id: str, db: AsyncSession) -> io.BytesIO:#telechargement de tout les billets
+    # 1. Récupération de la commande et de l'événement lié
+    result = await db.execute(
+        select(Order)
+        .where(Order.id == order_id)
+        .options(selectinload(Order.events))
+    )
     order = result.scalar_one_or_none()
-    
-    # 2. Vérifications de sécurité (Est-ce que le client a le droit ?)
-    if not order or not order.paid:
-        raise HTTPException(status_code=403, detail="Commande invalide ou non payée.")
-    
-    if order.downloaded:
-        raise HTTPException(status_code=403, detail="Ce ticket a déjà été téléchargé.")
-        
-    # 3. Génération du PDF
-    # On appelle notre fonction de génération. 
-    # Si ça échoue, elle renvoie None, et on traite l'erreur proprement.
-    pdf_bytes = await redis_conn.get(f"pdf_cache:{order_id}")
-    
-    if not pdf_bytes:
-        # Si le PDF n'est pas prêt, on demande au client de patienter ou on affiche une erreur
-        raise HTTPException(
-        status_code=202, 
-        detail="Le billet est en cours de préparation.",
-        headers={"Retry-After": "5"}
-    )
-    
-    # 4. Marquage "Téléchargé" en base
-    # On ne le fait qu'une fois le PDF généré avec succès
-    order.downloaded = True
-    await db.commit()
-    
-    # 5. Envoi du fichier
-    return StreamingResponse(
-        io.BytesIO(pdf_bytes), 
-        media_type="application/pdf",
-        headers={"Content-Disposition": f"attachment; filename=Billet_{order_id}.pdf"}
-    )
+    if not order:
+        raise ValueError("Commande introuvable.")
 
-@Root.get("/download/ticket/{event_id}/{ticket_id}")#telecharger une invitation
-async def get_guest_invite(event_id:str,ticket_id :str,db:AsyncSession =Depends(connecting)):
-    get_guest = select(Ticket).where(Ticket.id == ticket_id,Ticket.event_id == event_id).options(selectinload(Ticket.orders))
-    res = await db.execute(get_guest)
-    ticket = res.scalars().first()
-    if not ticket:
-        raise HTTPException(status_code=404,detail="ticket introuvable")
-    qr_token = ticket.qr_token
-    guest_name = ticket.participator_name
-    phone = ticket.orders.buyer_number
-    guest_phone = phone[:-4] +"xxxx"
-    #return StreamingResponse(buffer,media_type = "image/png",headers = {"content-Disposition":f"attachment;filename=event_{guest_name}-{guest_phone}.png"})
+    # 2. Récupération de TOUS les tickets associés à cette commande
+    result_tickets = await db.execute(select(Ticket).where(Ticket.order_id == order_id))
+    tickets = result_tickets.scalars().all()
+    
+    if not tickets:
+        raise ValueError("Aucun ticket trouvé pour cette commande.")
+
+    # 3. Génération des QR codes uniques pour CHAQUE ticket
+    for ticket in tickets:
+        # On utilise le token unique propre à chaque ticket en BDD
+        qr_base64 = generer_qr_code_base64(ticket.qr_token)
+        # On crée dynamiquement l'attribut que le HTML va lire dans la boucle
+        ticket.qr_code_base64 = f"data:image/png;base64,{qr_base64}"
+
+    # 4. Rendu du template global avec la liste complète
+    template = env.get_template("Invitation/show_invite/other/pdf_ticket.html")
+    html_content = template.render(
+        bg_image_base64=get_base64_bg_image(),
+        tickets=tickets,  # 🔥 On passe la liste complète ici
+        event_name=order.events.name if order.events else "Événement",
+        event_date=order.events.date.date() if order.events and order.events.date else "Date inconnue",
+        event_time=order.events.date.time() if order.events and order.events.date else "00:00",
+        event_location=order.events.location if order.events else "Lieu inconnu",
+        event_address=order.events.address if order.events else "",
+        ticket_type=order.ticket_type
+    )
+    
+    # 5. Compilation par xhtml2pdf (pisa)
+    pdf_buffer = io.BytesIO()
+    pisa_status = pisa.CreatePDF(
+        io.StringIO(html_content), 
+        dest=pdf_buffer,
+        link_callback=xhtml2pdf_link_callback
+    )
+    
+    if pisa_status.err:
+        raise RuntimeError(f"Échec de la compilation PDF via xhtml2pdf: {pisa_status.err}")
+        
+    pdf_buffer.seek(0)
+    return pdf_buffer
+
+
 
 
 #---------------------------------methodes

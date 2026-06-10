@@ -24,10 +24,17 @@ from app.init_admin import create_admin
 #fastapi.middleware.cors import CORSMiddleware
 from fastapi_csrf_protect import CsrfProtect
 from pydantic import BaseModel
+  # Tes configurations Redis
+
 
 templates = Jinja2Templates(directory = "Templates")
 #initialisation
 Apk = FastAPI()
+
+# 1. On crée une variable globale (vide au départ)
+
+
+
 @Apk.on_event("startup")
 async def on_startup():
     await init_db()

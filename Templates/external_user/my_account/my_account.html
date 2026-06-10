@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mon Compte - EasyInvite</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
         body {
             background-color: #121214; /* Fond sombre identique à ton app */
@@ -28,26 +29,28 @@
         .text-warning-custom {
             color: #ffc107;
         }
+        .btn
+        {
+            background: linear-gradient(45deg, #bf953f, #fcf6ba, #b38728);
+        }
     </style>
 </head>
 <body>
 
     <nav class="navbar navbar-dark bg-transparent border-bottom border-secondary border-opacity-25 py-3">
         <div class="container d-flex justify-content-between align-items-center">
-            <span class="navbar-brand fw-bold text-warning-custom">🎟️ EasyInvite</span>
-            <a href="/auth/logout" class="btn btn-outline-danger">
-                <i class="bi bi-box-arrow-right"></i> Se déconnecter
+            <span class="navbar-brand fw-bold text-warning-custom"><i style="font-size: 25px;" class="bi bi-person-circle "></i> {{ user_name }}</span>
+            <a href="/auth/logout" class="btn btn-outline-dark">
+                <i class="bi bi-box-arrow-left"></i> Se déconnecter
             </a>
         </div>
+        
     </nav>
 
     <div class="container py-4">
         
         <header class="mb-4">
             <h3 class="fw-bold mb-1">Mes Billets Électroniques</h3>
-            <span class="badge bg-dark border border-secondary text-white-50 font-monospace">
-                👤 {{ user_phone }}
-            </span>
             <p class="text-secondary small">Présentez ces accès directement sur votre téléphone à l'entrée de l'événement.</p>
         </header>
 
@@ -62,14 +65,17 @@
                                 <h4 class="fw-bold mb-1 text-white" style="font-size: 1.15rem;">
                                     📅 {{ order.events.name }}
                                 </h4>
-                                <small class="text-muted font-monospace" style="font-size: 0.8rem;">
+                                <small class="text-white font-monospace" style="font-size: 0.8rem;">
                                     Réf : #{{ order.id[:8].upper() }}
                                 </small>
                             </div>
                             <div class="mt-1 mt-sm-0">
-                                <span class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25 px-2 py-1" style="font-size: 0.75rem;">
-                                    ✓ Validé
-                                </span>
+                                <div class="d-flex justify-content-center gap-3">
+                                    <a href="/download/order/{{order.id}}" 
+                                    class="btn btn-warning text-dark">
+                                        ⬇ télécharger mes billets
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -94,7 +100,8 @@
                                             <a href="/ticket/view/{{ order.event_id }}/{{ ticket.id }}" 
                                                class="btn btn-warning btn-sm fw-bold px-3 py-2 shadow-sm text-dark d-flex align-items-center"
                                                style="font-size: 0.85rem; background-color: #ffc107;">
-                                                <span class="me-1"></span> Voir 
+                                               </span><i class="bi bi-eye"> </i> 
+                                                <span class="me-1"> Voir 
                                             </a>
                                         </div>
                                         

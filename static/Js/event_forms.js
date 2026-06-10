@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const organizer_input_field = document.querySelector(".organizer input");
     const greetings = document.querySelector(".greetings");
     const description = document.querySelector(".description");
+    const place_field = document.querySelector(".total_place");//le champ specifiant le nombre des place ou l'espace d'accueil d'un evenement
     function toggleCoupleField() {
         if (!couple_field || !img_field || !present_field || !greetings || !description) return;
         else if(event_type.value === "concours") {
@@ -43,7 +44,9 @@ document.addEventListener("DOMContentLoaded", function() {
         else if(event_type.value === "other") {
             couple_field.style.display = "none";
             present_field.style.display = "none";
+            place_field.style.display = "block";
             couple_input_field.required =  false;
+            place_field.required =  true;
             couple_number.textContent = "numero organisateur"
         } 
          else {
@@ -55,6 +58,8 @@ document.addEventListener("DOMContentLoaded", function() {
             couple_number.textContent = "Numéro de téléphone du couple (Couple's phone number)"
             greetings.style.display = "none"
             organizer.style.display = "none"
+            place_field.style.display = "none"
+            place_field.required = false
             organizer_input_field.required = false
         }
     }

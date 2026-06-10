@@ -138,6 +138,7 @@ is_active : bool = Form(None),#le cadeau
 language :str = Form(...),#la langue
 organizer :str = Form(None),#organisateeur
 greetings:str = Form(None),#message de bienvenu
+total_place:str = Form(None),#espace d'accueil  ou le nombre de place prevu
 Db:AsyncSession = Depends(connecting),
 ):
     res = jwt.decode(access_token,secret,algorithms=[algo])
@@ -188,6 +189,7 @@ Db:AsyncSession = Depends(connecting),
         language=language,
         organizer=organizer,
         greeting_message = greetings,
+        total_capacity=total_place 
             )
         Db.add(newEvent)
         await Db.commit()
@@ -209,7 +211,7 @@ async def editEvent(request:Request,event_id : str,user=Depends(permission_requi
 @Root.post("/edit_event/{event_id}")#la root pour modifier un evenement
 async def editEvent(request:Request,event_id : str,access_token = Cookie(None),eventName:str = Form(...),coupleName:str = Form(...),couple_phone_number:str = Form(...),eventType:str = Form(...),eventDate: str = Form(...),
                     eventAddress:str = Form(...),location:str = Form(...),eventDescription: Optional[str] = Form(None),
-                    eventState: str = Form(...),photo:UploadFile = File(None),is_active:bool = Form(None),language:str = Form(...),organizer:str = Form(None),greetings:str = Form(None),db:AsyncSession = Depends(connecting)
+                    eventState: str = Form(...),photo:UploadFile = File(None),is_active:bool = Form(None),language:str = Form(...),organizer:str = Form(None),greetings:str = Form(None),total_place:str = Form(None),db:AsyncSession = Depends(connecting)
                     ,user=Depends(permission_required("edit_event"))):
     edited_Event_Data = select(Event).where(Event.id == event_id)
     res = await db.execute(edited_Event_Data)
@@ -267,6 +269,7 @@ async def editEvent(request:Request,event_id : str,access_token = Cookie(None),e
     editedEventData.organizer = organizer
     editedEventData.language = language
     editedEventData.greeting_message = greetings
+    editedEventData.total_capacity = total_place
     if user_role != "admin":
         edited_Event_Data.groups = [groups]
     edited_Event_Data.groups = []

@@ -120,7 +120,7 @@ async def get_paiement_data(request:Request, event_id: str, buyer_name: str = Fo
         res = await db.execute(select(ExternalUser).where(ExternalUser.phone_number == clean_phone))
         user = res.scalars().first()
         if not user:
-            user = ExternalUser(phone_number=clean_phone)
+            user = ExternalUser(name=buyer_name,phone_number=clean_phone)
             db.add(user)
             await db.flush()
         ticket_price = ticket.price

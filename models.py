@@ -55,6 +55,7 @@ class ExternalUser(Base):
     __tablename__ = "external_users"
     id = Column(String,primary_key = True,default = lambda : str(uuid4()))
     phone_number = Column(String, unique=True, index=True)
+    name = Column(String)
     created_at = Column(DateTime,default=datetime.utcnow)
 
     orders = relationship("Order", back_populates="external_user")

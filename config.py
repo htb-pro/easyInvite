@@ -1,7 +1,9 @@
-from fastapi import Request,HTTPException
+from fastapi import Request,HTTPException,FastAPI
 from dotenv import load_dotenv
 import os,hmac
 from arq.connections import RedisSettings
+from contextlib import asynccontextmanager
+from arq import create_pool
 
 load_dotenv()
 
@@ -14,7 +16,21 @@ token_expire_minute = int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTE',60))#duree d'ex
 redis_url = os.getenv("REDIS_URL")
 REDIS_SETTINGS = RedisSettings.from_dsn(redis_url)
 csrf_key = os.getenv('CSRF_SECRET')
+
+arq_pool = None
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    global arq_pool
+    # 2. Au démarrage de FastAPI, on connecte le pool ARQ à Redis
+    arq_pool = create_pool(REDIS_SETTINGS)
+    print("🚀 Le pool ARQ est connecté à Redis et prêt à envoyer des tâches !")
     
+    yield
+    
+    # 3. À la fermeture de l'application, on ferme proprement la connexion
+    await arq_pool.close()
+    print("🛑 Connexion au pool ARQ fermée.")
+
 def verify_csrf(request: Request):#methode de la verfication du token
     print("----------------------DEBUG: La fonction verify_csrf est appelée -----------------!")
     csrf_cookie = request.cookies.get("csrf_token")

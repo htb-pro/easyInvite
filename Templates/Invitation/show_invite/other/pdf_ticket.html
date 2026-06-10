@@ -87,7 +87,8 @@
 <body>
 <body>
     <div class="page-break">
-        
+        {% if tickets %}
+        {% for ticket in tickets %}
         <table class="ticket-table">
             <tr>
                 <td class="ticket-header">
@@ -146,6 +147,66 @@
         </table>
 
     </div>
+{%endfor%}
+{% elif ticket%}
+        <table class="ticket-table">
+            <tr>
+                <td class="ticket-header">
+                    <h1 class="event-title" style="font-size: 30px;">{{ event_name or "ÉVÉNEMENT" }}</h1>
+                    <span style="color: #888888; font-size: 9px; letter-spacing: 1px;">ACCÈS UNIQUE</span>
+                </td>
+            </tr>
+            
+            <tr>
+                <td class="ticket-body" style="background-color: #121212;">
+                    <table width="100%">
+                        <tr >
+                            <td width="25%" style="text-align: left; vertical-align: middle;padding-right: 5px;">
+                                <div class="info-label"   style="font-size: 12.5px;">Participant</div>
+                                <div class="info-value" style="margin: 0px;padding-top: 0px; font-size: 15px; color: #FFFFFF !important;">{{ ticket.participator_name or "Invité Officiel" }}</div>
 
+                                <div class="info-label"  style="font-size: 12.5px;">Date & Heure</div>
+                                <div class="info-value" style="margin: 0px;padding-top: 0px; font-size: 15px; color: #FFFFFF !important;">{{ event_date }}<br>{{ event_time }}</div>
+
+                                <div class="info-label"  style="font-size: 12.5px;">Lieu</div>
+                                <div class="info-value" style="margin: 0px;padding-top: 0px;font-size: 15px; color: #FFFFFF !important;">{{ event_location }}</div>
+                            </td>
+                            <td width="50%">
+                                <div style="background-color: #FFFFFF; padding: 8px; display: inline-block; border-radius: 6px; width: 80pt; height: 80pt; text-align: center;">
+    
+                                    <img src="{{ ticket.qr_code_base64 }}" width="100" height="100" style="display: block; margin: 0 auto;" />
+
+                                </div>
+                            </td>
+                            <td width="25%" style="text-align: left; vertical-align: middle;">
+                                <div class="info-label" style="font-size: 12px; margin: 0;">Jeton</div>
+                                <div style="color: #D4AF37; font-size: 15px;margin: 0px;padding-top: 0px; font-weight: bold;">
+                                    {{ticket.get_pass}}
+                                </div>
+                                <div class="info-label" style="font-size: 12px; margin: 0;">N° Billet</div>
+                                <div style="color: #D4AF37; font-size: 15px;margin: 0px;padding-top: 0px; font-weight: bold;">
+                                    #{{ "%03d"|format(ticket.number|int) }}
+                                </div>
+                                <div class="info-label" style="font-size: 12px; margin: 0;">Serie </div>
+                                <div class="gold-text" style="font-size: 15px;margin: 0px;padding-top: 0px; font-weight: bold; color: #D4AF37;">#{{ ticket.seri }}</div>
+                                <div class="info-label" style="font-size: 12px; margin: 0;">Billet </div>
+                                <div class="gold-text" style="font-size: 15px;margin: 0px;padding-top: 0px; font-weight: bold; color: #D4AF37;">{{ ticket.orders.ticket_type }}</div>
+                            </td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            
+            <tr>
+                <td class="ticket-footer">
+                    <span style="font-size: 8px; color: #888888;">Scannez ce billet à l'entrée — Propulsé par easyInvite</span><br>
+                    <span style="font-size: 8px; color: #888888;"><i class="bi bi-telephone-fill"></i>urgence : +243 897 401 210 ou +243 991 152 067</span><br>
+                    <span style="font-size: 8px; color: #888888;"><i class="bi bi-telephone-fill"></i> +243 898 147 644 ou +243 970 784 320</span>
+                </td>
+            </tr>
+        </table>
+
+    </div>
+{% endif%}
 </body>
 </html>

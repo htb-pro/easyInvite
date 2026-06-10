@@ -173,7 +173,7 @@ billet utilise un code dynamique à scan unique.
             
             <!-- BOUTONS -->
             <div class="d-flex justify-content-center gap-3">
-                <a href="#" 
+                <a href="/download/ticket/{{ticket.id}}/{{ticket.order_id}}" 
                 class="btn text-dark">
                     ⬇ télécharger le billet
                 </a>
@@ -198,7 +198,6 @@ billet utilise un code dynamique à scan unique.
         <div id="timer-bar" class="progress-bar bg-primary" role="progressbar" style="width: 100%"></div>
     </div>
 </div>
-
 <script>
     document.addEventListener("DOMContentLoaded", function() {
         const totp = window.otplib.totp;

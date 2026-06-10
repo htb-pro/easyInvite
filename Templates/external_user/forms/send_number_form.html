@@ -8,6 +8,10 @@
     <style>
         body { background-color: #121214; color: #ffffff; }
         .auth-card { background-color: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; }
+        input::placeholder
+        {
+            color: #a0a0a0 !important;
+        }
     </style>
 </head>
 <body class="d-flex align-items-center min-vh-100">
@@ -35,9 +39,14 @@
                     
                     <form action="/auth/request-otp" method="POST">
                         <div class="mb-3">
+                            <label for="username" class="form-label text-white-50">Nom</label>
+                            <input type="text" name="name" id="phone" class="form-control bg-dark text-light border-secondary" placeholder="Ex: heritier tshim" required>
+                         </div>
+                        <div class="mb-3">
                             <label for="phone" class="form-label text-white-50">Numéro de téléphone</label>
-                            <input type="tel" name="phone" id="phone" class="form-control bg-dark text-white border-secondary" placeholder="Ex: 0991635198" required>
-                            <div class="form-text text-muted" style="font-size: 0.75rem;">Saisissez le numéro utilisé lors de l'achat.</div>
+                            <input type="tel" name="phone" id="phone" class="form-control bg-dark text-light border-secondary" placeholder="Ex: 0991635198" required>
+                            
+                            <div class="form-text text-secondary" style="font-size: 0.75rem;">Saisissez le numéro utilisé lors de l'achat.</div>
                         </div>
                         <button type="submit" class="btn btn-warning w-100 fw-bold text-dark">Recevoir mon code d'accès</button>
                     </form>
