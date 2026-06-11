@@ -1,0 +1,56 @@
+<div class="container-fluid bg-dark text-light min-vh-100 py-5" style="background-color: #0f172a !important;">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            
+            <div class="card bg-secondary border-0 shadow-lg" style="background-color: #1e293b !important;">
+                <div class="card-body p-4 p-md-5">
+                    
+                    <h3 class="text-center fw-bold text-white mb-4">Réserver mon billet 🎫</h3>
+                    
+                    <form action="/make_order/{{ event.id }}" method="POST">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-secondary" style="color: #cbd5e1 !important;">Nom complet</label>
+                            <input type="text" name="buyer_name" 
+                                   class="form-control bg-dark text-white border-secondary focus-ring-warning" 
+                                   style="background-color: #0f172a !important; border-color: #334155 !important;"
+                                   value="{{ buyer_name or '' }}" required>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label small fw-semibold text-secondary" style="color: #cbd5e1 !important;">Numéro de téléphone</label>
+                            <input type="tel" name="buyer_phone" 
+                                   class="form-control bg-dark text-white border-secondary" 
+                                   style="background-color: #0f172a !important; border-color: #334155 !important;"
+                                   value="{{ buyer_phone or '' }}" required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label small fw-semibold text-secondary" style="color: #cbd5e1 !important;">Type de billet</label>
+                            <select name="ticket_type" class="form-select bg-dark text-white border-secondary" style="background-color: #0f172a !important; border-color: #334155 !important;">
+                                {% for ticket in tickets %}
+                                    <option value="{{ ticket.ticket_type }}" {% if ticket_type == ticket.ticket_type %}selected{% endif %}>
+                                        {{ ticket.ticket_type | capitalize }} - {{ ticket.price }} $
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        
+                        {% if places_restantes > 0 %}
+                            <button type="submit" class="btn btn-warning w-100 fw-bold py-2.5 text-dark shadow">
+                                Confirmer et payer
+                            </button>
+                        {% else %}
+                            <button type="button" class="btn btn-outline-secondary w-100 py-2.5" disabled>
+                                ❌ Événement Complet
+                            </button>
+                        {% endif %}
+                        
+                    </form>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+</div>

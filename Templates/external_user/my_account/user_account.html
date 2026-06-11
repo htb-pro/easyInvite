@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mon Tableau de Bord Billets | easyInvite</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <style>
+        :root {
+            --bg-body: #0F172A; /* Couleur de fond (Bleu Nuit profond) */
+            --bg-card: #1E293B; /* Couleur de la Card (Ardoise) */
+            --border-color: #334155; /* Bordures des inputs et séparations */
+            --text-muted-color: #9CA3AF;
+            --primary-accent: #FFC107; /* Ton jaune d'easyInvite */
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-body);
+            color: #FFFFFF;
+            padding-bottom: 80px; /* Évite que le contenu soit caché sous le menu bas */
+        }
+
+        /* En-tête de l'application mobile */
+        .app-header {
+            background-color: var(--bg-card);
+            border-bottom: 1px solid var(--border-color);
+            padding: 12px 16px;
+        }
+
+        .brand-title {
+            font-weight: 700;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Cartes de statistiques condensées */
+        .stat-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            height: 100%;
+            position: relative;
+        }
+
+        .stat-icon {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            color: var(--primary-accent);
+            font-size: 1.3rem;
+        }
+
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-top: 4px;
+        }
+
+        /* Cartes des Billets */
+        .ticket-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            overflow: hidden;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+        }
+
+        .ticket-img-container {
+            position: relative;
+            height: 130px;
+        }
+
+        .ticket-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background-color: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(4px);
+            border: 1px solid var(--border-color);
+            color: #FFF;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .ticket-body {
+            padding: 16px;
+        }
+
+        .ticket-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+
+        .ticket-meta {
+            font-size: 0.8rem;
+            color: var(--text-muted-color);
+            margin-bottom: 14px;
+        }
+
+        .ticket-detail-row {
+            font-size: 0.85rem;
+            margin-bottom: 6px;
+        }
+        
+        .ticket-detail-row strong {
+            color: var(--text-muted-color);
+            font-weight: 500;
+        }
+
+        /* Bloc QR Code interactif */
+        .qr-section {
+            background-color: #0F172A;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 10px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 14px;
+            margin-bottom: 14px;
+        }
+
+        .qr-placeholder {
+            width: 55px;
+            height: 55px;
+            background-color: #FFF;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Conteneur Urgence "Places Restantes" */
+        .progress-container {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+
+        .progress {
+            background-color: #0F172A;
+            height: 8px;
+            border-radius: 4px;
+        }
+
+        /* Barre de navigation basse (Mobile standard) */
+        .mobile-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: var(--bg-card);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0;
+            z-index: 1030;
+        }
+
+        .nav-item-link {
+            color: var(--text-muted-color);
+            text-decoration: none;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 0.7rem;
+            font-weight: 500;
+        }
+
+        .nav-item-link i {
+            font-size: 1.3rem;
+            margin-bottom: 2px;
+        }
+
+        .nav-item-link.active {
+            color: var(--primary-accent);
+        }
+
+        /* Boîte de support rapide */
+        .support-box {
+            background: linear-gradient(135deg, #1E293B 0%, #0F172A 100%);
+            border: 1px dashed var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+        }
+
+        /* Boutons personnalisés */
+        .btn-warning {
+            background-color: var(--primary-accent);
+            border-color: var(--primary-accent);
+            color: #0F172A !important;
+            font-weight: 600;
+        }
+
+        .btn-outline-light-custom {
+            background-color: transparent;
+            border: 1px solid var(--border-color);
+            color: #FFFFFF;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="app-header sticky-top">
+        <div class="container-fluid d-flex justify-content-between align-items-center">
+            <div class="brand-title text-warning">
+                <i class="bi bi-hexagon-fill"></i> EasyTicket
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <a href="#" class="text-white position-relative fs-5">
+                    <i class="bi bi-bell"></i>
+                    <span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle"></span>
+                </a>
+                <a href="#" class="text-white fs-4">
+                    <i class="bi bi-person-circle"></i>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <main class="container pt-4 px-3">
+        
+        <div class="mb-4">
+            <h5 class="text-secondary small fw-bold text-uppercase mb-1">Tableau de bord</h5>
+            <h2 class="fw-bold text-white">Salut, {{user_name}} 👋</h2>
+        </div>
+
+        <div class="row g-3 mb-4">
+            <div class="col-6">
+                <div class="stat-card">
+                    <i class="bi bi-ticket-perforated stat-icon"></i>
+                    <div class="text-secondary small fw-semibold">Billets achetés</div>
+                    <div class="stat-value">{{number_of_ticket}}</div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="stat-card">
+                    <i class="bi bi-wallet2 stat-icon"></i>
+                    <div class="text-secondary small fw-semibold">Total dépensé</div>
+                    <div class="stat-value">{{total_amount}}</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold m-0 text-white">Mes Billets Actifs</h5>
+            <span class="badge bg-secondary-subtle text-secondary px-2 py-1" style="font-size: 0.75rem;">3 billets</span>
+        </div>
+        {%if events %}
+        {% for event in events%}
+        <div class="ticket-card">
+            <div class="ticket-img-container">
+                <div class="w-100 h-100 d-flex align-items-center justify-content-center bg-gradient" style="background: linear-gradient(45deg, #1e3a8a, #3b82f6);">
+                    <i class="bi bi-laptop fs-1 text-white-50"></i>
+                </div>
+                <span class="ticket-badge">{{event.date}}</span>
+            </div>
+            <div class="ticket-body">
+                <div class="ticket-title">{{event.name}}</div>
+                <div class="ticket-meta"><i class="bi bi-geo-alt-fill me-1"></i> {{event.address}}</div>
+                <div class="ticket-meta"><i class="bi bi-geo-alt-fill me-1"></i> {{event.location}}</div>
+                
+                <div class="ticket-detail-row"><strong>Titulaire :</strong> heritier tshim</div>
+                <div class="ticket-detail-row"><strong>Type :</strong> Standard (15 USD)</div>
+                <div class="ticket-detail-row"><strong>Statut :</strong> <span class="text-success fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>Confirmé</span>
+                <span class="text-success fw-semibold">>{{event.state}}</span>
+                </div>
+                
+                <div class="qr-section">
+                    <div class="qr-placeholder">
+                        <i class="bi bi-qr-code fs-2 text-dark"></i>
+                    </div>
+                    <div>
+                    </div>
+                </div>
+
+                <div class="row g-2 mt-2">
+                    <div class="col-9">
+                        <a href="/download/order/{{order.id}}" 
+                            class="btn btn-warning text-dark">
+                                ⬇ télécharger mes billets
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {%endfor%}
+        {%endif%}
+        <div class="support-box text-center mt-4 mb-2">
+            <div class="fs-4 text-warning mb-2"><i class="bi bi-headset"></i></div>
+            <h6 class="fw-bold text-white">Un problème ?</h6>
+            <p class="text-secondary small mb-3">Notre équipe technique d'easyticket est disponible pour vous aider.</p>
+            <button class="btn btn-outline-light-custom btn-sm px-4">Contacter l'aide</button>
+        </div>
+
+    </main>
+
+    <nav class="mobile-nav">
+        <a href="#" class="nav-item-link active">
+            <i class="bi bi-grid-1x2-fill"></i>
+            <span>Dashboard</span>
+        </a>
+        <a href="#" class="nav-item-link">
+            <i class="bi bi-ticket-perforated"></i>
+            <span>Tickets</span>
+        </a>
+        <a href="#" class="nav-item-link">
+            <i class="bi bi-calendar-event"></i>
+            <span>Événements</span>
+        </a>
+        <a href="#" class="nav-item-link">
+            <i class="bi bi-clock-history"></i>
+            <span>Historique</span>
+        </a>
+        <a href="#" class="nav-item-link">
+            <i class="bi bi-person"></i>
+            <span>Profil</span>
+        </a>
+    </nav>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

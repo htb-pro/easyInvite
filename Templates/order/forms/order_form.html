@@ -8,14 +8,14 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     <style>
         body {
-            background-color: #f4f6f9;
+            background-color: #0F172A;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
         .form-card {
             max-width: 650px;
             margin: 40px auto;
-            background: white;
-            border: none;
+            background-color: #1E293B;
+            border: 1px solid rgba(255, 255, 255, 0.05);
             border-radius: 16px;
             box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
         }
@@ -26,6 +26,37 @@
             text-align: center;
             background-color: #fff;
         }
+        input{
+            border-color: #334155;
+            
+        }
+        input::placeholder
+        {
+             color: #9CA3AF !important;
+        }
+        /* Force le fond sombre et le texte blanc sur la liste déroulante */
+            .form-control, .form-select {
+            background-color: #0F172A !important;
+            color: #ffffff !important;
+            border: 1px solid #334155 !important;
+            border-radius: 6px;
+            padding: 0.6rem 1rem; /* 🎯 Aligne et donne de l'air au texte à l'intérieur */
+            font-weight: 500;     /* 🎯 Rend le texte saisi plus robuste */
+        }
+
+        .form-select {
+            /* Garantit que la flèche Bootstrap ne se superpose pas au texte */
+            padding-right: 2.5rem !important; 
+        }
+        label,p,strong,span
+        {
+            color: #9CA3AF;
+        }
+        .operator-badge
+        {
+            background-color: #ffffff4b;
+            border-color: none;
+        }
     </style>
 </head>
 <body>
@@ -34,10 +65,10 @@
     <div class="card form-card p-4 p-md-5">
         
         <div class="text-center mb-4">
-            <h2 class="fw-bold text-primary">Payement</h2>
+            <h2 class="fw-bold text-warning">Payement</h2>
             
         </div>
-        <p class="text-muted">Complétez le formulaire et effectuez votre paiement pour recevoir le(s) billet(s) pour l'événement <strong>{% if event %}{{event.name}}{%endif%}</strong>.</p>
+        <p class="">Complétez le formulaire et effectuez votre paiement pour recevoir le(s) billet(s) pour l'événement <strong>{% if event %}{{event.name}}{%endif%}</strong>.</p>
         <form action="/make_order/{{event.id}}" method="POST">
             {%if exist_message%}
                 <div class="alert alert-danger is-invalid">
@@ -49,17 +80,17 @@
                     {{invalid_phone_number}}
                 </div>
             {%endif%}
-            <h5 class="fw-bold text-primary mb-3"><i class="bi bi-person-circle me-2"></i>1. Vos Informations</h5>
+            <h5 class="fw-bold text-warning mb-3"><i class="bi bi-person-circle me-2"></i>1. Vos Informations</h5>
             <input type="hidden" name="csrf_token" value="{{csrf_token}}">
             <div class="mb-3">
                 <label for="nom_invite" class="form-label fw-semibold">Nom complet</label>
-                <input type="text" class="form-control" id="nom_invite" name="buyer_name" value="{{buyer_name}}" placeholder="Ex: heritier tshim" required>
+                <input type="text" class="form-control  text-light" id="nom_invite" name="buyer_name" style="background: #0F172A;" value="{{buyer_name}}" placeholder="Ex: heritier tshim" required>
             </div>
 
             <div class="row">
                 <div class=" mb-3">
                     <label for="telephone" class="form-label fw-semibold">Numéro de téléphone</label>
-                    <input type="tel" class="form-control {%if invalid_phone_number %} is-invalid border-danger {%endif%}" id="telephone" name="buyer_phone" value="{{buyer_phone}}" placeholder="Ex: 0812345678" required>
+                    <input type="tel" class="form-control {%if invalid_phone_number %} is-invalid border-danger {%endif%}" style="background: #0F172A; color: white;" id="telephone" name="buyer_phone" value="{{buyer_phone}}" placeholder="Ex: 0812345678" required>
                     {%if exist_message%}
                     <div class="invalid-feedback">
                         {{exist_message}}
@@ -68,23 +99,28 @@
                 </div>
                  <div class="col-12 col-md-6 mb-3">
                 <label for="ticket_type" class="form-label">Type de billet</label>
-                <select name="ticket_type" id="" class="form-control">
-                    <option value="">--Choisir le type de billet--</option>
+                <select class="form-select text-white px-3" style="background-color: #0F172A; height: 45px;">
+                    <option value="" class="text-muted" style="background-color: #1E293B;">--Choisir le type de billet--</option>
                     {% for ticket in event.ticket_prices %}
-                    <option value="{{ticket.ticket_type}}" {%if ticket.ticket_type == ticket_type %}selected{%endif%}>{{ticket.ticket_type}} {{ticket.price|int}} {{ticket.device}}</option>
-                    {%endfor%}                
+                        <option value="{{ticket.ticket_type}}" 
+                                class="text-white" 
+                                style="background-color: #1E293B;"
+                                {% if ticket.ticket_type == ticket_type %}selected{% endif %}>
+                            {{ ticket.ticket_type | capitalize }} - {{ ticket.price | int }} {{ ticket.device }}
+                        </option>
+                    {% endfor %} 
                 </select>
             </div>
                 <div class="col-12 col-md-6 mb-3">
                 <label for="amount" class="form-label">Nombre de billets</label>
-                <input type="number" class="form-control" id="amount" name="quantity" {%if quantity %}value="{{quantity}}"{%endif%} value="1" min="1" required>
+                <input type="number" class="form-control" style="background: #0F172A; color: white;" id="amount" name="quantity" {%if quantity %}value="{{quantity}}"{%endif%} value="1" min="1" required>
             </div>
             </div>
 
             <hr class="my-4 text-muted">
 
-            <h5 class="fw-bold text-primary mb-3"><i class="bi bi-wallet2 me-2"></i>2. Instructions de Paiement</h5>
-            <p class="text-muted small">Veuillez envoyer le montant du billet  sur l'un de nos comptes marchands ci-dessous avant de soumettre ce formulaire :</p>
+            <h5 class="fw-bold text-warning mb-3"><i class="bi bi-wallet2 me-2"></i>2. Instructions de Paiement</h5>
+            <p class=" small">Veuillez envoyer le montant du billet  sur l'un de nos comptes marchands ci-dessous avant de soumettre ce formulaire :</p>
             
             <div class="row g-2 mb-4">
                 <div class="col-12 col-lg-4">
@@ -109,22 +145,22 @@
 
             <hr class="my-4 text-muted">
 
-            <h5 class="fw-bold text-primary mb-3"><i class="bi bi-shield-check me-2"></i>3. Validation du Transfert</h5>
+            <h5 class="fw-bold text-warning mb-3"><i class="bi bi-shield-check me-2"></i>3. Validation du Transfert</h5>
             
             <div class="mb-4">
                 </div>
                     <label for="transaction_id" class="form-label fw-semibold">ID de Transaction / Référence du SMS</label>
-                    <input type="text" class="form-control bg-light border-primary {%if exist_message %}is-invalid border-danger{%endif%}" id="transaction_id" name="transaction_id" value="{{transaction_id}}" placeholder="Ex: MP260521.1610.A00123" required>
+                    <input type="text" class="form-control   {%if exist_message %}is-invalid border-danger{%endif%}" id="transaction_id" name="transaction_id" value="{{transaction_id}}" style="background: #0F172A;" placeholder="Ex: MP260521.1610.A00123" required>
                     {%if exist_message%}
                     <div class="invalid-feedback">
                         {{exist_message}}
                     </div>
                     {%endif%}
                     <div class="form-text text-muted">
-                        <i class="bi bi-info-circle-fill text-primary me-1"></i> Copiez exactement le code de référence reçu par SMS après votre transfert. Notre équipe le validera sous peu.
+                        <p><i class="bi bi-info-circle-fill text-secondary me-1"></i> Copiez exactement le code de référence reçu par SMS après votre transfert. Notre équipe le validera sous peu.</p>
                     </div>
                     <div class="mt-2 p-3  small ">
-                    <p><span class="text-warning"><i class="bi bi-lightbulb-fill "></i></span><span class="text-secondary-50 mb-2"><strong>Où trouver cet ID ?</strong></span></p>
+                    <p><span class="text-warning"><i class="bi bi-lightbulb-fill "></i></span><span class="text-secondary-50 mb-2"><strong> Où trouver cet ID ?</strong></span></p>
                     <p class="text-secondary-50 mb-0">Après votre transfert, vous recevez un SMS de confirmation. L'ID de transaction (ou code de transfert) ressemble à ceci :</p>
                     <div class="d-flex flex-column mt-2 gap-2 text-secondary">
                     <div class="d-flex">
@@ -141,21 +177,98 @@
                         </div>
                     </div>
                 </div>
-                
+            {% if insuffisant_place_message %}
+            <div class="modal fade" id="completeModal" tabindex="-1" aria-labelledby="completeModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered">
+                    <div class="modal-content border-0 shadow-lg">
+                        <div class="modal-header bg-danger text-white border-0">
+                            <h5 class="modal-title fw-bold" id="completeModalLabel">
+                               <i class="bi bi-exclamation-triangle"></i> Places insuffisantes
+                            </h5>
+                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body text-center py-4">
+                            <div class="fs-1 text-danger mb-3">🚫</div>
+                            <p class="fs-5 fw-semibold text-secondary">Désolé, il n'y a pas assez de places disponibles</p>
+                            <p class="text-muted small">
+                               Vous avez demandé <strong class="text-danger">{{ quantity }}</strong> places, mais il ne reste plus que : {{remaining_place}} places
+                            </p>
+                            <p class="text-muted small">
+                                Veuillez revoir la quantité souhaitée à la baisse ou contacter l'organisateur.
+                            </p>
+                        </div>
+                        <div class="modal-footer border-0 bg-light d-flex justify-content-center">
+                            <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Fermer</button>
+                        <div class="modal-footer border-0 bg-light d-flex justify-content-center">
+                            <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Modifier ma commande</button>
+                        </div>
+                        
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {%endif%}
 
-            <div class="d-grid gap-2 mt-4">
-                <button type="submit" class="btn btn-primary btn-lg fw-bold">
+            {% if remaining_place > 0 %}
+                <div class="d-grid gap-2 mt-4">
+                <button type="submit" class="btn  btn-warning btn-lg fw-bold">
                     <i class="bi bi-check-circle me-2"></i>Confirmer
                 </button>
             </div>
+            
+            {% else %}
+                <div class="modal fade" id="completeModal" tabindex="-1" aria-labelledby="completeModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered">
+                        <div class="modal-content border-0 shadow-lg">
+                            <div class="modal-header bg-danger text-white border-0">
+                                <h5 class="modal-title fw-bold" id="completeModalLabel">
+                                   <i class="bi bi-exclamation-triangle"></i> Événement Complet
+                                </h5>
+                                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body text-center py-4">
+                                <div class="fs-1 text-danger mb-3">🚫</div>
+                                <p class="fs-5 fw-semibold text-secondary">Désolé, toutes les places ont été vendues !</p>
+                                <p class="text-muted small">
+                                    La capacité maximale pour cet événement a été atteinte. Aucune réservation supplémentaire ne peut être enregistrée pour le moment.
+                                </p>
+                            </div>
+                            <div class="modal-footer border-0 bg-light d-flex justify-content-center">
+                                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Fermer</button>
+                                <a href="/event/list" class="btn btn-primary px-4">Découvrir d'autres événements</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                    <button type="button" class="btn btn-secondary w-100" disabled><i class="bi bi-x-circle"></i> Événement Complet</button>
+                {% endif %}
 
-        </form>
-        
-        <div class="text-center mt-4">
-            <p class="mb-0 text-muted small">Un problème ? Contactez notre support WhatsApp au <strong>+243 XXXXXXXXX</strong></p>
+            </form>
+            
+            <div class="text-center mt-4">
+                <p class="mb-0 small">Un problème ? Contactez notre support WhatsApp au <strong>+243 XXXXXXXXX</strong></p>
+            </div>
         </div>
     </div>
-</div>
+
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Jinja2 vérifie si la variable de session existe
+        {% if show_modal %}
+            
+            // On initialise et on affiche la modal Bootstrap
+            var myModal = new bootstrap.Modal(document.getElementById('completeModal'));
+            myModal.show();
+            
+            // On nettoie la session pour éviter qu'elle ne se réaffiche au prochain rafraîchissement
+            
+            
+        {% endif %}
+    });
+</script>
+
 <script>
     setTimeout(() => {
         const alert = document.querySelector(".alert");

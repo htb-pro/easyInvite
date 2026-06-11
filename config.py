@@ -7,6 +7,8 @@ from arq import create_pool
 
 load_dotenv()
 
+set_secure_cookie = True #la variable permettant l'usage du csrf_token Fasle en locale et True en ligne ou prod#
+
 secret = os.getenv('SECRET')#le secret ou sinature du token
 algo = os.getenv('ALGO')#type d'algorithme
 africa_talking_key = os.getenv('africa_talking_key')#at key
@@ -31,21 +33,31 @@ async def lifespan(app: FastAPI):
     await arq_pool.close()
     print("🛑 Connexion au pool ARQ fermée.")
 
-def verify_csrf(request: Request):#methode de la verfication du token
-    print("----------------------DEBUG: La fonction verify_csrf est appelée -----------------!")
-    csrf_cookie = request.cookies.get("csrf_token")
-    form_data = request._form # Récupère les données de formulaire déjà parsées
-    csrf_form = form_data.get("csrf_token")
-    print(f"--------------------------------{csrf_form}")
-    try:
-        if not csrf_cookie or not csrf_form:
-            raise HTTPException(
-                status_code=403,
-                detail="CSRF token manquant"
-            )
+import hmac
 
-            # 3. Comparaison sécurisée (temps constant)
-        if not hmac.compare_digest(csrf_cookie, csrf_form):
-            raise HTTPException(status_code=403, detail="CSRF token invalide")
-    except Exception as e:
-        print(f"-----------------------------------{e}")
+async def verify_csrf(request: Request):
+    # 1. Récupération du token stocké dans le cookie du navigateur
+    cookie_token = request.cookies.get("fastapi-csrf-token")
+    
+    # 2. Récupération du token soumis via le formulaire
+    form_data = await request.form()
+    form_token = form_data.get("csrf_token")
+    
+    # --- LOGS DE DEBUGGING EN TERMINAL ---
+    #print("======== DEBUG CSRF ========")
+    #print(f"Token du Cookie     : {cookie_token}")
+    #print(f"Token du Formulaire : {form_token}")
+    #print("============================")
+    
+    # 3. Vérifications strictes
+    if not cookie_token or not form_token:
+        print("DEBUG: [403] Un des tokens est manquant !")
+        raise HTTPException(status_code=403, detail="Sécurité CSRF : Données manquantes.")
+        
+    # 4. Comparaison sécurisée
+    if not hmac.compare_digest(cookie_token, form_token):
+        print("DEBUG: [403] Les tokens ne correspondent pas !")
+        raise HTTPException(status_code=403, detail="Sécurité CSRF : Jeton invalide ou expiré.")
+        
+    # Si tout est OK, on laisse passer la requête
+    return True

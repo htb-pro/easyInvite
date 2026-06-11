@@ -7,8 +7,8 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, asc, desc
 from sqlalchemy.orm import selectinload
 from db_setting import connecting
-from config import secret, algo,REDIS_SETTINGS
-import jwt,random,io
+from config import secret, algo,REDIS_SETTINGS,set_secure_cookie,verify_csrf
+import jwt,random,io,secrets
 from models import User, Order, Event,ExternalUser,OTP
 from app.security.permissions import permission_required
 from datetime import datetime, timedelta,timezone
@@ -141,7 +141,7 @@ async def mon_compte_participant(
 async def login_page(request: Request, db: AsyncSession = Depends(connecting)):
     # 1. Récupération du message d'erreur flash (ex: numéro invalide)
     invalid_phone_number = request.session.pop('invalid_number', None)
-    
+    csrf_token = secrets.token_urlsafe(32)
     # 2. Vérification si l'utilisateur possède déjà un cookie de session
     current_user_id = request.cookies.get("session_user_id")
     print(f"--- DEBUG COOKIE LOGIN PAGE : {current_user_id}")
@@ -166,19 +166,31 @@ async def login_page(request: Request, db: AsyncSession = Depends(connecting)):
 
     # 3. COMPORTEMENT NORMAL : Si PAS de cookie (ou cookie invalide)
     # On affiche simplement le formulaire HTML de connexion
-    return templates.TemplateResponse(
+    response = templates.TemplateResponse(
         "external_user/forms/send_number_form.html", # 🎯 Utilise ton template de formulaire de login ici !
         {
             "request": request, 
-            "invalid_phone_number": invalid_phone_number
+            "invalid_phone_number": invalid_phone_number,
+            'csrf_token':csrf_token
         }
     )
+    response.set_cookie(
+        key="fastapi-csrf-token",
+        value=csrf_token,
+        httponly=True,        # Protection contre le vol de jeton par JS (Garder obligatoire)
+        samesite="lax",       # Permet au cookie de transiter sur les navigations standards
+        secure=set_secure_cookie,         # TRÈS IMPORTANT en local (False permet au cookie de passer sans HTTPS)
+        path="/"
+        
+    )
+    return response
 
 @Root.post("/auth/request-otp")
 async def request_otp(
     phone: str = Form(...), 
     name: str = Form(...), 
-    db: AsyncSession = Depends(connecting)
+    db: AsyncSession = Depends(connecting),
+    _=Depends(verify_csrf)
 ):
     # 1. Validation et Nettoyage strict du numéro
     clean_phone = "".join(filter(str.isdigit, phone))
@@ -195,7 +207,7 @@ async def request_otp(
     generated_otp = str(random.randint(1000, 9999))
     now = datetime.now(timezone.utc).replace(tzinfo=None)
     expiration_time = now + timedelta(minutes=5)
-    
+
     try:
         # 3. Récupération ou création de l'utilisateur
         res = await db.execute(select(ExternalUser).where(ExternalUser.phone_number == clean_phone))
@@ -255,21 +267,33 @@ async def verify_otp_page(request: Request, phone: str):
     # On renvoie le fichier HTML en lui passant le numéro de téléphone.
     # Ainsi, Jinja2 pourra l'afficher à l'écran et l'injecter dans le champ caché <input type="hidden">
     incorect_otp = request.session.pop('incorrect_otp',None)
-    return templates.TemplateResponse(
+    csrf_token = secrets.token_urlsafe(32)
+    response= templates.TemplateResponse(
         "external_user/forms/verify_otp.html", 
         {
             "request": request, 
             "phone": phone,
-            "incorrect_otp_message":incorect_otp
+            "incorrect_otp_message":incorect_otp,
+            "csrf_token":csrf_token
         }
     )
+    response.set_cookie(
+        key="fastapi-csrf-token",
+        value=csrf_token,
+        httponly=True,        # Protection contre le vol de jeton par JS (Garder obligatoire)
+        samesite="lax",       # Permet au cookie de transiter sur les navigations standards
+        secure=set_secure_cookie,         # TRÈS IMPORTANT en local (False permet au cookie de passer sans HTTPS)
+        path="/"     
+    )
+    return response
 
 @Root.post("/auth/verify-otp")
 async def verify_otp(
     request: Request,
     phone: str = Form(...), 
     otp_entered: str = Form(...), 
-    db: AsyncSession = Depends(connecting)
+    db: AsyncSession = Depends(connecting),
+    _=Depends(verify_csrf)
 ):
     # 1. Récupérer l'utilisateur correspondant au numéro
     res = await db.execute(select(ExternalUser).where(ExternalUser.phone_number == phone))
