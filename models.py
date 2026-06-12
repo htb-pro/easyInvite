@@ -120,6 +120,8 @@ class Event(Base): #event table
     language = Column(String(50),default="fr")#langue par defaut de l'evenement
     total_capacity = Column(Integer)#capacité totale de place de l'evenement
     sold_seats = Column(Integer,default=0)#nombre de places vendues
+    is_featured = Column(Boolean, default=False, nullable=False)#LE CHAMP CLÉ : False par défaut, l'admin le passe à True pour le mettre À la Une
+    is_deleted =Column(Boolean, default=False, nullable=False)
 
     guests = relationship("Guest",back_populates="event",cascade="all,delete")
     groups = relationship("Group",back_populates ="events")

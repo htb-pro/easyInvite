@@ -1,13 +1,16 @@
-from fastapi import Request,HTTPException,FastAPI
+from fastapi import Request,HTTPException,FastAPI,status
 from dotenv import load_dotenv
+from fastapi.responses import RedirectResponse
 import os,hmac
 from arq.connections import RedisSettings
 from contextlib import asynccontextmanager
 from arq import create_pool
+from sqlalchemy.future import select
+from models import ExternalUser
 
 load_dotenv()
 
-set_secure_cookie = True #la variable permettant l'usage du csrf_token Fasle en locale et True en ligne ou prod#
+set_secure_cookie = False #la variable permettant l'usage du csrf_token Fasle en locale et True en ligne ou prod#
 
 secret = os.getenv('SECRET')#le secret ou sinature du token
 algo = os.getenv('ALGO')#type d'algorithme

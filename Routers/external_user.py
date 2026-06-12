@@ -1,5 +1,5 @@
 from datetime import datetime
-from fastapi import APIRouter, Request, Form,Depends,Cookie,HTTPException,status
+from fastapi import APIRouter, Request, Form,Depends,Cookie,HTTPException,status,responses
 from fastapi.responses import HTMLResponse, RedirectResponse,Response ,StreamingResponse,JSONResponse
 from fastapi.staticfiles import StaticFiles 
 from fastapi.templating import Jinja2Templates  
@@ -8,7 +8,7 @@ from sqlalchemy import select, func, asc, desc
 from sqlalchemy.orm import selectinload
 from db_setting import connecting
 from config import secret, algo,REDIS_SETTINGS,set_secure_cookie,verify_csrf
-import jwt,random,io,secrets
+import jwt,random,io,secrets,urllib
 from models import User, Order, Event,ExternalUser,OTP
 from app.security.permissions import permission_required
 from datetime import datetime, timedelta,timezone
@@ -16,6 +16,7 @@ from utils.sms_setting.sms_utils import send_otp_sms
 from utils.redis_config import redis_conn
 from uuid import UUID
 from arq import create_pool
+from urllib.parse import quote
 
 templates = Jinja2Templates(directory="Templates")
 Root = APIRouter()
@@ -43,7 +44,7 @@ async def search_event(request:Request,event_name:str,page:int = 1,db:AsyncSessi
         'copyright': copyright,
     })
 
-@Root.get("/event/list", response_class=HTMLResponse)#list des evenement
+@Root.get("/e-ticket", response_class=HTMLResponse)#list des evenement
 async def get_list_of_events(request: Request,  page: int = 1, db: AsyncSession = Depends(connecting)):
     #------------
     user_name = None
@@ -83,9 +84,80 @@ async def eventDetail(request:Request,event_id : str,access_token = Cookie(None)
     event_img = event.photo_url if event.photo_url else None
     return templates.TemplateResponse("external_user/list/detail.html",{'request':request,"event":event,'event_img':event_img})
 
+@Root.get("/support_team_contact")# le lien qui ouvrire whatsapp pour laisser le user donner sa demande ou probleme
+async def send_whatsapp_redirect(request:Request):    
+    support_contact = "+243897401210"
+    suport_name = "E-event"
+    # 2. Préparer les données
+    message = f"Demande d'aide\n\nBonjour {suport_name}, Bonjour l'équipe easyInvite ! \n\n👋J'utilise l'application et j'ai besoin d'aide\n\n "
+    # 3. Nettoyer le numéro (ne garder que les chiffres)
+    # On suppose que le numéro est stocké avec l'indicatif pays (ex: 243...)
+    clean_phone = "".join(filter(str.isdigit, support_contact))
+    # 4. Encoder le message pour l'URL
+    encoded_message = urllib.parse.quote(message)
+    whatsapp_url = f"https://wa.me/{clean_phone}?text={encoded_message}"
+    
+    # 5. Rediriger l'utilisateur directement vers WhatsApp
+    return RedirectResponse(url=whatsapp_url)
 #----------------------------OTP
 @Root.get("/my_account")
 async def mon_compte_participant(
+    request: Request, 
+    db: AsyncSession = Depends(connecting)
+):
+    # 1. Vérification de l'authentification via le cookie
+    user_id = request.cookies.get("session_user_id")
+    if not user_id:
+        # Si le participant n'est pas connecté, redirection flash vers la page de login
+        request.session['invalid_number'] = "Veuillez vous connecter pour accéder à vos billets."
+        return RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
+        
+    try:
+        # 2. Récupération de l'utilisateur pour afficher ses infos (optionnel mais pro)
+        user_res = await db.execute(select(ExternalUser).where(ExternalUser.id == user_id))
+        current_user = user_res.scalars().first()
+        
+        if not current_user:
+            # Sécurité si le cookie contient un ID qui n'existe plus en BDD
+            response = RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
+            response.delete_cookie("session_user_id")
+            return response
+
+        # 3. Requête ultra-optimisée avec jointures chargées en mémoire (Eager Loading)
+        # On ne prend que les commandes PAYÉES (Order.paid == True)
+        result = await db.execute(
+            select(Order)
+            .where(Order.user_id == user_id, Order.paid == True) # on recupere ses commande deja payer
+            .options(
+                selectinload(Order.events),   # Jointure pour récupérer le titre/date de l'événement
+                selectinload(Order.tickets)  # Jointure pour récupérer la liste des tickets associés
+            )
+            .order_by(Order.creation.desc()) # Les billets les plus récents en premier
+        )
+        orders = result.scalars().all()
+        #total_ticket = (await db.scalar(select(func.count()).select_.where(Ticket. == )))
+        #for order in orders:
+        #print(f"--------------------{len(orders.tickets)}----------------------------")
+        
+    except Exception as e:
+        print(f"Erreur lors du chargement de l'espace compte pour l'user {user_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Impossible de charger vos billets pour le moment."
+        )
+
+    # 4. Envoi des données triées au template HTML
+    return templates.TemplateResponse(
+        "external_user/my_account/user_account.html", 
+        {
+            "request": request, 
+            "orders": orders,
+            "current_user":current_user,
+            "user_name": current_user.name # Permet d'afficher "0991..." dans la navbar
+        }
+    )
+@Root.get("/my_ticket")
+async def user_tickets(
     request: Request, 
     db: AsyncSession = Depends(connecting)
 ):
@@ -129,13 +201,207 @@ async def mon_compte_participant(
 
     # 4. Envoi des données triées au template HTML
     return templates.TemplateResponse(
-        "external_user/my_account/my_account.html", 
+        "external_user/my_account/user_tickets.html", 
         {
             "request": request, 
             "orders": orders,
-            "user_name": current_user.name # Permet d'afficher "0991..." dans la navbar
+            #"user_name": current_user.name # Permet d'afficher "0991..." dans la navbar
         }
     )
+@Root.get("/user/list_events")
+async def user_list_events_json(
+    request: Request, 
+    db: AsyncSession = Depends(connecting)
+):
+    # 1. Vérification de l'authentification (Sécurité pour bloquer les robots anonymes)
+    user_id = request.cookies.get("session_user_id")
+    if not user_id:
+        # Si le participant n'est pas connecté, redirection flash vers la page de login
+        request.session['invalid_number'] = "Veuillez vous connecter pour accéder à vos billets."
+        return RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
+    try:
+        # 2. Récupération de l'utilisateur pour afficher ses infos (optionnel mais pro)
+        user_res = await db.execute(select(ExternalUser).where(ExternalUser.id == user_id))
+        current_user = user_res.scalars().first()
+        if not current_user:
+            # Sécurité si le cookie contient un ID qui n'existe plus en BDD
+            response = RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
+            response.delete_cookie("session_user_id")
+            return response
+        # 3. Requête ultra-optimisée avec jointures chargées en mémoire (Eager Loading)
+        # On ne prend que les commandes PAYÉES (Order.paid == True)
+        result = await db.execute(
+            select(Order) # on recupere ses commande deja payer
+            .options(
+                selectinload(Order.events),   # Jointure pour récupérer le titre/date de l'événement
+                selectinload(Order.tickets)  # Jointure pour récupérer la liste des tickets associés
+            )
+            .order_by(Order.creation.desc()) # Les billets les plus récents en premier
+        )
+        orders = result.scalars().all()
+        # 3. 🎯 RETOUR JSON PUR
+        # On construit la structure EXACTE attendue par le JavaScript `event.name`, `event.location`, `event.price`
+        return [
+            {
+                #"id": order.id,
+                # On prend les 8 premiers caractères de l'ID en majuscule pour la Réf
+                #"ref": order.id[:8].upper() if order.id else "INCONNU",
+                # On récupère le nom de l'événement lié de manière sécurisée
+                "event_name": order.events.name if order.events else "Événement sans nom",
+                "event_photo_url":order.events.photo_url,
+                "location":order.events.location
+            }
+            for order in orders
+        ]
+        
+    except Exception as e:
+        print(f"Erreur API Événements pour l'user {user_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Impossible de charger la liste des événements pour le moment."
+        )
+@Root.get("/user/profile")
+async def user_profil(
+    request: Request, 
+    db: AsyncSession = Depends(connecting)
+):
+    # 1. Vérification de l'authentification via le cookie
+    user_id = request.cookies.get("session_user_id")
+    if not user_id:
+        # Si le participant n'est pas connecté, redirection flash vers la page de login
+        request.session['invalid_number'] = "Veuillez vous connecter pour accéder à vos billets."
+        return RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
+    invalid_name = request.session.pop('invalid_name',None)
+    try:
+        # 2. Récupération de l'utilisateur pour afficher ses infos (optionnel mais pro)
+        user_res = await db.execute(select(ExternalUser).where(ExternalUser.id == user_id))
+        current_user = user_res.scalars().first()
+        
+        if not current_user:
+            # Sécurité si le cookie contient un ID qui n'existe plus en BDD
+            response = RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
+            response.delete_cookie("session_user_id")
+            return response
+        
+    except Exception as e:
+        print(f"Erreur lors du chargement de l'espace compte pour l'user {user_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Impossible de charger vos billets pour le moment."
+        )
+
+    # 4. Envoi des données triées au template HTML
+    return templates.TemplateResponse(
+        "external_user/my_account/user_profile.html", 
+        {
+            "request": request, 
+            "invalid_name_message":invalid_name,
+            "current_user": current_user # les donnees des l'urilisateur
+        }
+    )
+
+@Root.get("/user/historique")
+async def user_historique(
+    request: Request, 
+    db: AsyncSession = Depends(connecting)
+):
+    # 1. Vérification de l'authentification via le cookie
+    user_id = request.cookies.get("session_user_id")
+    if not user_id:
+        # Si le participant n'est pas connecté, redirection flash vers la page de login
+        request.session['invalid_number'] = "Veuillez vous connecter pour accéder à vos billets."
+        return RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
+    invalid_name = request.session.pop('invalid_name',None)
+    try:
+        # 2. Récupération de l'utilisateur pour afficher ses infos (optionnel mais pro)
+        user_res = await db.execute(select(ExternalUser).where(ExternalUser.id == user_id))
+        current_user = user_res.scalars().first()
+        
+        if not current_user:
+            # Sécurité si le cookie contient un ID qui n'existe plus en BDD
+            response = RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
+            response.delete_cookie("session_user_id")
+            return response
+        
+        result = await db.execute(
+            select(Order).where(Order.user_id == current_user.id) # on recupere ses commande deja payer
+            .options(
+                selectinload(Order.events),   # Jointure pour récupérer le titre/date de l'événement
+                selectinload(Order.tickets)  # Jointure pour récupérer la liste des tickets associés
+            )
+            .order_by(Order.creation.desc()) # Les billets les plus récents en premier
+        )
+        orders = result.scalars().all()
+
+    # 4. Envoi des données triées au template HTML
+        return [
+            {
+                #"id": order.id,
+                # On prend les 8 premiers caractères de l'ID en majuscule pour la Réf
+                #"ref": order.id[:8].upper() if order.id else "INCONNU",
+                # On récupère le nom de l'événement lié de manière sécurisée
+                "event_name": order.events.name if order.events else "Événement sans nom",
+                "event_photo_url":order.events.photo_url,
+                "location":order.events.location
+            }
+            for order in orders
+        ]
+    except Exception as e:
+        print(f"Erreur lors du chargement de l'espace compte pour l'user {user_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Impossible de charger vos billets pour le moment."
+        )
+
+
+@Root.post("/user/profile/update")
+async def update_profile(request:Request,
+    name: str = Form(...),
+    phone: str = Form(...),
+    db: AsyncSession = Depends(connecting)
+):
+    # 1. Vérification de l'authentification via le cookie
+    user_id = request.cookies.get("session_user_id")
+    if not user_id:
+        # Si le participant n'est pas connecté, redirection flash vers la page de login
+        request.session['invalid_number'] = "Veuillez vous connecter pour accéder à vos billets."
+        return RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
+        
+        # 2. Récupération de l'utilisateur pour afficher ses infos (optionnel mais pro)
+    user_res = await db.execute(select(ExternalUser).where(ExternalUser.id == user_id))
+    current_user = user_res.scalars().first()
+        
+    if not current_user:
+        # Sécurité si le cookie contient un ID qui n'existe plus en BDD
+        response = RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
+        response.delete_cookie("session_user_id")
+        return response
+
+    # 1. Nettoyage strict des inputs (Sécurité de base)
+    clean_name = name.strip()
+    clean_phone = phone.strip()
+    
+    if not clean_name or len(clean_name) < 2:
+        request.session['invalid_name'] = "Veiller entrer un nom valid"
+        return RedirectResponse("/user/profile",status_code=303)
+
+    # 2. Assignation des modifications sur l'objet SQLAlchemy chargé
+    current_user.name = clean_name
+    current_user.phone = clean_phone
+    
+    # 3. Validation et sauvegarde asynchrone
+    try:
+        db.add(current_user) # Marque l'objet comme modifié
+        await db.commit()    # Valide la transaction en BDD
+        await db.refresh(current_user)
+    except Exception as e:
+        await db.rollback()  # Annulation en cas de pépin
+        raise HTTPException(status_code=500, detail="Erreur lors de la mise à jour.")
+
+    # 4. Redirection vers le dashboard (onglet profil) avec un message de succès
+    # On redirige vers la route principale du dashboard
+    response = responses.RedirectResponse(url="/my_account", status_code=status.HTTP_303_SEE_OTHER)
+    return response
 
 @Root.get("/auth/login")
 async def login_page(request: Request, db: AsyncSession = Depends(connecting)):
@@ -340,7 +606,7 @@ async def verify_otp(
     
     return response
 
-@Root.get("/auth/logout")
+@Root.get("/user/auth/logout")
 async def logout(request: Request):
 
     # 1. Préparation de la redirection vers la page de login
