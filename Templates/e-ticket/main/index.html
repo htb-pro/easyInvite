@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EasyTicket - Accueil</title>
+    
+    <link href="/static/Css/bootstrap.min.css" rel="stylesheet">
+    <script src="/static/Js/bootstrap.bundle.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+    
+    <style>
+        /* Thème sombre global de l'application */
+        body {
+            background-color: #0F172A;
+            color: #FFFFFF;
+            font-family: 'Segoe UI', Roboto, sans-serif;
+            overflow-x: hidden;
+        }
+
+        /* 1. Zone Hero / Publicitaire */
+        .hero-section {
+            background: radial-gradient(circle at top right, rgba(245, 158, 11, 0.15), #0F172A 70%);
+        }
+
+        .custom-badge {
+            background-color: rgba(245, 158, 11, 0.1);
+            color: #F59E0B;
+            border: 1px solid rgba(245, 158, 11, 0.2);
+            border-radius: 50px;
+        }
+
+        .blur-halo {
+            width: 250px;
+            height: 250px;
+            background-color: #F59E0B;
+            opacity: 0.12;
+            border-radius: 50%;
+            filter: blur(60px);
+        }
+
+        /* 2. Zone Cartes Événements */
+        .event-card {
+            background-color: #FFFFFF;
+            color: #0F172A;
+            border-radius: 16px;
+            border: none;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        
+            /* Cache la barre de défilement sur Chrome/Safari/Blink */
+        .custom-carousel::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Donne une dimension fixe aux cartes du carrousel */
+        .story-card {
+            width: 85vw;          /* Prend 85% de la largeur de l'écran sur mobile */
+            max-width: 350px;     /* Évite que la carte devienne géante sur PC */
+            height: 220px;        /* Hauteur fixe de la carte */
+            background-size: cover;
+            background-position: center;
+            border-radius: 16px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .event-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3) !important;
+        }
+
+        .event-img {
+            border-top-left-radius: 16px;
+            border-top-right-radius: 16px;
+            height: 180px;
+            object-fit: cover;
+            background-color: #E2E8F0;
+        }
+
+        .text-muted-custom {
+            color: #64748B;
+        }
+
+        /* 3. Style du Footer */
+        footer a {
+            transition: color 0.2s ease;
+        }
+        footer a:hover {
+            color: #F59E0B !important;
+        }
+        input::placeholder
+        {
+            color: silver !important;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg navbar-dark bg-transparent border-bottom border-secondary border-opacity-10 py-3">
+        <div class="container">
+            <a class="navbar-brand fw-bold text-warning fs-3" href="#">EasyTicket</a>
+            <button class="navbar-toggler border-0" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse justify-content-end" id="navbarNav">
+                <ul class="navbar-nav gap-2 mt-2 mt-lg-0">
+                    <li class="nav-item"><a class="nav-link active" href="#">Accueil</a></li>
+                    <li class="nav-item"><a class="nav-link" href="#">Événements</a></li>
+                    <li class="nav-item text-center">
+                         {%if user %}
+                    <a class="navbar-brand fw-bold text-white" href="/my_account"> <i style="font-size: 25px; color: white;" class="bi bi-person-circle "></i>  {{user}} </a>
+                    {%else%}
+                    <a href="/auth/login" class="btn btn-outline-danger text-light">
+                        <i class="bi bi-box-arrow-right"></i> Se connecter
+                    </a>
+                    {%endif%}
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero-section d-flex align-items-center py-5">
+        <div class="container py-3">
+            <div class="row align-items-center g-5 flex-column-reverse flex-lg-row">
+                
+                <div class="col-12 col-lg-6 text-center text-lg-start">
+                    <span class="badge custom-badge px-3 py-2 mb-3 fw-semibold d-inline-flex align-items-center">
+                        <i class="bi bi-shield-check me-2"></i>Billetterie 100% Sécurisée
+                    </span>
+                    
+                    <h1 class="display-5 fw-bold text-white mb-3" style="letter-spacing: -1px; line-height: 1.2;">
+                        Prenez vos places en 30 secondes chrono<br> avec <span class="text-warning">E-ticket !</span>
+                    </h1>
+                    
+                    <p class="lead text-secondary mb-4" style="font-size: 1.05rem; max-width: 550px;">
+                        Achetez vos billets instantanément via M-Pesa, Airtel Money ou Orange Money. Recevez votre billet avec QR Code unique directement sur votre téléphone. 
+                        Présentez-le à l'entrée, et profitez de l'événement. Aucun déplacement, zéro stress !                    </p>
+                    
+                    <div class="d-grid d-sm-flex justify-content-sm-center justify-content-lg-start gap-3 mb-5">
+                        <a href="#events-section" class="btn btn-warning btn-lg fw-bold text-dark px-4 py-3 shadow" style="border-radius: 12px; font-size: 1rem;">
+                            <i class="bi bi-compass me-2"></i>Découvrir les événements
+                        </a>
+                        <!-- <a href="#" class="btn btn-outline-light btn-lg fw-semibold px-4 py-3" style="border-radius: 12px; border-color: rgba(255,255,255,0.15); font-size: 1rem;">
+                            <i class="bi bi-plus-circle me-2"></i>Créer un événement
+                        </a> -->
+                                            <!-- 1. LE BOUTON POUR OUVRIR LE MODAL -->
+                        <button type="button" class="btn btn-outline-warning fw-bold px-4 py-2 text-white" data-bs-toggle="modal" data-bs-target="#videoModal" style="border-radius: 12px;">
+                            <i class="bi bi-play-circle-fill me-2"></i>Comment payer un billet???
+                        </button>
+                        <button type="button" class="btn btn-outline-warning fw-bold px-4 py-2" data-bs-toggle="modal" data-bs-target="#videoModal" style="border-radius: 12px;">
+                            <i class="bi bi-play-circle-fill me-2"></i>Comment créer un compte???
+                        </button>
+                    </div>
+                    <!-- 2. LE MODAL BOOTSTRAP (Thème Sombre) -->
+                    <div class="modal fade" id="videoModal" tabindex="-1" aria-labelledby="videoModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered modal-lg"> <!-- modal-lg pour une grande vidéo -->
+                            <div class="modal-content bg-dark text-white border border-secondary border-opacity-25" style="border-radius: 16px;">
+                                
+                                <!-- En-tête du Modal -->
+                                <div class="modal-header border-bottom border-secondary border-opacity-10">
+                                    <h5 class="modal-title fw-bold text-warning" id="videoModalLabel">
+                                        <i class="bi bi-info-circle me-2"></i>Comment fonctionne easyInvite ?
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-shadow="none" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                
+                                <!-- Corps du Modal (La Vidéo) -->
+                                <div class="modal-body p-0 bg-black overflow-hidden" style="border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
+                                    <!-- 
+                                    Option A : Vidéo locale (MP4) hébergée sur ton serveur.
+                                    Pour l'Option B (YouTube), regarde l'explication en bas.
+                                    -->
+                                    <div class="ratio ratio-16x9"> <!-- Classe Bootstrap pour garder le format cinéma 16:9 -->
+                                        <video id="demoVideo" controls poster="/static/images/video-thumbnail.jpg">
+                                            <source src="/static/videos/demo_easyticket.mp4" type="video/mp4">
+                                            Votre navigateur ne prend pas en charge les vidéos HTML5.
+                                        </video>
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>                 
+                    <div class="row pt-4 border-top border-secondary border-opacity-10 g-3 text-center text-sm-start">
+                        <div class="col-6 col-sm-4">
+                            <h4 class="text-white fw-bold mb-0">100%</h4>
+                            <p class="text-secondary small mb-0">Un écosystème de paiement sécurisé</p>
+                        </div>
+                        <div class="col-6 col-sm-4">
+                            <h4 class="text-white fw-bold mb-0">Réconciliation</h4>
+                            <p class="text-secondary small mb-0">Automatique des comptes</p>
+                        </div>
+                        <div class="col-12 col-sm-4">
+                            <h4 class="text-warning fw-bold mb-0" style="font-size: 1.1rem;"><i class="bi bi-wallet2 me-1"></i> Mobile Money</h4>
+                            <p class="text-secondary small mb-0">M-Pesa, Orange, Airtel</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="col-12 col-lg-6 text-center">
+                    <div class="position-relative d-inline-block">
+                        <div class="position-absolute top-50 start-50 translate-middle blur-halo"></div>
+                        
+                        <div class="position-relative p-4 text-start shadow-lg" 
+                             style="width: 280px; border-radius: 20px; background-color: #1E293B; border: 1px solid rgba(255,255,255,0.05); z-index: 2; transform: rotate(1deg);">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span class="text-warning fw-bold small">EasyTicket PASS</span>
+                                <span class="badge bg-danger bg-opacity-20 text-danger rounded-pill" style="font-size: 10px;">LIVE</span>
+                            </div>
+                            <h5 class="text-white fw-bold mb-1">Event</h5>
+                            <p class="text-secondary small mb-3"><i class="bi bi-calendar-event me-1"></i> 01-07-2026 à 15:00</p>
+                            <div class="bg-white p-3 rounded-3 text-center my-3 mx-auto" style="width: 160px; height: 160px; display: flex; align-items: center; justify-content: center;">
+                                <i class="bi bi-qr-code text-dark" style="font-size: 7.5rem; line-height: 1;"></i>
+                            </div>
+                            <div class="border-top border-secondary border-opacity-25 pt-2 text-center">
+                                <span class="text-success fw-bold small">ACCÈS VIP</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+            </div>
+        </div>
+    </section>
+
+
+    <section id="" class="hero-section d-flex align-items-center py-5">
+        <div class="hero-overlay"></div>
+        
+        <div class="container position-relative w-100" style="z-index: 2;">
+            <h1 class="hero-title">E-ticket</h1>
+            <p class="hero-subtitle"></p>
+            <form class="d-flex gap-2" action="/get/event_name" method="get" style="max-width: 500px;">
+                <input class="form-control" type="search" name="event_name" style="background-color:#0F172A; color: white; border: 1px solid #334155;" placeholder="Rechercher un événement...">
+                <button class="btn" type="submit" style="background-color: #0F172A; color: silver; border: 1px solid #334155;">Rechercher</button>
+            </form>
+        </div>
+    </section>
+
+
+    <section id="events-section" class="py-5 text-dark mt-2" style="background-color: white; border-top-left-radius: 24px; border-top-right-radius: 24px;">
+        <div class="container py-3">
+            
+            {% if featured_events %}
+            <div class="row mb-5"> <div class="col-12">
+                    <h6 class="fw-bold text-secondary mb-3"><i class="bi bi-star-fill me-2"></i>À la une</h6>
+                    
+                    <div class="d-flex gap-3 overflow-x-auto pb-3 custom-carousel" style="scroll-snap-type: x mandatory; scrollbar-width: none; -ms-overflow-style: none;">
+                        {% for event in featured_events %}
+                        <div class="card border-0 flex-shrink-0 story-card" style="scroll-snap-align: start; {% if event.photo_url %}background-image : url('{{ event.photo_url }}'); {% endif%}">
+                            <div class="position-absolute top-0 start-0 w-100 h-100" 
+                                style="background: linear-gradient(to top, rgba(15, 23, 42, 0.95) 0%, rgba(15, 23, 42, 0.4) 50%, rgba(0, 0, 0, 0) 100%); z-index: 1;">
+                            </div>
+                            <div class="position-absolute bottom-0 start-0 w-100 p-3 d-flex flex-column justify-content-end" style="z-index: 2; min-height: 150px;">
+                                <h5 class="fw-bold text-warning mb-1 text-truncate">{{ event.name }}</h5>
+                                <span class="fw-bold text-white" style="font-size: 1rem;">{{event.date.strftime("%d-%m-%y a partir de %H:%M")}}</span>
+                                 {% for ticket in event.ticket_prices %}
+                                    <span class="small {% if ticket.price and ticket.price > 0 %}text-warning{% else %}text-success{% endif %}" style="font-size: 0.75rem;">
+                                        <i class="bi bi-ticket-perforated me-1"></i>
+
+                                        {{ ticket.ticket_type.capitalize() }} : {% if ticket.price and ticket.price > 0 %}{{ ticket.price|int }} {{ ticket.device }}{% else %}Gratuit{% endif %}
+                                    </span>
+                                {% endfor %}
+                                <a href="/event/details/{{ event.id }}" class="btn btn-warning btn-sm fw-bold px-3 py-1 text-dark mt-2" style="border-radius: 8px;">Voir detail</a>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                </div>
+            </div>
+            {% endif %}
+            
+            <div class="mt-4">
+                <h6 class="fw-bold text-dark mb-3">Tous les événements à venir</h6> 
+                
+                <div class="row g-3"> {% for event in events %}
+                    <div class="col-12 col-md-4">
+                        <div class="card event-card h-100 mt-2" style="background-color: #0F172A; color: white; border-radius: 16px; overflow: hidden;">
+                            {% if event.photo_url %}
+                            <img src="{{ event.photo_url }}" class="card-img-top w-100" style="height: 200px; object-fit: cover;" alt="...">
+                            {% endif %}
+                            <div class="card-body">
+                                <h5 class="card-title fw-bold">{{ event.name }}</h5>
+                                <p class="text-secondary">{% if event.description %}{{ event.description[:100] }}...{% endif %}</p>
+                                <p class="text-secondary small"><i class="bi bi-calendar-event"></i> Date : {{ event.date.strftime("%d-%m-%Y") }} à partir de {{ event.date.strftime("%H:%M") }}</p>
+                                <p class="text-secondary"><i class="bi bi-geo-alt"></i> {{ event.location}}</p>
+                                 {% for ticket in event.ticket_prices %}
+                                <span class=" {% if ticket.price and ticket.price > 0 %}text-warning{% else %}text-success{% endif %}" >
+                                    <i class="bi bi-ticket-perforated me-1"></i>
+                                    {{ ticket.ticket_type.capitalize() }} : {% if ticket.price and ticket.price > 0 %}{{ ticket.price|int }} {{ ticket.device }}{% else %}Gratuit{% endif %}
+                                </span><br>
+                                {% endfor %}
+                            </div>
+                            <div class="card-footer bg-transparent border-0 pb-3">
+                                <a href="/event/details/{{ event.id }}" class="btn btn-outline-primary w-100" style="border-radius: 8px;">Voir les détails</a>
+                            </div>
+                        </div>
+                    </div>
+                {% else %}
+                    <div class="col-12 text-center text-secondary py-4">
+                        <i class="bi bi-calendar-x fs-2"></i>
+                        <p class="small mt-2">Aucun événement disponible.</p>
+                    </div>
+                {% endfor %}
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+<div class="row">
+            <div class="col">
+                <nav class="mt-4">
+                    <ul class="pagination justify-content-center">
+                    <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ page - 1 }}">Précédent</a>
+                    </li>
+                    {% for p in range(1, total_pages + 1) %}
+                    {% if p == 1 or p == total_pages or (p >= page - 1 and p <= page + 1) %}
+                    <li class="page-item {% if page == p %}active{% endif %}">
+                    <a class="page-link" href="?page={{ p }}">{{ p }}</a>
+                    </li>
+                    {% elif p == page - 2 or p == page + 2 %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                    {% endfor %}
+                    <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ page + 1 }}">Suivant</a>
+                    </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+
+    <footer class="bg-dark text-secondary pt-5 pb-4 border-top border-secondary border-opacity-10" style="background-color: #0B1224 !important;">
+        <div class="container">
+            <div class="row g-4">
+                
+                <div class="col-12 col-md-4 text-center text-md-start">
+                    <h5 class="text-warning fw-bold mb-3">EasyTicket</h5>
+                    <p class="small" style="max-width: 300px;">La plateforme de billetterie  numérique de confiance en RDC. Sécurisé, rapide et adapté au Mobile Money.</p>
+                    <div class="d-flex justify-content-center justify-content-md-start gap-3 mt-3">
+                        <a href="#" class="text-secondary"><i class="bi bi-facebook fs-5"></i></a>
+                        <a href="#" class="text-secondary"><i class="bi bi-whatsapp fs-5"></i></a>
+                        <a href="#" class="text-secondary"><i class="bi bi-twitter-x fs-5"></i></a>
+                    </div>
+                </div>
+
+                <div class="col-6 col-md-4 text-center text-md-start">
+                    <h6 class="text-white fw-bold mb-3">Navigation</h6>
+                    <ul class="list-unstyled small d-flex flex-column gap-2">
+                        <ul class="list-unstyled footer-links">
+                            <li><a href="/event/list"><i class="bi bi-chevron-right small me-1"></i> Tous les événements</a></li>
+                            <li><a href="/event/list?filter_date=today"><i class="bi bi-chevron-right small me-1"></i> Événements d'aujourd'hui</a></li>
+                            <li><a href="/event/list?filter_date=upcoming"><i class="bi bi-chevron-right small me-1"></i> Événements à venir</a></li>
+                            <li><a href="#"><i class="bi bi-chevron-right small me-1"></i> Vérifier un billet</a></li>
+                        </ul>
+                    </ul>
+                </div>
+
+                <div class="col-6 col-md-2">
+                    <h6 class="footer-heading">Organiser</h6>
+                    <ul class="list-unstyled footer-links">
+                        <li><a href="#"><i class="bi bi-chevron-right small me-1"></i> Espace Organisateur</a></li>
+                        <li><a href="/pricing"><i class="bi bi-chevron-right small me-1"></i> Tarifs & Commissions</a></li>
+                    </ul>
+                </div>
+
+                <div class="col-12 col-md-4 text-center text-md-start">
+                     <h6 class="footer-heading">Besoin d'aide ?</h6>
+                    <ul class="list-unstyled small d-flex flex-column gap-2">
+                        <li><a href="/support_team_contact"><i class="bi bi-envelope me-2"></i> Support client</a></li>
+                        <li><a href="/support_team_contact"><i class="bi bi-question-circle me-2"></i> FAQ / Centre d'aide</a></li>
+                        <li><a href="/privacy" class="d-block text-secondary text-decoration-none">Politique de confidentialité</a></li>
+                        <li><a href="/policy" class="d-block text-secondary text-decoration-none mb-1">Conditions Générales (CGU)</a></li>
+                    </ul>
+                </div>
+
+            </div>
+
+            <div class="row mt-4 pt-3 border-top border-secondary border-opacity-10 text-center">
+                <div class="col-12">
+                <p class="copyright-text mb-0">
+                    &copy; {{copyright}} EasyInvite - Plateforme de billetterie intelligente. Tous droits réservés.
+                </p>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/typed.js@3.0.0/dist/typed.umd.js"></script>
+
+<script>
+    // =========================================================================
+    // 1. CONFIGURATION ET GESTION DU BACKGROUND DYNAMIQUE (HERO)
+    // =========================================================================
+    const backgroundImages = [
+        "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=1200",
+        "https://images.unsplash.com/photo-1511578314322-379afb476865?q=80&w=1200",
+        "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=1200",
+        "https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=1200",
+        {% for event in events %}
+            {% if event.photo_url %}
+                "{{ event.photo_url }}",
+            {% endif %}
+        {% endfor %}
+    ];
+    
+    let currentImageIndex = -1;
+
+    function changeHeroBackground() {
+        const heroElement = document.getElementById('dynamicHero');
+        if (!heroElement || backgroundImages.length === 0) return;
+
+        let randomIndex;
+        do {
+            randomIndex = Math.floor(Math.random() * backgroundImages.length);
+        } while (randomIndex === currentImageIndex && backgroundImages.length > 1);
+
+        currentImageIndex = randomIndex;
+        const nextImageUrl = backgroundImages[currentImageIndex];
+
+        // Préchargement de l'image en mémoire pour éviter le clignotement blanc
+        const img = new Image();
+        img.src = nextImageUrl;
+        img.onload = function() {
+            heroElement.style.backgroundImage = `url('${nextImageUrl}')`;
+        };
+    }
+
+    // =========================================================================
+    // 2. INITIALISATION ET ÉVÉNEMENTS AU CHARGEMENT DE LA PAGE (DOMContentLoaded)
+    // =========================================================================
+    document.addEventListener('DOMContentLoaded', () => {
+        
+        // A. Lancement de l'animation de texte (Typed.js)
+        if (document.querySelector('.hero-subtitle')) {
+            new Typed('.hero-subtitle', {
+                strings: [
+                    'Réservez vos places en toute sécurité.', 
+                    'Découvrez des événements uniques.', 
+                    'Vivez des expériences inoubliables.',
+                    'Cliquez, payez et profitez'
+                ],
+                typeSpeed: 50,
+                backSpeed: 30,
+                shuffle: true,       // : Active le mode aléatoire
+                loop: true
+            });
+        }
+
+        // B. Lancement du Background Dynamique
+        changeHeroBackground();
+        setInterval(changeHeroBackground, 5000);
+
+        // C. Gestion de la fermeture automatique des Alertes et Toasts (3 secondes)
+        setTimeout(() => {
+            const alertElement = document.querySelector(".alert");
+            if (alertElement) {
+                alertElement.classList.remove("show");
+                alertElement.classList.add("fade");
+                setTimeout(() => alertElement.remove(), 500);
+            } else {
+                const toastElement = document.querySelector(".toast");
+                if (toastElement) {
+                    toastElement.classList.remove("show");
+                    toastElement.classList.add("fade");
+                    setTimeout(() => toastElement.remove(), 700);
+                }
+            }
+        }, 3000);
+
+        // D. Anti-Bug de son : Gestion du Modal Vidéo Démo
+        const videoModal = document.getElementById('videoModal');
+        const demoVideo = document.getElementById('demoVideo');
+
+        if (videoModal && demoVideo) {
+            videoModal.addEventListener('hidden.bs.modal', function () {
+                demoVideo.pause();
+                demoVideo.currentTime = 0; // Remet la vidéo au début
+            });
+        }
+    });
+</script>
+</body>
+</html>

@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", function() {
     const couple_number = document.querySelector(".couple_number label");
     const img_field = document.querySelector(".event_img");
     const present_field = document.querySelector(".form-check");
+    const is_featured_box = document.querySelector(".is_featured");
 
     const organizer = document.querySelector(".organizer");
     const organizer_input_field = document.querySelector(".organizer input");
@@ -45,8 +46,11 @@ document.addEventListener("DOMContentLoaded", function() {
             couple_field.style.display = "none";
             present_field.style.display = "none";
             place_field.style.display = "block";
+            is_featured_box.style.display = "block";
             couple_input_field.required =  false;
             place_field.required =  true;
+            organizer.style.display = "block";
+            organizer_input_field.required = true;
             couple_number.textContent = "numero organisateur"
         } 
          else {
@@ -59,6 +63,7 @@ document.addEventListener("DOMContentLoaded", function() {
             greetings.style.display = "none"
             organizer.style.display = "none"
             place_field.style.display = "none"
+            is_featured_box.style.display = "none"
             place_field.required = false
             organizer_input_field.required = false
         }

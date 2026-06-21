@@ -157,6 +157,12 @@
                         cadeau en espèce (cash gift)
                     </label>
                 </div>
+
+                 <div class="mb-3 is_featured">
+                    <label for="place" class="form-label fw-semibold">A la une ?</label>
+                    <input type="checkbox" class="form-check-input" id="is_featured" name="is_featured" {%if event.is_featured%}checked{%endif%}>
+                </div>
+
             <!-- message de bienvenu -->
             <div class="mb-3 greetings">
                 <label for="gretting" class="form-label fw-semibold">Message de bienvenu (optionnel)</label>

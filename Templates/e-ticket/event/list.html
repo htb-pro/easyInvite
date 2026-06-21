@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Découvrir les Événements - easyInvite</title>
+    <link href="/static/Css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-main: #0B132B;
+            --bg-card: #141B2D;
+            --text-main: #E2E8F0;
+            --text-muted: #94A3B8;
+            --easy-gold: #F59E0B;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            padding-bottom: 80px;
+        }
+
+        /* --- NAVBAR SIMPLE --- */
+        .custom-nav {
+            background-color: rgba(20, 27, 45, 0.8);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* --- ZONE DE RECHERCHE / FILTRES --- */
+        .filter-section {
+            background-color: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 25px;
+            margin-top: 40px;
+            margin-bottom: 40px;
+        }
+
+        .form-control, .form-select {
+            background-color: rgba(11, 19, 43, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #FFFFFF;
+            border-radius: 10px;
+            padding: 10px 15px;
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: rgba(11, 19, 43, 0.8);
+            border-color: var(--easy-gold);
+            color: #FFFFFF;
+            box-shadow: none;
+        }
+
+        /* --- CARTES ÉVÉNEMENTS --- */
+        .event-card {
+            background-color: var(--bg-card);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+            overflow: hidden;
+            transition: transform 0.3s ease, border-color 0.3s ease;
+            height: 100%;
+            display: flex;
+            flex-column: justify-content-between;
+        }
+        .event-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(245, 158, 11, 0.3);
+        }
+
+        .event-img-container {
+            position: relative;
+            height: 200px;
+            overflow: hidden;
+        }
+        .event-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .category-badge {
+            position: absolute;
+            top: 15px;
+            left: 15px;
+            background-color: rgba(11, 19, 43, 0.85);
+            backdrop-filter: blur(5px);
+            color: var(--easy-gold);
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 5px 12px;
+            border-radius: 30px;
+            text-transform: uppercase;
+        }
+
+        .card-body-content {
+            padding: 25px;
+        }
+
+        .event-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #FFFFFF;
+            line-height: 1.4;
+            margin-bottom: 12px;
+        }
+
+        .event-meta {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-ticket {
+            background-color: var(--easy-gold);
+            color: #0B132B;
+            font-weight: 700;
+            border-radius: 12px;
+            padding: 10px;
+            transition: background-color 0.2s;
+        }
+        .btn-ticket:hover {
+            background-color: #D97706;
+            color: #0B132B;
+        }
+        input::placeholder
+        {
+            color: silver !important;
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="navbar navbar-expand-lg custom-nav sticky-top navbar-dark py-3">
+        <div class="container">
+            <a class="navbar-brand fw-bold text-white" href="/">
+                <i class="bi bi-ticket-perforated-fill text-warning me-2"></i>Easy<span class="text-warning">ticket</span>
+            </a>
+            <a href="/auth/login" class="btn btn-outline-light btn-sm px-3 rounded-3">se connecter</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        
+        <div class="filter-section">
+            <form method="GET" action="/event/list" class="row g-3">
+                <div class="col-12 col-md-5">
+                    <div class="input-group">
+                        <span class="input-group-text bg-transparent border-end-0 border-secondary border-opacity-25 text-secondary"><i class="bi bi-search"></i></span>
+                        <input type="text" name="search" class="form-control border-start-0" placeholder="Rechercher un événement, un artiste...">
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <select name="city" class="form-select">
+                        {% if city %}
+                        <option value="{{ city }}" selected>{{ city }}</option>
+                        {% else %}
+                        <option value="" selected disabled>ville...</option>
+                        {% endif %}
+                        <option value="kinshasa">Kinshasa</option>
+                        <option value="lubumbashi">Lubumbashi</option>
+                        <option value="likasi">Likasi</option>
+                        <option value="kolwezi">Kolwezi</option>
+                        <option value="goma">Goma</option>
+                        <option value="butembo">Butembo</option>
+                        <option value="beni">Beni</option>
+                        <option value="bukavu">Bukavu</option>
+                        <option value="uvira">Uvira</option>
+                        <option value="baraka">Baraka</option>
+                        <option value="matadi">Matadi</option>
+                        <option value="boma">Boma</option>
+                        <option value="kisangani">Kisangani</option>
+                        <option value="mbuji-mayi">Mbuji-Mayi</option>
+                        <option value="kananga">Kananga</option>
+                        <option value="tshikapa">Tshikapa</option>
+                        <option value="mwene-ditu">Mwene-Ditu</option>
+                        <option value="bandundu">Bandundu</option>
+                        <option value="kikwit">Kikwit</option>
+                        <option value="kindu">Kindu</option>
+                        <option value="kalemie">Kalemie</option>
+                        <option value="gbadolite">Gbadolite</option>
+                        <option value="mbandaka">Mbandaka</option>
+                        <option value="bunia">Bunia</option>
+                        <option value="isiro">Isiro</option>
+                        <option value="buta">Buta</option>
+                        <option value="kamina">Kamina</option>
+                        <option value="kabinda">Kabinda</option>
+                        <option value="kenge">Kenge</option>
+                        <option value="inongo">Inongo</option>
+                        <option value="lisala">Lisala</option>
+                        <option value="gemena">Gemena</option>
+                        <option value="zongo">Zongo</option>
+                        <option value="boende">Boende</option>
+                        <option value="lusambo">Lusambo</option>
+                    </select>
+                </div>
+                <div class="col-6 col-md-2">
+                    <select name="category" class="form-select">
+                        {% if category %}
+                        <option value="{{ category }}" selected>{{ category }}</option>
+                        {% else %}
+                        <option value="" selected disabled>Catégories</option>
+                        {% endif %}
+                        <option value="concert">Concert</option>
+                        <option value="conference">Conférence</option>
+                        <option value="mariage">Mariage / Privé</option>
+                    </select>
+                </div>
+                <div class="col-12 col-md-2">
+                    <button type="submit" class="btn btn-warning w-100 fw-bold text-dark rounded-3" style="padding: 10px;">Filtrer</button>
+                </div>
+            </form>
+        </div>
+        {% if filter_date == "today" %}
+        <h3 class="fw-bold mb-4 text-white">Événements d'aujourd'hui</h3>
+        {% elif filter_date == "upcoming" %}
+        <h3 class="fw-bold mb-4 text-white">Tous les événements à venir</h3>
+        {% else %}
+        <h3 class="fw-bold mb-4 text-white">Tous les événements</h3>
+        {% endif %}
+        <div class="row g-4">
+            {% if events %}
+            {% for event in events %}
+            <div class="col-12 col-md-6 col-lg-4">
+                <div class="event-card d-flex flex-column h-100">
+                    <div class="event-img-container">
+                        <span class="category-badge"></span>
+                        <img src="{{ event.photo_url if event.photo_url else 'https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=600&q=80' }}" class="event-img" alt="{{ event.title }}">
+                    </div>
+                    
+                    <div class="card-body-content d-flex flex-column justify-content-between flex-grow-1">
+                        <div>
+                            <h5 class="event-title">{{ event.name }}</h5>
+                            
+                            <div class="event-meta">
+                                <i class="bi bi-calendar3 text-warning"></i>
+                                <span>{{ event.date.strftime('%d %b %Y à %H:%M') }}</span>
+                            </div>
+                            
+                            <div class="event-meta">
+                                <i class="bi bi-geo-alt-fill text-danger"></i>
+                                <span>{{ event.location | capitalize }}</span>
+                            </div>
+
+                            <div class="event-meta mt-3 fw-bold text-secondary fs-5">
+                                <i class="bi bi-tag-fill me-1"></i>
+                                {% for ticket in event.ticket_prices %}
+                                <span>{% if ticket.price%}{{ticket.ticket_type}}:{{ ticket.price|int}} {{ticket.device}}{%else%} Gratuit {%endif%}</span><br>
+                                {% endfor %}
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                            <a href="/events/{{ event.id }}" class="btn btn-ticket w-100">Réserver ma place</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+             <div class="row">
+            <div class="col">
+                <nav class="mt-4">
+                    <ul class="pagination justify-content-center">
+                    <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ page - 1 }}">Précédent</a>
+                    </li>
+                    {% for p in range(1, total_pages + 1) %}
+                    {% if p == 1 or p == total_pages or (p >= page - 1 and p <= page + 1) %}
+                    <li class="page-item {% if page == p %}active{% endif %}">
+                    <a class="page-link" href="?page={{ p }}">{{ p }}</a>
+                    </li>
+                    {% elif p == page - 2 or p == page + 2 %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                    {% endfor %}
+                    <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ page + 1 }}">Suivant</a>
+                    </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+            {% else %}
+            <div class="col-12 text-center py-5">
+                <i class="bi bi-calendar-x text-muted" style="font-size: 3rem;"></i>
+                <h5 class="mt-3 text-muted">Aucun événement disponible pour le moment</h5>
+            </div>
+            {% endif %}
+        </div>
+
+    </div>
+
+</body>
+</html>

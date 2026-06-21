@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vérification - EasyInvite</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/Css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <style>
         body { background-color: #0F172A;color: #ffffff; }
         .auth-card { background-color: #1E293B; border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; }
@@ -24,33 +25,28 @@
                     <h2 class="fw-bold text-warning">EasyTicket</h2>
                 </div>
 
-                {% if incorrect_otp_message %} <!-- message a affichier lors qu'un ticket est supprimer-->
-                <div class="toast show position-fixed top-0 end-0 m-3" style="z-index: 1055;">
-                    <div class="toast-body bg-danger text-white d-flex justify-content-between align-items-center">
-                    <span>{{ incorrect_otp_message }}</span>
-                    <button type="button" class="btn-close btn-close-white ms-2" data-bs-dismiss="toast"></button>
-                    </div>
-                </div>
-                {% endif %}
-
                 <div class="p-4 auth-card shadow">
                     <h5 class="mb-1 fw-bold text-center">Vérification du code</h5>
                     <p class=" text-center small mb-4">
-                        Entrez le code secret envoyé au <br>
-                        <strong class="text-warning font-monospace">{{ phone }}</strong>
+                        Entrez le code secret envoyé par sms au <br>
+                        <strong class="text-warning font-monospace">{{ reset_phone }}</strong>
                     </p>
                     
                     <form action="/auth/verify-otp" method="POST">
-                        
+                        {% if error_message %} <!-- message a affichier lors qu'un ticket est supprimer-->
+                        <div class="alert alert-danger">
+                            <span><i class="bi bi-exclamation-diamond"></i> {{ error_message }}</span>
+                        </div>
+                        {% endif %}
                         <input type="hidden" name="phone" value="{{ phone }}">
                         <input type="hidden" name="csrf_token" value="{{csrf_token}}">
                         <div class="mb-4">
-                            <input type="text" name="otp_entered" id="otp_entered" 
+                            <input type="text" name="otp_input" id="otp_entered" 
                                    class="form-control bg-dark text-white text-center fw-bold fs-3 border-secondary" 
-                                   placeholder="0 0 0 0" maxlength="4" required autocomplete="off" autofocus>
+                                   placeholder="0 0 0 0" maxlength="6" required autocomplete="off" autofocus>
                         </div>
                         
-                        <button type="submit" class="btn btn-warning w-100 fw-bold text-dark">Confirmer et voir mes billets </button>
+                        <button type="submit" class="btn btn-warning w-100 fw-bold text-dark">Valider </button>
                     </form>
 
                     <div class="text-center mt-3">

@@ -56,6 +56,7 @@ class ExternalUser(Base):
     id = Column(String,primary_key = True,default = lambda : str(uuid4()))
     phone_number = Column(String, unique=True, index=True)
     name = Column(String)
+    password = Column(String, nullable=False)  #le mot de passe doit etre hasher  avant de le stocker
     created_at = Column(DateTime,default=datetime.utcnow)
 
     orders = relationship("Order", back_populates="external_user")
@@ -66,6 +67,7 @@ class OTP(Base):
     id = Column(String, primary_key=True,default = lambda : str(uuid4()))
     ext_user_id = Column(String, ForeignKey('external_users.id', ondelete="CASCADE"), nullable=True) #la cle etrangere de external_user_id
     code = Column(String)
+    otp_attempts = Column(Integer, default=0) # Sécurité pour bloquer après 3 essais ratés
     expires_at = Column(DateTime) # Très important pour la sécurité l'expiration du code otp
 
     current_otp = relationship("ExternalUser", back_populates="ext_user")
@@ -120,8 +122,8 @@ class Event(Base): #event table
     language = Column(String(50),default="fr")#langue par defaut de l'evenement
     total_capacity = Column(Integer)#capacité totale de place de l'evenement
     sold_seats = Column(Integer,default=0)#nombre de places vendues
-    is_featured = Column(Boolean, default=False, nullable=False)#LE CHAMP CLÉ : False par défaut, l'admin le passe à True pour le mettre À la Une
-    is_deleted =Column(Boolean, default=False, nullable=False)
+    is_featured = Column(Boolean, default=False, nullable=True)#LE CHAMP CLÉ : False par défaut, l'admin le passe à True pour le mettre À la Une
+    is_deleted =Column(Boolean, default=False, nullable=True)
 
     guests = relationship("Guest",back_populates="event",cascade="all,delete")
     groups = relationship("Group",back_populates ="events")
@@ -206,7 +208,7 @@ class Ticket(Base):
     seri = Column(String(25))#la serie du ticket
     number = Column(Integer) #numero du ticket
     participator_name = Column(String(50))      # Nom de la personne qui détient ce ticket précis
-    participator_number = Column(String(20),index=True)      # Nom de la personne qui détient ce ticket précis
+    participator_number = Column(String(20),index=True)      # Numero du payeur
     qr_token = Column(String, unique=True,index = True) # Token unique crypté dans le QR Code
     get_pass = Column(String,index=True)          # Code de secours (8 caractères)
     totp_secret = Column(String(32), nullable=True)#l'totp

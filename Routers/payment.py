@@ -68,121 +68,120 @@ async def get_success_message(request:Request):
 # 1. Tu prépares le décodeur avec ta clé secrète
 serializer = URLSafeTimedSerializer(csrf_key)
 @Root.post("/make_order/{event_id}")
-async def get_paiement_data(request:Request, event_id: str, buyer_name: str = Form(...), buyer_phone: str = Form(...),  ticket_type: str = Form(...), quantity: int = Form(...),transaction_id = Form(...),_=Depends(verify_csrf),db: AsyncSession = Depends(connecting)):
-    converted_transaction_id = transaction_id.lower() #Conversion de id de transaction
-    new_order =None
-    tickets_sold =None
+async def get_paiement_data(
+    request: Request, 
+    event_id: str, 
+    buyer_name: str = Form(...), 
+    buyer_phone: str = Form(...),  
+    ticket_type: str = Form(...), 
+    quantity: int = Form(...),
+    transaction_id: str = Form(...),
+    _=Depends(verify_csrf),
+    db: AsyncSession = Depends(connecting)
+):
+    converted_transaction_id = transaction_id.lower().strip()
+    
+    # Nettoyage et uniformisation immédiate du numéro de téléphone
+    clean_phone = "".join(filter(str.isdigit, buyer_phone))
+    if not clean_phone:
+        request.session['invalid_number'] = "Format du numéro de téléphone invalide"
+        return RedirectResponse(f"/payments/{event_id}", status_code=303)
+        
+    if clean_phone.startswith("0"):
+        clean_phone = "243" + clean_phone[1:]
+
+    # 🌟 AJOUT : Essayer de récupérer l'ID utilisateur si connecté
+    session_user_id = request.cookies.get("session_user_id")
+    order_id = None  # On initialise pour le récupérer plus tard
+
     async with db.begin():
-        # 2. On récupère l'événement ET ON LE VERROUILLE (.with_for_update())
-        # Ça empêche deux requêtes simultanées de lire le même nombre de places
+        # 1. On récupère et verrouille l'événement contre la concurrence
         event_result = await db.execute(
             select(Event).where(Event.id == event_id).with_for_update()
         )
-        event = event_result.scalar_one_or_none()    
-        ticket_res = await db.execute(select(Ticket_price).where(Ticket_price.ticket_type == ticket_type))
-        ticket = ticket_res.scalars().first()#pour le calcule du montant a transfere Qte * prix de billet
-        order_res = await db.execute(select(Order).where(Order.transaction_id == converted_transaction_id,Order.event_id == event_id))
-        order = order_res.scalars().first()
-        
+        event = event_result.scalar_one_or_none() 
         if not event:
             raise HTTPException(status_code=404, detail="Event not found")
-        if order: 
-            csrf_token = secrets.token_urlsafe(32)
-            res = await db.execute(select(Ticket_price)) #a renvoyer pour la liste d'options sur le form de commande
-            tickets = res.scalars().all()
-            # Re-chargement de l'event avec ses relations pour le formulaire
-            event_with_prices = (await db.execute(
-                select(Event).where(Event.id == event_id).options(selectinload(Event.ticket_prices))
-            )).scalars().first()
-              # 2. On compte combien de billets ont déjà été vendus
-            tickets_sold = await db.scalar(
-                select(func.count(Ticket.id)).where(Ticket.event_id == event_id)
-            ) or 0
             
-            if tickets_sold:
-                # 3. ON CALCULE LES PLACES RESTANTES 📊
-                remaining_place = event.total_capacity - tickets_sold
-                
-                # Si jamais le calcul donne un chiffre négatif par accident, on le remet à 0
-                
-                if remaining_place < 0:
-                    remaining_place = 0
-            exist_message = "Ce code de transaction a déjà été utilisé, si vous pensez qu'il s'agit d'une erreur, veillez verifier le code saisi ou contacter notre service support"
-            return templates.TemplateResponse("order/forms/order_form.html",{'request':request, "csrf_token": csrf_token,'event':event_with_prices,'tickets':tickets,'exist_message':exist_message,'buyer_name':buyer_name,'buyer_phone':buyer_phone,'ticket_type':ticket_type,'quantity':quantity,'transaction_id':transaction_id,'remaining_place':remaining_place})
-        clean_phone = "".join(filter(str.isdigit, buyer_phone))
-        if not clean_phone:
-            request.session['invalid_number'] = "Format du numéro de téléphone invalide"
-            return RedirectResponse(
-            f"/payments/{event_id}",
-                status_code=303
-            )
-            
-        if clean_phone.startswith("0"):
-            clean_phone = "243" + clean_phone[1:]
-        new_order = None
-        #creation du compte du participant directement 
-            #la verification de place 
+        # 2. Correction Filtre Prix : On lie le type de billet à cet événement précis
+        ticket_res = await db.execute(
+            select(Ticket_price).where(Ticket_price.ticket_type == ticket_type, Ticket_price.event_id == event_id)
+        )
+        ticket = ticket_res.scalars().first()
+        if not ticket:
+            raise HTTPException(status_code=404, detail="Type de ticket introuvable pour cet événement")
+
+        # 3. Vérification si la transaction existe déjà
+        order_res = await db.execute(
+            select(Order).where(Order.transaction_id == converted_transaction_id, Order.event_id == event_id)
+        )
+        order = order_res.scalars().first()
+        
+        # Comptage global des billets déjà vendus
         tickets_sold = await db.scalar(
             select(func.count(Ticket.id)).where(Ticket.event_id == event_id)
         ) or 0
-        # 4. LE CONTRÔLE CRITIQUE : Est-ce qu'on a atteint la limite (ex: 100) ?
-        if tickets_sold:
-            if tickets_sold + quantity > event.total_capacity: 
-                insuffisant_place_message=" Désolé, cet événement est complet ! Plus aucune place n'est disponible." #si le nombre de billet demander est plus ce que les place restante
-                event_with_prices = (await db.execute(
-                    select(Event).where(Event.id == event_id).options(selectinload(Event.ticket_prices))
-                )).scalars().first()
-                res_tickets = await db.execute(select(Ticket_price))
-                tickets = res_tickets.scalars().all()
-                tickets_sold = await db.scalar(
-                select(func.count(Ticket.id)).where(Ticket.event_id == event_id)) or 0
-                # 3. ON CALCULE LES PLACES RESTANTES 📊
-                remaining_place = event.total_capacity - tickets_sold
-                # Si jamais le calcul donne un chiffre négatif par accident, on le remet à 0
-                if remaining_place < 0:
-                    remaining_place = 0
-                return templates.TemplateResponse(
-                    "order/forms/order_form.html",
-                    {
-                        "request": request,
-                        "event": event_with_prices,
-                        "tickets": tickets,
-                        "show_modal": True,  # Un petit drapeau pour dire au JS d'ouvrir la modal
-                        'insuffisant_place_message':insuffisant_place_message,
-                        # On ré-injecte ce que l'utilisateur avait tapé :
-                        "buyer_name": buyer_name,
-                        "buyer_phone": buyer_phone,
-                        "ticket_type": ticket_type,
-                        "quantity": quantity,
-                        'remaining_place':remaining_place,
-                        "transaction_id": transaction_id
-                    }
-                )
+        remaining_place = max(0, event.total_capacity - tickets_sold)
 
-            # 3. Récupération ou création de l'utilisateur en une seule étape logique
-        res = await db.execute(select(ExternalUser).where(ExternalUser.phone_number == clean_phone))
-        user = res.scalars().first()
-        if not user:
-            user = ExternalUser(name=buyer_name,phone_number=clean_phone)
-            db.add(user)
-            await db.flush()
-        ticket_price = ticket.price
+        if order: 
+            csrf_token = secrets.token_urlsafe(32)
+            res = await db.execute(select(Ticket_price).where(Ticket_price.event_id == event_id))
+            tickets = res.scalars().all()
+            
+            event_with_prices = (await db.execute(
+                select(Event).where(Event.id == event_id).options(selectinload(Event.ticket_prices))
+            )).scalars().first()
+            
+            exist_message = "Ce code de transaction a déjà été utilisé. Veuillez vérifier ou contacter le support."
+            return templates.TemplateResponse(
+                "order/forms/order_form.html",
+                {
+                    'request': request, "csrf_token": csrf_token, 'event': event_with_prices, 
+                    'tickets': tickets, 'exist_message': exist_message, 'buyer_name': buyer_name, 
+                    'buyer_phone': buyer_phone, 'ticket_type': ticket_type, 'quantity': quantity, 
+                    'transaction_id': transaction_id, 'remaining_place': remaining_place
+                }
+            )
+
+        # 4. Correction Contrôle Capacité
+        if tickets_sold + quantity > event.total_capacity: 
+            insuffisant_place_message = "Désolé, cet événement est complet ! Plus aucune place n'est disponible."
+            
+            event_with_prices = (await db.execute(
+                select(Event).where(Event.id == event_id).options(selectinload(Event.ticket_prices))
+            )).scalars().first()
+            
+            res_tickets = await db.execute(select(Ticket_price).where(Ticket_price.event_id == event_id))
+            tickets = res_tickets.scalars().all()
+            
+            return templates.TemplateResponse(
+                "order/forms/order_form.html",
+                {
+                    "request": request, "event": event_with_prices, "tickets": tickets, "show_modal": True,
+                    'insuffisant_place_message': insuffisant_place_message, "buyer_name": buyer_name, 
+                    "buyer_phone": buyer_phone, "ticket_type": ticket_type, "quantity": quantity, 
+                    'remaining_place': remaining_place, "transaction_id": transaction_id
+                }
+            )
+
+        # 5. Création de la commande avec ou sans l'ID de l'utilisateur connecté
         new_order = Order(
             event_id = event_id,
+            user_id = session_user_id, # 🌟 MODIFICATION : Sera soit un ID (String) soit None !
             buyer_name = buyer_name,
-            buyer_number = buyer_phone,
+            buyer_number = clean_phone,  
             ticket_type = ticket_type,
             transaction_id = converted_transaction_id,
-            ticket_quantity  = quantity,
-            user_id = user.id,
-            total_amount =  quantity * ticket_price, #total a payer pour le ticket
+            ticket_quantity = quantity,
+            total_amount = quantity * ticket.price,
         )
         db.add(new_order)
-    request.session['code'] = transaction_id
-    order_id = new_order.id
-    return RedirectResponse(url=f"/valid_order_response/{event_id}/{order_id}", status_code=303)
+        await db.flush()  
+        order_id = new_order.id  
 
-#reponse a envoyer a l'utilisateur une fois commande valide
+    # Hors de la transaction, tout est validé proprement
+    request.session['code'] = transaction_id
+    return RedirectResponse(url=f"/valid_order_response/{event_id}/{order_id}", status_code=303) #redirection vers la page d'attente
 @Root.get("/valid_order_response/{event_id}/{order_id}",name="order_response")
 async def get_order_response_message(request:Request,event_id:str,order_id:str,db:AsyncSession = Depends(connecting)):
     event_res = await db.execute(select(Event).where(Event.id == event_id))

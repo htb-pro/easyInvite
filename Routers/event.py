@@ -113,7 +113,8 @@ async def eventDetail(request:Request,event_id : str,access_token = Cookie(None)
 
 @Root.get("/event_form",name="event_form")#event form request
 def getEventForm(request:Request,user=Depends(permission_required("create_event"))):
-    return templates.TemplateResponse("Event/Forms/event_form.html",{'request':request})
+    success_message = request.session.get("success")
+    return templates.TemplateResponse("Event/Forms/event_form.html",{'request':request, "creation_success": success_message})
 #------------------------------------------l'addresse du dossier de stockage des image
 FOLDER_MAPPING = {
     "Mariage": "EasyInvite/wedding_events",
@@ -139,6 +140,7 @@ language :str = Form(...),#la langue
 organizer :str = Form(None),#organisateeur
 greetings:str = Form(None),#message de bienvenu
 total_place:int = Form(None),#espace d'accueil  ou le nombre de place prevu
+is_featured:bool = Form(None),#l'event est a la une?
 Db:AsyncSession = Depends(connecting),
 ):
     res = jwt.decode(access_token,secret,algorithms=[algo])
@@ -189,7 +191,8 @@ Db:AsyncSession = Depends(connecting),
         language=language,
         organizer=organizer,
         greeting_message = greetings,
-        total_capacity=total_place 
+        total_capacity=total_place,
+        is_featured = is_featured
             )
         Db.add(newEvent)
         await Db.commit()
@@ -197,8 +200,8 @@ Db:AsyncSession = Depends(connecting),
     except Exception :
         await Db.rollback()
         raise HTTPException(status_code=500,detail="Erreur lors de la création de l'événement")
-    request.session["success"] = "🎉 Événement créé avec succès !"
-    return RedirectResponse("/event_list",status_code=303)
+    request.session["success"] = " Événement créé avec succès !"
+    return RedirectResponse("/event_form",status_code=303)
 
 @Root.get("/edit_event/{event_id}")#la root pour la modification d'un evenement
 async def editEvent(request:Request,event_id : str,user=Depends(permission_required("edit_event")),db:AsyncSession = Depends(connecting)):
@@ -211,8 +214,11 @@ async def editEvent(request:Request,event_id : str,user=Depends(permission_requi
 @Root.post("/edit_event/{event_id}")#la root pour modifier un evenement
 async def editEvent(request:Request,event_id : str,access_token = Cookie(None),eventName:str = Form(...),coupleName:str = Form(...),couple_phone_number:str = Form(...),eventType:str = Form(...),eventDate: str = Form(...),
                     eventAddress:str = Form(...),location:str = Form(...),eventDescription: Optional[str] = Form(None),
-                    eventState: str = Form(...),photo:UploadFile = File(None),is_active:bool = Form(None),language:str = Form(...),organizer:str = Form(None),greetings:str = Form(None),total_place:int = Form(None),db:AsyncSession = Depends(connecting)
+                    eventState: str = Form(...),photo:UploadFile = File(None),is_active:bool = Form(None),language:str = Form(...),organizer:str = Form(None),greetings:str = Form(None),total_place:int = Form(None),
+                    is_featured:bool = Form(None),db:AsyncSession = Depends(connecting)
                     ,user=Depends(permission_required("edit_event"))):
+    print(f"======================================={is_featured}")
+
     edited_Event_Data = select(Event).where(Event.id == event_id)
     res = await db.execute(edited_Event_Data)
     editedEventData = res.scalars().first() 
@@ -270,6 +276,7 @@ async def editEvent(request:Request,event_id : str,access_token = Cookie(None),e
     editedEventData.language = language
     editedEventData.greeting_message = greetings
     editedEventData.total_capacity = total_place
+    editedEventData.is_featured = is_featured
     if user_role != "admin":
         edited_Event_Data.groups = [groups]
     edited_Event_Data.groups = []
@@ -279,6 +286,7 @@ async def editEvent(request:Request,event_id : str,access_token = Cookie(None),e
         await db.rollback()
         raise HTTPException(status_code=500,detail="Erreur lors de la modification de l'événement")
     request.session["success"] = "🎉 Événement modifié avec succès !"
+
     return RedirectResponse("/event_list",status_code=303)
 
 @Root.post("/delete_event/{event_id}")

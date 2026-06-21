@@ -216,14 +216,13 @@ async def confirm_paiement(
                     ticket_seri = await get_current_seri(event_id,db)
                     ticket_number = await get_current_ticket_number(event_id,db)
                     totp_value = pyotp.random_base32()
-                    print("f============================================{totp_value}")
                     new_ticket = Ticket(
                         order_id=order.id, # Attachement à la commande
                         event_id=event_id,
                         participator_name=display_name,
-                        participator_number = buyer_phone,
+                        participator_number = clean_phone,#numero du participant
                         seri = ticket_seri,
-                        number = ticket_number,
+                        number = ticket_number,#numero du ticket
                         qr_token=str(uuid4()),
                         get_pass=ticket_get_pass,
                         totp_secret=totp_value,

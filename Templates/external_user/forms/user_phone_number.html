@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vérification - EasyInvite</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #0F172A;color: #ffffff; }
+        .auth-card { background-color: #1E293B; border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; }
+        .text-center a,p
+        {
+            color: #9CA3AF 
+        }
+        input::placeholder
+        {
+            color: silver !important;
+        }
+    </style>
+</head>
+<body class="d-flex align-items-center min-vh-100">
+
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-12 col-sm-8 col-md-5">
+                
+                <div class="text-center mb-4">
+                    <h2 class="fw-bold text-warning">EasyTicket</h2>
+                </div>
+
+                <div class="p-4 auth-card shadow">
+                    <div class="card p-4 shadow-lg border-0" style="background-color: #0F172A; max-width: 400px; width: 100%; border-radius: 16px;">
+                        <div class="text-center mb-4">
+                            <h4 class="text-white fw-bold">Mot de passe oublié ?</h4>
+                            <p class="text-secondary small">Entrez votre numéro de téléphone. Un code de vérification OTP vous sera envoyé par message.</p>
+                        </div>
+
+                        <form action="/auth/forgot-password/otp" method="POST">
+                            <div class="mb-4">
+                                <label class="form-label text-white-50 small fw-semibold">Numéro de téléphone</label>
+                                <div class="input-group">
+                                    <input type="hidden" name="csrf_token" value="{{csrf_token}}">
+                                    <span class="input-group-text border-0 text-secondary" style="background-color: #1E293B; border-radius: 12px 0 0 12px;">+243</span>
+                                    <input 
+                                        type="tel" 
+                                        name="phone_input" 
+                                        class="form-control text-white border-0" 
+                                        placeholder="812345678" 
+                                        pattern="[0-9]{9}" 
+                                        required
+                                        style="background-color: #1E293B; border-radius: 0 12px 12px 0; padding: 12px;"
+                                    >
+                                </div>
+                            </div>
+
+                            <button type="submit" class="btn btn-warning     w-100 fw-semibold" style="border-radius: 12px; padding: 12px;">
+                                Recevoir le code OTP
+                            </button>
+                        </form>
+                    </div>
+                </div>
+
+                    <div class="text-center mt-3">
+                        <a href="/auth/login" class=" small">Retour / Changer de numéro</a>
+                    </div>
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+    setTimeout(() => {
+        // 1. Gestion de l'alerte
+        const alertElement = document.querySelector(".alert");
+        if (alertElement) {
+            alertElement.classList.remove("show");
+            alertElement.classList.add("fade");
+            setTimeout(() => alertElement.remove(), 500);
+        } 
+        // 2. Gestion du toast (Utilisation de 'else if')
+        else {
+            const toastElement = document.querySelector(".toast");
+            if (toastElement) {
+                toastElement.classList.remove("show");
+                toastElement.classList.add("fade");
+                setTimeout(() => toastElement.remove(), 700);
+            }
+        }
+    }, 3000); 
+</script>
+</body>
+</html>

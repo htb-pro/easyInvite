@@ -1,0 +1,420 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EasyInvite - Événements</title>
+    <link href="/static/Css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <script src="https://unpkg.com/typed.js@3.0.0/dist/typed.umd.js"></script>
+    <style>
+        body { background-color: #f8f9fa; }
+        .hero {  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%), url('https://images.unsplash.com/photo-1501386761578-e35c9d80d2d1?auto=format&fit=crop&q=80&w=1600'); background-size: cover; background-position: center; color: white; padding: 100px 0; }
+        .event-card { transition: 0.3s; border-radius: 15px; overflow: hidden; }
+        .event-card:hover { transform: translateY(-10px); box-shadow: 0 10px 20px rgba(0,0,0,0.15); }
+        .navbar
+        {
+            background-color: #0F172A;
+            color: white;
+        }
+         /* STYLE DU HERO BANNER DYNAMIQUE */
+    .hero-banner-dynamic {
+        position: relative;
+        padding: 80px 20px;
+        text-align: center;
+        color: #FFFFFF;
+        min-height: 220px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        /* Dégradé de secours pendant le chargement de la première image */
+        background: linear-gradient(135deg, #6366F1 0%, #A855F7 50%, #EC4899 100%); 
+        background-size: cover;
+        background-position: center;
+        /* Transition fluide de 1.5 seconde lors du changement d'image */
+        transition: background-image 1.5s ease-in-out; 
+        overflow: hidden;
+    }
+
+    /* FILTRE SOMBRE ET PROGRESSIF (OVERLAY) */
+    .hero-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        /* Mélange d'un fond sombre et d'un dégradé violet transparent pour garder l'ADN easyInvite */
+        background: linear-gradient(to bottom, rgba(11, 19, 43, 0.8) 0%, rgba(168, 85, 247, 0.4) 100%);
+        z-index: 1;
+    }
+
+    .hero-title {
+        font-weight: 800;
+        font-size: 2.6rem;
+        margin-bottom: 12px;
+        letter-spacing: -1px;
+        text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5); /* Ombre sur le texte pour détacher du fond */
+    }
+
+    .hero-subtitle {
+        font-weight: 500;
+        font-size: 1.15rem;
+        opacity: 0.95;
+        text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    }
+    
+    /* On ajuste la marge de la barre de recherche pour qu'elle s'intègre bien */
+    .search-container {
+        margin-top: -30px;
+        position: relative;
+        z-index: 10;
+    }
+        footer
+        {
+            background-color: #0F172A;
+        }
+        input::placeholder
+        {
+            color: silver !important;
+        }
+         .footer-advanced {
+        background-color: #0B132B; /* Même bleu nuit profond que ta navbar */
+        color: #94A3B8;
+        padding: 60px 0 30px 0;
+        margin-top: 80px;
+        border-top: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .footer-logo {
+        color: #FFFFFF !important;
+        font-weight: 700;
+        font-size: 1.4rem;
+        letter-spacing: -0.5px;
+        text-decoration: none;
+    }
+
+    .footer-heading {
+        color: #FFFFFF;
+        font-weight: 600;
+        font-size: 0.95rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        margin-bottom: 20px;
+    }
+
+    .footer-links li {
+        margin-bottom: 12px;
+    }
+
+    .footer-links a {
+        color: #94A3B8;
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: color 0.2s ease, padding-left 0.2s ease;
+    }
+
+    /* Petit effet dynamique au survol des liens */
+    .footer-links a:hover {
+        color: #F59E0B !important; /* Jaune or au survol */
+        padding-left: 4px;
+    }
+
+    .social-link {
+        color: #94A3B8;
+        font-size: 1.2rem;
+        transition: color 0.2s;
+    }
+
+    .social-link:hover {
+        color: #FFFFFF;
+    }
+
+    .copyright-text {
+        font-size: 0.85rem;
+        color: #64748B;
+        font-weight: 500;
+    }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg   sticky-top">
+    <div class="container">
+        <a class="navbar-brand fw-bold text-white" href="#"><i class="bi bi-ticket-detailed me-2 text-white"></i> E-Ticket</a>
+        {%if user %}
+        <a class="navbar-brand fw-bold text-white" href="/my_account">{{user}} <i style="font-size: 25px; color: white;" class="bi bi-person-circle "></i> </a>
+        {%else%}
+        <a href="/auth/login" class="btn btn-outline-danger text-light">
+            <i class="bi bi-box-arrow-right"></i> Se connecter
+        </a>
+        {%endif%}
+    </div>
+</nav>
+
+<!-- 2. HERO BANNER AVEC ARRIÈRE-PLAN ANIMÉ ALÉATOIRE -->
+<header class="hero-banner-dynamic w-100" id="dynamicHero">
+    <!-- Un filtre sombre (overlay) pour garantir que le texte reste lisible peu importe l'image -->
+    <div class="hero-overlay"></div>
+    
+    <div class="container position-relative w-100" style="z-index: 2;">
+        <h1 class="hero-title">E-ticket</h1>
+        <p class="hero-subtitle"></p>
+        <form class="d-flex gap-2" action="/get/event_name" method="get">
+            <input class="form-control form-control-sm" type="search" name="event_name" style="background-color:#0F172A;color: white;" placeholder="Rechercher un événement...">
+            <button class="btn  btn" type="submit" style="background-color: #0F172A;color: silver;">Rechercher</button>
+        </form>
+    </div>
+</header>
+
+<!-- CODE JAVASCRIPT À PLACER AVANT LA FERMETURE DE TA BALISE </BODY> -->
+
+    {% if featured_events %}
+    <div class="mb-4">
+        <h6 class="fw-bold  mb-3 text-gold" ><i class="bi bi-star-fill me-2"></i>À la une</h6>
+        <div class="d-flex gap-3 overflow-x-auto pb-3" style="scroll-snap-type: x mandatory;">
+            {% for event in featured_events %}
+            <div class="card border-0 flex-shrink-0" style="width: 280px; background-color: #1E293B; border-radius: 12px; scroll-snap-align: start;">
+                <div class="p-3 text-center rounded-top" style="background-image: url('{{event.photo_url}}');object-fit: cover; height: 100px;">
+                </div>
+                <div class="card-body p-3">
+                    <span class="badge bg-danger mb-2" style="font-size: 0.65rem;">🔥 Reste 45 places</span>
+                    <h6 class="fw-bold text-white mb-1 text-truncate">{{ event.name }}</h6>
+                    <p class="text-secondary small mb-2"><i class="bi bi-calendar-event me-1"></i>{{event.date.strftime("%d-%m-%Y")}} à {{event.date.strftime("%H:%M")}}</p>
+                   <div class="d-flex flex-wrap gap-2">
+                        {% for ticket in event.ticket_prices %}
+                        {% if ticket.price%}
+                        <span>{{ticket.ticket_type}} : {{ ticket.price|int}} {{ticket.device}}</span><br>
+                            <span class="fw-bold text-secondary">
+                                <i class="bi bi-ticket-perforated"></i> 
+                                {{ ticket.ticket_type.capitalize() }} : {{ ticket.price }} {{ ticket.device }}
+                            </span><br>
+                        {% else %}
+                            <span class="fw-bold text-success">
+                                <i class="bi bi-ticket-perforated"></i> 
+                                {{ ticket.ticket_type.capitalize() }} : Gratuit
+                            </span><br>
+                        {% endif %}
+                    {% endfor %}
+                    </div>
+
+                    <div class="d-flex  justify-content-between align-items-center">
+                        <a href="/paiement/{{ event.id }}" class="btn btn-warning btn-sm fw-bold px-3 py-1 ">Réserver</a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+
+        </div>
+    </div>
+    {% endif %}
+
+<div class="container my-5">
+    <div class="row g-4">
+        {% for event in events %}
+        <div class="col-md-4">
+            <div class="card event-card h-100">
+                {%if event.photo_url %}
+                <img src="{{ event.photo_url }}" class="card-img-top w-100" style="height: 200px;object-fit: cover;" alt="...">
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title fw-bold">{{ event.name }}</h5>
+                    <p class="text-muted small"><i class="bi bi-calendar-event"></i> Date : {{ event.date.strftime("%d-%m-%Y") }} a partir de {{ event.date.strftime("%H:%M") }}</p>
+                    <p class="card-text">{% if event.description %}{{ event.description[:100] }}...{% endif %}</p>
+                    {% if event.ticket_prices %}
+                    {%for ticket in event.ticket_prices %}
+                    <p class="card-text"><span>{{ ticket.ticket_type.capitalize() }} : {{ ticket.price|int }} {{ ticket.device }}</span></p>
+                    {% endfor %}
+                    {%endif%}
+                </div>
+                <div class="card-footer bg-transparent border-0 pb-3">
+                    <a href="/event/details/{{ event.id }}" class="btn btn-outline-primary w-100">Voir les détails</a>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="col-12 text-center">
+            <p>Aucun événement disponible pour le moment.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+        <div class="row">
+            <div class="col">
+                <nav class="mt-4">
+                    <ul class="pagination justify-content-center">
+                    <li class="page-item {% if page <= 1 %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ page - 1 }}">Précédent</a>
+                    </li>
+                    {% for p in range(1, total_pages + 1) %}
+                    {% if p == 1 or p == total_pages or (p >= page - 1 and p <= page + 1) %}
+                    <li class="page-item {% if page == p %}active{% endif %}">
+                    <a class="page-link" href="?page={{ p }}">{{ p }}</a>
+                    </li>
+                    {% elif p == page - 2 or p == page + 2 %}
+                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                    {% endif %}
+                    {% endfor %}
+                    <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
+                    <a class="page-link" href="?page={{ page + 1 }}">Suivant</a>
+                    </li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+
+<footer class="footer-advanced">
+    <div class="container px-4">
+        <div class="row g-4 text-start">
+            
+            <div class="col-12 col-md-4">
+                <a class="footer-logo d-flex align-items-center mb-3" href="#">
+                    <i class="bi bi-ticket-perforated-fill text-white me-2"></i>
+                    Easy<span class="text-warning">ticket</span>
+                </a>
+                <p class="text-secondary small">
+                    La plateforme de billetterie nouvelle génération pour planifier, distribuer et contrôler vos accès événementiels en toute sécurité grâce au scan QR Code.
+                </p>
+                <div class="d-flex gap-3 mt-3">
+                    <a href="#" class="social-link"><i class="bi bi-facebook"></i></a>
+                    <a href="#" class="social-link"><i class="bi bi-twitter-x"></i></a>
+                    <a href="#" class="social-link"><i class="bi bi-instagram"></i></a>
+                </div>
+            </div>
+
+            <div class="col-6 col-md-2 offset-md-1">
+                <h6 class="footer-heading">Découvrir</h6>
+                <ul class="list-unstyled footer-links">
+                    <li><a href="/event/list"><i class="bi bi-chevron-right small me-1"></i> Tous les événements</a></li>
+                    <li><a href="/event/list?filter_date=today"><i class="bi bi-chevron-right small me-1"></i> Événements d'aujourd'hui</a></li>
+                    <li><a href="/event/list?filter_date=upcoming"><i class="bi bi-chevron-right small me-1"></i> Événements à venir</a></li>
+                    <li><a href="#"><i class="bi bi-chevron-right small me-1"></i> Vérifier un billet</a></li>
+                </ul>
+            </div>
+
+            <div class="col-6 col-md-2">
+                <h6 class="footer-heading">Organiser</h6>
+                <ul class="list-unstyled footer-links">
+                    <li><a href="#"><i class="bi bi-chevron-right small me-1"></i> Espace Organisateur</a></li>
+                    <li><a href="/pricing"><i class="bi bi-chevron-right small me-1"></i> Tarifs & Commissions</a></li>
+                </ul>
+            </div>
+
+            <div class="col-12 col-md-3">
+                <h6 class="footer-heading">Besoin d'aide ?</h6>
+                <ul class="list-unstyled footer-links mb-0">
+                    <li><a href="/support_team_contact"><i class="bi bi-question-circle me-2"></i> FAQ / Centre d'aide</a></li>
+                    <li><a href="/support_team_contact"><i class="bi bi-envelope me-2"></i> Support client</a></li>
+                </ul>
+                <hr class="border-secondary border-opacity-25 my-3 d-md-none">
+                <div class="legal-links small">
+                    <a href="/policy" class="d-block text-secondary text-decoration-none mb-1">Conditions Générales (CGU)</a>
+                    <a href="/privacy" class="d-block text-secondary text-decoration-none">Politique de confidentialité</a>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="row mt-5 pt-4 border-top border-secondary border-opacity-10">
+            <div class="col-12 text-center">
+                <p class="copyright-text mb-0">
+                    &copy; {{copyright}} EasyInvite - Plateforme de billetterie intelligente. Tous droits réservés.
+                </p>
+            </div>
+        </div>
+    </div>
+</footer>
+
+<script>
+    // 1. Liste des images d'arrière-plan (Tu peux mettre tes propres liens ici)
+    const backgroundImages = [
+    // Tes images de secours (au cas où un événement n'a pas de photo)
+    "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=1200",
+    "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=1200", // Concert / Light show
+    "https://images.unsplash.com/photo-1511578314322-379afb476865?q=80&w=1200", // Conférence / Business
+    "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=1200", // DJ / Festival night
+    "https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=1200", // Grand meeting / Event
+    // La boucle magique pour injecter proprement les images de ta base de données
+    {% for event in events %}
+        {% if event.photo_url %}
+            "{{ event.photo_url }}",
+        {% endif %}
+    {% endfor %}
+];
+    
+    //const backgroundImages = [
+        //"https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?q=80&w=1200", // Concert / Light show
+        //"https://images.unsplash.com/photo-1511578314322-379afb476865?q=80&w=1200", // Conférence / Business
+        //"https://images.unsplash.com/photo-1470225620780-dba8ba36b745?q=80&w=1200", // DJ / Festival night
+        //"https://images.unsplash.com/photo-1540575467063-178a50c2df87?q=80&w=1200", // Grand meeting / Event
+        "{%for event in events %}{{event.photo_url}}{%endfor%}"  // Fête / Célébration
+        
+    //];
+
+    let currentImageIndex = -1;
+
+    function changeHeroBackground() {
+        const heroElement = document.getElementById('dynamicHero');
+        
+        if (backgroundImages.length === 0) return;
+
+        let randomIndex;
+        // Sécurité pour éviter de tirer deux fois de suite la même image
+        do {
+            randomIndex = Math.floor(Math.random() * backgroundImages.length);
+        } while (randomIndex === currentImageIndex && backgroundImages.length > 1);
+
+        currentImageIndex = randomIndex;
+        const nextImageUrl = backgroundImages[currentImageIndex];
+
+        // Préchargement en mémoire de l'image pour éviter l'effet de clignotement blanc
+        const img = new Image();
+        img.src = nextImageUrl;
+        img.onload = function() {
+            // Applique l'image dès qu'elle est prête avec la transition CSS automatique
+            heroElement.style.backgroundImage = `url('${nextImageUrl}')`;
+        };
+    }
+
+    // 2. Déclenchement automatique
+    // Applique une première image aléatoire dès le chargement de la page
+    document.addEventListener('DOMContentLoaded', () => {
+        changeHeroBackground();
+        
+        // Alterne l'image toutes les 5 secondes (5000 millisecondes)
+        setInterval(changeHeroBackground, 5000);
+    });
+</script>
+<script src="https://unpkg.com/typed.js@3.0.0/dist/typed.umd.js"></script>
+
+  <!-- Setup and start animation! -->
+  <script>
+    var typed = new Typed('.hero-subtitle', {
+      strings: ['Réservez vos places en toute sécurité.', 'Découvrez des événements uniques.', 'Vivez des expériences inoubliables.'],
+      typeSpeed: 50,
+    });
+  </script>
+
+     <script>
+    setTimeout(() => {
+        // 1. Gestion de l'alerte
+        const alertElement = document.querySelector(".alert");
+        if (alertElement) {
+            alertElement.classList.remove("show");
+            alertElement.classList.add("fade");
+            setTimeout(() => alertElement.remove(), 500);
+        } 
+        // 2. Gestion du toast (Utilisation de 'else if')
+        else {
+            const toastElement = document.querySelector(".toast");
+            if (toastElement) {
+                toastElement.classList.remove("show");
+                toastElement.classList.add("fade");
+                setTimeout(() => toastElement.remove(), 700);
+            }
+        }
+    }, 3000); // Délai de 3 secondes avant de commencer à masquer les messages
+    </script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

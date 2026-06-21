@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tarifs et Commissions - easyInvite</title>
+    <link href="/static/Css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #0B132B; /* Ton bleu nuit signature */
+            color: #E2E8F0;
+            padding-top: 60px;
+            padding-bottom: 80px;
+        }
+
+        .pricing-header h1 {
+            font-weight: 800;
+            font-size: 2.5rem;
+            color: #FFFFFF;
+            letter-spacing: -1px;
+        }
+
+        .pricing-card {
+            background-color: #141B2D;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 24px;
+            padding: 40px 30px;
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .pricing-card:hover {
+            transform: translateY(-5px);
+            border-color: #F43F5E; /* Petite touche rouge/rose de ton bouton de connexion */
+        }
+
+        .pricing-card.featured {
+            border: 2px solid #F59E0B; /* Bordure jaune/or pour l'offre principale */
+            position: relative;
+        }
+
+        .badge-featured {
+            position: absolute;
+            top: -15px;
+            right: 30px;
+            background-color: #F59E0B;
+            color: #0B132B;
+            font-weight: 700;
+            font-size: 0.8rem;
+            padding: 4px 12px;
+            border-radius: 20px;
+            text-transform: uppercase;
+        }
+
+        .price-title {
+            font-size: 3rem;
+            font-weight: 800;
+            color: #FFFFFF;
+            line-height: 1;
+        }
+
+        .price-currency {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #94A3B8;
+        }
+
+        .feature-list li {
+            font-size: 0.95rem;
+            color: #94A3B8;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .btn-pricing {
+            border-radius: 12px;
+            padding: 12px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+        /* --- STYLE PREMIUM SUR MESURE POUR LA MODAL EASYINVITE --- */
+
+    /* 1. Fond général de la modal (Bleu nuit de la carte vedette) */
+    #completeModal .modal-content {
+        background-color: #141B2D;
+        border: 1px solid rgba(255, 255, 255, 0.08); /* Bordure fine et discrète */
+        border-radius: 24px; /* Coins arrondis modernes */
+        overflow: hidden; /* Empêche les éléments enfants de dépasser des arrondis */
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.5);
+    }
+
+    /* 2. En-tête de la modal (Alerte / Danger) */
+    #completeModal .modal-header {
+        background-color: yellow !important; /* Rouge alerte plus doux/premium */
+        border-bottom: none;
+        padding: 20px 24px;
+    }
+
+    #completeModal .modal-title {
+        font-size: 1.15rem;
+        letter-spacing: -0.3px;
+    }
+
+    /* 3. Corps de la modal (Textes et structure) */
+    #completeModal .modal-body {
+        padding: 35px 24px;
+    }
+
+    /* Style de l'émoji ou de l'icône principale */
+    #completeModal .modal-body .fs-1 {
+        font-size: 3.5rem !important;
+        animation: pulse 2s infinite; /* Petite animation discrète */
+    }
+
+    /* Textes à l'intérieur du corps */
+    #completeModal .modal-body h5 {
+        font-weight: 700;
+        font-size: 1.3rem;
+        letter-spacing: -0.5px;
+        margin-top: 15px;
+    }
+
+    #completeModal .text-muted {
+        color: #94A3B8 !important; /* Gris ardoise clair pour la lisibilité */
+        font-size: 0.95rem;
+        line-height: 1.5;
+    }
+
+    #completeModal .text-secondary {
+        color: #64748B !important; /* Gris légèrement plus soutenu pour le conseil secondaire */
+        font-size: 0.85rem;
+    }
+
+    /* 4. Pied de page de la modal (Boutons d'action) */
+    #completeModal .modal-footer-custom {
+        background-color: rgba(0, 0, 0, 0.15); /* Légèrement plus sombre pour structurer le bas */
+        border-top: 1px solid rgba(255, 255, 255, 0.04);
+        padding: 20px 24px;
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+    }
+
+    /* Personnalisation des boutons de la modal */
+    #completeModal .modal-footer-custom .btn {
+        border-radius: 12px; /* Uniformisé avec la classe .btn-pricing */
+        padding: 10px 20px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        transition: all 0.2s ease;
+    }
+
+    #completeModal .modal-footer-custom .btn-secondary {
+        background-color: #334155;
+        border: none;
+        color: #F1F5F9;
+    }
+
+    #completeModal .modal-footer-custom .btn-secondary:hover {
+        background-color: #475569;
+    }
+
+    #completeModal .modal-footer-custom .btn-warning {
+        background-color: #F59E0B;
+        border: none;
+    }
+
+    #completeModal .modal-footer-custom .btn-warning:hover {
+        background-color: #D97706;
+        transform: translateY(-1px);
+    }
+
+    /* Animation optionnelle pour l'icône d'erreur */
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.08); }
+        100% { transform: scale(1); }
+    }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <div class="text-center pricing-header mb-5">
+            <p class="text-warning fw-bold text-uppercase tracking-wider small">Des tarifs simples et transparents</p>
+            <h1>Préparez votre événement, on s'occupe du reste</h1>
+            <p class="text-secondary col-lg-6 mx-auto">Aucun frais caché. Aucun abonnement mensuel. Vous ne payez que lorsque vous vendez des billets payants.</p>
+        </div>
+
+        <div class="row g-4 justify-content-center mt-4">
+            
+            <div class="col-12 col-md-4">
+                <div class="pricing-card h-100 d-flex flex-column justify-content-between">
+                    <div>
+                        <h3 class="text-white fw-bold mb-2">Pour les événements des invitations</h3>
+                        <p class="text-secondary small">Idéal pour les invitations de mariages, conférences , fêtes privées.</p>
+                        <div class="my-4">
+                            <span class="price-title">1$</span>
+                            <span class="price-currency">/ billet</span>
+                        </div>
+                        <hr class="border-secondary border-opacity-25 my-4">
+                        <ul class="list-unstyled feature-list">
+                            <li><i class="bi bi-check-circle-fill text-success"></i> Invitations QR Code illimitées</li>
+                            <li><i class="bi bi-check-circle-fill text-success"></i> Application de Scan gratuite</li>
+                            <li><i class="bi bi-check-circle-fill text-success"></i> Support par email 7j/7</li>
+                            <li><i class="bi bi-check-circle-fill text-success"></i> Accès aux statistiques de présence</li>
+                        </ul>
+                    </div>
+                    <div class="mt-4">
+                        <a href="#" class="btn btn-outline-light w-100 btn-pricing" onclick="init_model()">Créer un événement</a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-12 col-md-4">
+                <div class="pricing-card h-100 featured d-flex flex-column justify-content-between">
+                    <span class="badge-featured">Standard</span>
+                    <div>
+                        <h3 class="text-white fw-bold mb-2">Pour les ventes payantes</h3>
+                        <p class="text-secondary small">Idéal pour les concerts, festivals, soirées DJ, grands galas professionnels, conference etc.</p>
+                        <div class="my-4">
+                            <span class="price-title">5%</span>
+                            <span class="price-currency">par billet vendu</span>
+                        </div>
+                        <p class="small text-warning bg-warning bg-opacity-10 p-2 rounded border border-warning border-opacity-25">
+                            <i class="bi bi-info-circle-fill me-1"></i> La commission peut être payée par l'organisateur ou ajoutée au prix de l'acheteur.
+                        </p>
+                        <hr class="border-secondary border-opacity-25 my-4">
+                        <ul class="list-unstyled feature-list">
+                            <li><i class="bi bi-check-circle-fill text-success"></i> Tous les outils de la version gratuite</li>
+                            <li><i class="bi bi-check-circle-fill text-success"></i> Billetterie sécurisée anti-fraude</li>
+                            <li><i class="bi bi-check-circle-fill text-success"></i> Gestion des codes promos / réductions</li>
+                            <li><i class="bi bi-check-circle-fill text-success"></i> Reversement rapide des gains</li>
+                        </ul>
+                    </div>
+                    <div class="mt-4">
+                        <button class="btn btn-warning w-100 btn-pricing text-dark" onclick="init_model()">Lancer ma billetterie</button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-12 col-md-4">
+                <div class="pricing-card h-100 featured d-flex flex-column justify-content-between">
+                    <span class="badge-featured">Premium</span>
+                    <div>
+                        <h3 class="text-white fw-bold mb-2">Pour les ventes payantes</h3>
+                        <p class="text-secondary small">Idéal pour le service d'accueil d'un 'événement complet.</p>
+                        <div class="my-4">
+                            <span class="price-title">35%</span>
+                            <span class="price-currency">du montant total de billets vendus</span>
+                        </div>
+                       
+                        <hr class="border-secondary border-opacity-25 my-4">
+                        <ul class="list-unstyled feature-list">
+                            <li><i class="bi bi-check-circle-fill text-success"></i> Tous les outils de la version standard</li>
+                            <li><i class="bi bi-check-circle-fill text-success"></i> le protocole d'accueil</li>
+                            <li><i class="bi bi-check-circle-fill text-success"></i> Mise en avant de l'événement sur notre plateforme</li>
+                            <li><i class="bi bi-check-circle-fill text-success"></i> Campagne de marketing</li>
+                        </ul>
+                    </div>
+                    <div class="mt-4">
+                        <button class="btn btn-outline-warning w-100 btn-pricing text-light" onclick="init_model()">Lancer ma billetterie</button>
+                    </div>
+                </div>
+            </div>
+            </div>
+
+        </div>
+
+            <div class="modal fade" id="completeModal" tabindex="-1" aria-labelledby="completeModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow-lg">
+                <div class="modal-header bg-danger text-white border-0" style="border-top-left-radius: 23px; border-top-right-radius: 23px;">
+                    <h5 class="modal-title fw-bold text-dark" id="completeModalLabel">
+                       <i class="bi bi-exclamation-triangle-fill me-2 text-dark"></i>Coordonnées</h5>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body text-center py-4">
+                    <h3 class="card-title text-center mb-4 text-light" >Contactez-nous</h3>
+        
+                    <hr style="border-top: 2px solid #d1d8e0;">
+                    
+                    <!-- Email -->
+                    <p class="mb-3"><strong><i class="bi bi-envelope-at text-warning"></i></strong> <a href="#" class="text-warning" style=" text-decoration: none;">easyinviterdc@gmail.com</a></p>
+                    
+                    <!-- Téléphone -->
+                    <p class="mb-3 "><strong></strong> <a href="tel:+243991234567" class="text-warning" style="text-decoration: none;">
+                        <i class="bi bi-telephone-fill"></i> +243 89 740 1210</a>
+                    </p>
+                    <p class="mb-3 "><strong></strong> <a href="tel:+243991234567" class="text-warning" style="text-decoration: none;">
+                        <i class="bi bi-telephone-fill"></i> +243 991 152 067</a>
+                    </p>
+                    <p class="mb-3 "><strong></strong> <a href="tel:+243991234567" class="text-warning" style="text-decoration: none;">
+                        <i class="bi bi-telephone-fill"></i> +243 898 147 644</a>
+                    </p>
+                    
+                    <!-- Adresse -->
+                    <p class="mb-4" style="color:yellow;"><strong><i class="bi bi-geo-alt-fill"></i></strong> RDC</p>
+        <!-- Réseaux sociaux -->
+        <div class="d-flex justify-content-center gap-4">
+          <a href="/support_team_contact" 
+          target="_blank" class="btn btn-warning fs-5" ><i class="bi bi-whatsapp"></i> Entrer en contact</a>
+        </div>
+                </div>
+                <div class="modal-footer-custom d-flex justify-content-center gap-2">
+                    <button type="button" class="btn btn-sm btn-secondary px-3 rounded-3" data-bs-dismiss="modal">Fermer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+          
+        <div class="text-center mt-5 pt-4">
+            <p class="small text-secondary"><i class="bi bi-shield-lock-fill text-success me-2"></i> Transactions sécurisées. Des questions sur les gros volumes ? Contactez notre <a href="#" class="text-warning text-decoration-none">service commercial</a>.</p>
+        </div>
+
+    </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+    function init_model() {
+    // On cible la modal et on l'affiche directement sans attendre le chargement de la page
+    var myModal = new bootstrap.Modal(document.getElementById('completeModal'));
+    myModal.show();
+}
+    </script>
+</body>
+</html>
