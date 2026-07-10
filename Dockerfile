@@ -34,3 +34,6 @@ EXPOSE 10000
 
 # Commande de lancement
 CMD ["uvicorn", "rooting:Apk", "--host", "0.0.0.0", "--port", "10000"]
+
+# 3. AJOUTE CETTE LIGNE JUSTE ICI : Installer Chromium pour Playwright
+RUN playwright install chromium
