@@ -104,8 +104,8 @@ def get_csrf_config():
         csrf_token_key="csrf_token" 
     )
 
-import uvicorn
-if __name__ == '__main__':
+#import uvicorn
+#if __name__ == '__main__':
     # Pour FastAPI, on utilise uvicorn.run et non app.run
-    uvicorn.run("rooting:Apk", host="0.0.0.0", port=8000, reload=True)#public acces
+    #uvicorn.run("rooting:Apk", host="0.0.0.0", port=8000, reload=True)#public acces
     #uvicorn.run("rooting:Apk", host="127.0.0.1", port=8000, reload=True) #acces privee
