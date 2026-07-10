@@ -102,7 +102,7 @@ async def login(request:Request,form_data : OAuth2PasswordRequestForm = Depends(
         message = "compte bloquer"
         return templates.TemplateResponse("Authentification/forms/auth.html",{'request':request,'message':message})
     access_token = create_token(data={"user":user_id}) #si l'utilisateur existe et qu'il est active on lui cree un token
-    response = RedirectResponse(url="/main",status_code = 303)
+    response = RedirectResponse(url="/",status_code = 303)
     response.set_cookie(key="access_token",value=access_token,httponly=True)
     return response
 

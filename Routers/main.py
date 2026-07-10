@@ -19,7 +19,7 @@ Root = APIRouter(tags = ["easyInvite"],dependencies =[Depends(get_current_user_f
 
 Root.mount("/static",StaticFiles(directory="static"), name="static")#ou sont stocker les fichier static
 
-@Root.get("/main",name="main_page")#get the main page
+@Root.get("/",name="main_page")#get the main page
 async def get_main(request:Request,access_token:str=Cookie(None),current_user:User =Depends(get_current_user_from_cookie),db:AsyncSession=Depends(connecting)):
     get_email = jwt.decode(access_token,secret,algorithms = [algo])
     id = get_email.get("user")

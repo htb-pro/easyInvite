@@ -3,7 +3,7 @@ from fastapi import Request,Form,Depends,HTTPException,APIRouter,Cookie,status
 from fastapi.responses import JSONResponse,RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
-import models,pyotp
+import models,pyotp,time
 from db_setting import connecting
 from sqlalchemy.orm import selectinload
 from sqlalchemy.future import select
@@ -36,85 +36,97 @@ def scanQrCode(request:Request):
 
 @Root.get("/scan-ticket-secure")
 async def scan_ticket_secure(qr_data: str, db: AsyncSession = Depends(connecting)):
-    try:
-        # 1. On décrypte TOUJOURS en premier (vu que les deux types de QR sont cryptés)
-        decrypted = decrypt_token(qr_data)
-        
-        # 2. On tente de découper pour voir si c'est le format "Ticket" (EI-ID-TOKEN)
-        parts = decrypted.split("~")
-        
-        if len(parts) == 3 and parts[0] == "EI":
-            ticket_id = parts[1]
-            token_recu = parts[2]
+    # 1. Nettoyage de sécurité sur la chaîne reçue du scanner
+    qr_data = qr_data.strip()
+    
+    # Validation du préfixe de la plateforme
+    if qr_data.startswith("EI~"):
+        try:
+            # Découpage du QR code (Format attendu : EI~ID_BILLET~TOKEN_TOTP)
+            parts = qr_data.split("~")
+            if len(parts) != 3:
+                return {"valid": False, "is_scanned": False, "message": "Format de QR code invalide."}
             
-            # --- CAS A : LOGIQUE TICKET ---
-            result = await db.execute(
-                select(Ticket)
-                .where(Ticket.id == ticket_id)
-                .options(selectinload(Ticket.order)) # .order ou .orders selon ton modèle
-            )
+            prefix, ticket_id, scanned_token = parts
+            
+            # 2. Récupération asynchrone du billet dans la base de données
+            result = await db.execute(select(Ticket).where(Ticket.id == ticket_id))
             ticket = result.scalars().first()
-            
-            if not ticket:
-                raise HTTPException(status_code=404, detail="Ce billet n'existe pas dans notre système ❌")
 
-            # Sécurité anti-réutilisation
-            if ticket.is_scanned:
+            # Si le billet n'existe pas
+            if not ticket:
+                return {"valid": False, "is_scanned": False, "message": "Billet introuvable."}
+            
+            # 3. Vérification anti-fraude : le billet a-t-il déjà été utilisé ?
+            if ticket.is_scanned is True:
                 return {
                     "valid": True, 
-                    "type": "ticket", 
-                    "name": ticket.participator_name, 
-                    "ticket_id": ticket.id,
-                    "state": True  # Déjà scanné
+                    "is_scanned": True, 
+                    "state": True, 
+                    "message": "⚠️ Ce billet a déjà été validé et utilisé."
                 }
 
-            # Validation du temps TOTP
-            totp_verifier = pyotp.TOTP(ticket.totp_secret, interval=30)
-            if not totp_verifier.verify(token_recu, valid_window=1):
-                raise HTTPException(
-                    status_code=status.HTTP_400_BAD_REQUEST, 
-                    detail="Code expiré ou capture d'écran frauduleuse ! Accès refusé ⏱️❌"
-                )
-
-            # Validation définitive de l'entrée
-            ticket.is_scanned = True
-            await db.commit()
+            # 4. Nettoyage de la clé Base32 (Sécurité contre les erreurs de caractères 0/O et 1/I)
+            secret_propre = ticket.totp_secret.upper().strip().replace('0', 'O').replace('1', 'I')
             
-            return {
-                "valid": True, 
-                "type": "ticket", 
-                "name": ticket.participator_name, 
-                "ticket_id": ticket.id,
-                "ticket_type": ticket.order.ticket_type if ticket.order else "Standard",
-                "state": False # Premier scan réussi
-            }
+            # 5. Initialisation de l'algorithme TOTP avec la clé propre
+            totp = pyotp.TOTP(secret_propre, interval=30)
 
-        # --- CAS B : LOGIQUE INVITATION SIMPLE (GUEST) ---
-        # Si le décryptage a réussi mais que ce n'est pas un format "EI-...", 
-        # alors la variable 'decrypted' contient directement le 'guest_id' brut !
-        guest_res = await db.execute(select(Guest).where(Guest.id == decrypted))
-        guest = guest_res.scalars().first()
-        
-        if guest:
+            # Synchronisation temporelle basée sur le timestamp de la machine
+            timestamp_local = int(time.time())
+            # 6. Vérification du token avec une fenêtre de tolérance (valid_window=4)
+            if totp.verify(scanned_token, for_time=timestamp_local, valid_window=4):
+                
+                # Validation validée ! On marque immédiatement le billet comme scanné
+                ticket.is_scanned = True 
+                
+                # Sauvegarde immédiate en base de données (AWAIT obligatoire)
+                await db.commit()
+                
+                # Récupération sécurisée des attributs du billet pour l'affichage au guichet
+                participant = getattr(ticket, "name", "Détenteur du billet")
+                type_billet = getattr(ticket, "type", "Standard")
+
+                # ON RENVOIE "is_scanned": True ICI pour que l'UI affiche le succès au premier scan
+                return {
+                    "valid": True,
+                    "is_scanned": False,
+                    "state": False,
+                    "type": "ticket",
+                    "ticket_id": ticket.id,
+                    "name": participant,
+                    "ticket_type": type_billet,
+                    "message": "✅ Billet validé avec succès ! Bienvenue."
+                }
+            else:
+                return {"valid": False, "is_scanned": False, "message": "Code expiré. Veuillez rafraîchir le QR Code."}
+
+        except Exception as e:
+            return {"valid": False, "is_scanned": False, "message": f"Erreur lors du traitement du billet : {str(e)}"}
+    #============================================================       
+    #CAS B : IL S'AGIT D'UNE INVITATION CLASSIQUE (Pas de préfixe EI~)
+    # =========================================================================
+    else:
+        try:
+            # On cherche l'invité dans la table des invités à partir des données brutes du QR Code
+            # (Adapte 'Guest.qr_code' ou 'Guest.id' selon le stockage de tes invitations)
+            guest_id = decrypt_token(qr_data)
+            result = await db.execute(select(Guest).where(Guest.id == guest_id))
+            guest = result.scalars().first()
+            if not guest:
+                return {"valid": False, "message": "Invitation inconnue ou invalide."}
+                
+            # Renvoi des informations de l'invitation pour le lien cliquable JavaScript
             return {
-                "valid": True, 
-                "type": "guest", 
-                "name": guest.name, 
+                "valid": True,
+                "type": "invitation",
                 "guest_id": guest.id,
-                "state": False
+                "name": getattr(guest, "name", "Invité Spécial")
             }
             
-        # Si le code est décryptable mais ne correspond à rien en BDD
-        return {"valid": False, "message": "Code inconnu ou événement expiré ❌"}
-
-    except HTTPException as http_e:
-        # Permet de laisser passer les vraies erreurs HTTP (comme le code 400 ou 404 du ticket)
-        raise http_e
-    except Exception as e:
-        # Si le décryptage de la toute première ligne lève une erreur (ex: QR code altéré ou externe)
-        print(f"DEBUG - Erreur décryptage ou système: {str(e)}") 
-        return {"valid": False, "message": "Code invalide ou altéré ❌"}
-
+        except Exception as e:
+            return {"valid": False, "message": f"Erreur lors du traitement de l'invitation : {str(e)}"}
+    
 @Root.get('/invite/result/{guest_id}')#traitement de la request json pour la verification du guest
 async def scanResult(request:Request,guest_id :str,db:AsyncSession = Depends(connecting)):
     get_guest = await db.execute(select(Guest).where(Guest.id == guest_id).options(selectinload(Guest.invite),selectinload(Guest.event)))

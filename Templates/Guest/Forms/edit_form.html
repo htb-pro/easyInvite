@@ -1,139 +1,239 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="/static/Css/bootstrap.min.css">
-  <title>modifier l'invite</title>
-  <script src="/static/Js/guest_forms.js" defer></script>
-  <style>
-    body {
-      font-family: "Segoe UI", system-ui, sans-serif;
-      min-height: 100vh;
-      background-color: #0b1c2d;
-      position: relative;
-      overflow-x: hidden;
-    }
-    /* ===== BACKGROUND GEOMETRIQUE ===== */
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      background:
-        linear-gradient(135deg, rgba(255,255,255,0.03) 25%, transparent 25%) -60px 0,
-        linear-gradient(225deg, rgba(255,255,255,0.03) 25%, transparent 25%) -60px 0,
-        linear-gradient(315deg, rgba(255,255,255,0.03) 25%, transparent 25%),
-        linear-gradient(45deg, rgba(255,255,255,0.03) 25%, transparent 25%);
-      background-size: 120px 120px;
-      z-index: 0;
-    }
-    .card
-    {
-         background-color : rgb(0,0,0,0.2);
-         color : white;
-    }
-    .header {
-      background: linear-gradient(135deg, #1f3c88, #2c6bed);
-      color: white;
-      padding: 15px;
-    }
-    .btn-send {
-      background-color: #2c6bed;
-      color: white;
-    }
-     .btn-send:hover
-    {
-      background-color: #13397a;
-    }
-    .referenceName
-    {
-      display: none;
-    }
-  </style>
-</head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EasyInvite - Adaptatif</title>
+    <link rel="stylesheet" href="/static/Css/bootstrap.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="/static/Js/guest_forms.js" defer></script>
+    <style>
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+        
+        body {
+            font-family: "Segoe UI", system-ui, sans-serif;
+            min-height: 100vh;
+            background-color: #0b1c2d;
+            margin: 0;
+            position: relative;
+            overflow-x: hidden;
+            
+            /* 🟢 LES PROPRIÉTÉS MAGIQUES POUR CENTRER LA CARTE ACCUEIL */
+            display: flex;
+            align-items: center;       /* Centrage vertical */
+            justify-content: center;    /* Centrage horizontal */
+            padding: 20px 12px;         /* Sécurité pour éviter le collage sur petit mobile */
+        }
 
+        /* ===== BACKGROUND GEOMETRIQUE ===== */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background:
+                linear-gradient(135deg, rgba(255,255,255,0.03) 25%, transparent 25%) -60px 0,
+                linear-gradient(225deg, rgba(255,255,255,0.03) 25%, transparent 25%) -60px 0,
+                linear-gradient(315deg, rgba(255,255,255,0.03) 25%, transparent 25%),
+                linear-gradient(45deg, rgba(255,255,255,0.03) 25%, transparent 25%);
+            background-size: 120px 120px;
+            z-index: 0;
+        }
+
+        .card {
+            background-color : rgb(0,0,0,0.2);
+            color : white;
+        }
+       
+        /* 🚨 LE CONTENEUR PRINCIPAL : Configuré en FLEX DIRECTION */
+        .main-container { 
+            width: 100%; 
+            max-width: 900px; /* Plus large pour accueillir la disposition horizontale sur PC */
+            background: white; 
+            border-radius: 16px; 
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); /* Ombre légèrement augmentée pour faire ressortir sur fond sombre */
+            overflow: hidden; 
+            display: flex;
+            flex-direction: column; /* Par défaut : Vertical (Mobile) */
+            z-index: 1; /* Assure que la carte passe au-dessus du background ::before */
+        }
+        
+        /* Bannière du haut (Branding) */
+        .branding-card { 
+            background: linear-gradient(135deg, #0d6efd 0%, #0a4ebd 100%); 
+            color: white; 
+            padding: 35px 20px; 
+            text-align: center; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .branding-card h2 { margin: 10px 0 5px 0; font-weight: 700; font-size: 24px; }
+        .branding-card p { margin: 0; font-size: 13px; opacity: 0.8; line-height: 1.4; max-width: 300px; }
+        .badge { display: inline-block; background: white; color: #0d6efd; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-top: 15px; }
+        
+        /* Section Formulaire */
+        .form-content { padding: 30px 25px; flex: 1; }
+        .form-title { font-size: 20px; font-weight: 700; color: #212529; margin: 0 0 5px 0; }
+        .form-subtitle { font-size: 12px; color: #6c757d; margin: 0 0 20px 0; }
+        
+        /* Alerte d'erreur */
+        .alert-error { background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7; padding: 10px 15px; border-radius: 8px; font-size: 13px; margin-bottom: 20px; display: flex; align-items: center; }
+        
+        /* Champs de saisie */
+        .mb-3 { margin-bottom: 15px; }
+        .form-label { display: block; font-size: 11px; font-weight: 700; color: #495057; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .input-group { display: flex; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; overflow: hidden; align-items: center; }
+        .input-icon { padding: 10px 12px; color: #6c757d; background: #e9ecef; border-right: 1px solid #dee2e6; display: flex; align-items: center; }
+        .form-control { border: none; background: transparent; padding: 10px 12px; width: 100%; font-size: 14px; color: #212529; outline: none; }
+        
+        /* Grille 2 colonnes */
+        .row-grid { display: flex; gap: 12px; }
+        .col-6 { flex: 1; }
+        
+        /* Boutons */
+        .btn-submit { background-color: #0d6efd; color: white; border: none; width: 100%; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 700; margin-top: 10px; cursor: pointer; box-shadow: 0 4px 6px rgba(13, 110, 253, 0.2); }
+        .back-link { display: block; text-align: center; margin-top: 15px; font-size: 13px; color: #6c757d; text-decoration: none; }
+
+        /* 🌐 🚨 LA RÈGLE MAGIQUE POUR LES ÉCRANS PC (Supérieurs à 768px) */
+        @media (min-width: 768px) {
+            .main-container {
+                flex-direction: row; /* Bascule les deux blocs côte à côte en horizontal */
+            }
+            .branding-card {
+                flex: 1; /* Prend exactement 50% de la largeur */
+                padding: 40px;
+            }
+            .form-content {
+                flex: 1; /* Prend exactement 50% de la largeur */
+                padding: 40px;
+            }
+        }
+
+          .app-name
+        {
+            display: inline-block;
+            min-width: 280px;
+            min-height: 40px;
+            vertical-align: bottom;
+        }
+    </style>
+</head>
 <body>
 
-<!-- HEADER -->
-<div class="header text-center fw-bold">
-  📩 modifié l'invité
-</div>
-
-<!-- FORM -->
-<div class="container mt-4 mb-5">
-  <div class="card shadow-sm">
-    <div class="card-body">
-      <input type="hidden" value="{{event.type}}" class="event_type">
-      <form method="post" action="/edit_guest_form/{{event.id}}" enctype="multipart/form-data">
-        <input type="hidden" name="guest_id" value="{{guest.id}}">
-        <!-- NAME -->
-        <div class="mb-3 guest_name">
-          <label class="form-label">Nom complet (full name)</label>
-          <input type="text" class="form-control" name="guestName" placeholder="ex : Jean Dupont " value="{{guest.name}}" required>
+<div class="main-container">
+    
+    <div class="branding-card">
+        <i class="bi bi-envelope-paper-heart-fill" style="font-size: 3rem;"></i>
+        <h2 class="app-name"></h2>
+        <p>Gestion intelligente et sécurisée de vos invitations par QR Code.</p>
+        <div class="badge">
+            <i class="bi bi-calendar-event me-1"></i> {{event.type}} de {{event.couple_name}}
         </div>
-
-           <!-- type -->
-        <div class="mb-3 guest_type_div">
-          <label class="form-label">Type</label>
-          <select class="form-select selectInput" name="guestType"  required>
-            <option value="">-- {{guestType}} --</option>
-            <option value="Singleton" {%if guest.guest_type == 'Singleton' %}selected{%endif%} >Singleton (single)</option>
-            <option value="Couple" {%if guest.guest_type == 'Couple' %}selected{%endif%}>Couple (couple)</option>
-          </select>
-        </div>
-
-             <!-- table ou sera l'invite -->
-        <div class="mb-3 guest_table_div">
-          <label class="form-label">Table</label>
-          <input type="text" class="form-control" name="guestPlace" placeholder="ex : A1" value="{{guest.place}}" required>
-        </div>
-        <!--
-         <div class="mb-3">
-          <label for="ticket_type" class="form-label">Type de billet</label>
-        <select class="form-select" id="ticket_type" name="ticket_type" required>
-            <option value="standard" {%if guest.invite.type == 'standard'%}selected{%endif%}>Standard</option>
-            <option value="vip"{%if guest.invite.type == 'vip'%}selected{%endif%}>VIP</option>
-          </select>
-        </div>-->
-
-        <!--etat present ou absent-->
-        <div class="mb-3">
-          <label class="form-label">Etat </label>
-          <select class="form-select selectInput" name="guestState"  required>
-            <option value="0" {%if not guest.is_present %}selected{%endif%}>Absent </option>
-            <option value="1" {%if guest.is_present %}selected{%endif%}>Present</option>
-          </select>
-        </div>
-
-        <!-- telephone -->
-        <div class="mb-3">
-          <label class="form-label">Telephone *</label>
-          <input type="number" class="form-control" maxlength="10" name="guestTel" placeholder="ex : 09900000000" value="{{guest.telephone}}" required>
-        </div>
-        <div class="mb-3">
-          <label for="event_photo" class="form-label fw-bold">Photo de l'invité</label>
-          <!-- accept="image/*" autorise tous les formats d'image -->
-          <input 
-              type="file" 
-              class="form-control" 
-              id="event_photo" 
-              name="photo" 
-              accept="image/*">
-        </div>
-        <!-- SUBMIT -->
-        <div class="d-grid">
-          <button type="submit" class="btn btn-send">
-            📤 Enregistrer
-          </button>
-        </div>
-
-      </form>
-
     </div>
-  </div>
+
+    <div class="form-content">
+        
+    {% if error_message %}
+    <div class="toast show position-fixed top-0 end-0 m-3" style="z-index: 1055;">
+        <div class="toast-body bg-danger text-white d-flex justify-content-between align-items-center">
+        <span>{{ error_message}}</span>
+        <button type="button" class="btn-close btn-close-white ms-2" data-bs-dismiss="toast"></button>
+        </div>
+    </div>    
+    </div>
+    {% endif %}
+    {% if  uniqueValueError %}
+    <div class="toast show position-fixed top-0 end-0 m-3" style="z-index: 1055;">
+        <div class="toast-body bg-danger text-white d-flex justify-content-between align-items-center">
+        <span>{{ uniqueValueError }}</span>
+        <button type="button" class="btn-close btn-close-white ms-2" data-bs-dismiss="toast"></button>
+        </div>
+    </div>
+    {% endif %}
+
+        <h3 class="form-title">Modifier {{guest.name}}</h3>
+        <p class="form-subtitle">Configurez l'accès de votre invité.</p>
+        
+        <input type="hidden" value="{{event.type}}" class="event_type">
+        <form method="post" action="/edit_guest_form/{{event.id}}" enctype="multipart/form-data">
+        <input type="hidden" name="guest_id" value="{{guest.id}}">
+        <input type="hidden" name="csrf_token" value="{{csrf_token}}" required>
+            <div class="mb-3">
+                <label class="form-label">Nom de l'invité (guest name)</label>
+                <div class="input-group">
+                    <div class="input-icon"><i class="bi bi-person"></i></div>
+                    <input type="text" class="form-control" max="60" placeholder="Ex: heritier tshim" name="guestName" value="{{guest.name}}" required>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Téléphone WhatsApp</label>
+                <div class="input-group">
+                    <div class="input-icon"><i class="bi bi-whatsapp"></i></div>
+                    <input type="tel" class="form-control" name="guestTel" placeholder="Ex: 243897408910" value="{{guest.telephone}}" minlength="9" maxlength="15" required>
+                </div>
+            </div>
+
+            <div class="mb-3 guest_type_div">
+                <label class="form-label">Type d'invité</label>
+                <div class="input-group">
+                    <div class="input-icon"><i class="bi bi-people"></i></div>
+                    
+                    <select class="form-control selectInput" name="guestType" required style="cursor: pointer; -webkit-appearance: none; -moz-appearance: none; appearance: none;">
+                        <option value="Singleton" {% if guest.guest_type == 'Singleton' %}selected{% endif %}>Singleton (single)</option>
+                        <option value="Couple" {% if guest.guest_type == 'Couple' %}selected{% endif %}>Couple (couple)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="mb-3 guest_table_div">
+                <label class="form-label">Place / Table</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" name="guestPlace" value="{{guest.place}}" required>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <label class="form-label">Etat </label>
+                <select class="form-select selectInput" name="guestState"  required>
+                    <option value="0" {%if not guest.is_present %}selected{%endif%}>Absent </option>
+                    <option value="1" {%if guest.is_present %}selected{%endif%}>Present</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn-submit">
+                <i class="bi bi-plus-circle" style="margin-right: 5px;"></i> Enregistrer
+            </button>
+            
+            <a href="/guest_list/{{event.id}}" class="back-link"><i class="bi bi-arrow-left"></i> Retour à la liste</a>
+        </form>
+    </div>
+
 </div>
-
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-
+ <script src="https://unpkg.com/typed.js@3.0.0/dist/typed.umd.js"></script>
+ <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    setTimeout(() => {
+        const alert = document.querySelector(".toast");
+        if (alert) {
+            alert.classList.remove("show");
+            alert.classList.add("fade");
+            setTimeout(() => alert.remove(), 1500);
+        }
+    }, 3000); // disparaît après 3 secondes
+</script>
+ <script>
+    new Typed('.app-name', {
+                strings: [
+                    'EasyInvite', 
+                ],
+                typeSpeed: 100,
+                backSpeed: 50,
+                shuffle: true,       // : Active le mode aléatoire
+                loop: true
+            });
+ </script>
 </body>
 </html>

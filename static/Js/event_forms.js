@@ -1,79 +1,93 @@
-
 document.addEventListener("DOMContentLoaded", function() {
     const event_type = document.querySelector("#event_type");
+    
+    // Si le sélecteur principal n'existe pas sur la page, on arrête
+    if (!event_type) return;
+
+    // Récupération des conteneurs de champs
     const couple_field = document.querySelector(".couple_name");
     const couple_input_field = document.querySelector(".couple_name input");
-    const couple_number = document.querySelector(".couple_number label");
+    
+    // Ciblage précis du label associé au numéro de téléphone
+    const couple_number_label = document.querySelector(".couple_number .form-label");
+    
     const img_field = document.querySelector(".event_img");
-    const present_field = document.querySelector(".form-check");
-    const is_featured_box = document.querySelector(".is_featured");
+    
+    // CORRECTION : Ciblage de la nouvelle classe des conteneurs de cases à cocher
+    const checkboxes_divs = document.querySelectorAll(".check-container");
+    // Le premier est généralement "A la une", le second "Cadeau en espèce"
+    const present_field = checkboxes_divs[1] || document.querySelector(".form-check"); 
+    const is_featured_box = checkboxes_divs[0] || document.querySelector(".is_featured");
 
     const organizer = document.querySelector(".organizer");
     const organizer_input_field = document.querySelector(".organizer input");
     const greetings = document.querySelector(".greetings");
     const description = document.querySelector(".description");
-    const place_field = document.querySelector(".total_place");//le champ specifiant le nombre des place ou l'espace d'accueil d'un evenement
+    const place_field = document.querySelector(".total_place");
+
     function toggleCoupleField() {
-        if (!couple_field || !img_field || !present_field || !greetings || !description) return;
-        else if(event_type.value === "concours") {
-            couple_field.style.display = "none";
-            img_field.style.display = "none";
-            present_field.style.display = "none";
-            couple_input_field.required =  false;
-            couple_number.textContent = "numero organisateur"
-            greetings.style.display = "none"
-            description.style.display = "block"
-        } 
-        else if(event_type.value === "conference") {
-            couple_field.style.display = "none";
-            present_field.style.display = "none";
-            description.style.display = "none";
-            couple_input_field.required =  false;
-            couple_number.textContent = "numero organisateur"
-            description.style.display = "none"
-            greetings.style.display = "block"
+        const val = event_type.value;
+
+        // Réinitialisation par défaut des requis pour éviter les blocages fantômes
+        if (couple_input_field) couple_input_field.required = false;
+        if (organizer_input_field) organizer_input_field.required = false;
+        if (place_field) {
+            const pInput = place_field.querySelector("input");
+            if (pInput) pInput.required = false;
         }
-        else if(event_type.value === "birth_day") {
-            couple_field.style.display = "none";
-            present_field.style.display = "block";
-            description.style.display = "none";
-            couple_input_field.required =  false;
-            couple_number.textContent = "numero organisateur"
-            description.style.display = "none"
-            greetings.style.display = "block"
+
+        // Affichage de base (On affiche tout par défaut, on masquera au cas par cas)
+        if (couple_field) couple_field.style.display = "block";
+        if (img_field) img_field.style.display = "block";
+        if (present_field) present_field.style.display = "flex"; // Style flex pour l'alignement du nouveau design
+        if (is_featured_box) is_featured_box.style.display = "flex";
+        if (organizer) organizer.style.display = "block";
+        if (greetings) greetings.style.display = "block";
+        if (description) description.style.display = "block";
+        if (place_field) place_field.style.display = "block";
+
+        if (val === "concours") {
+            if (couple_field) couple_field.style.display = "none";
+            if (img_field) img_field.style.display = "none";
+            if (present_field) present_field.style.display = "none";
+            if (greetings) greetings.style.display = "none";
+            if (couple_number_label) couple_number_label.textContent = "Numéro de l'organisateur";
         } 
-        else if(event_type.value === "other") {
-            couple_field.style.display = "none";
-            present_field.style.display = "none";
-            place_field.style.display = "block";
-            is_featured_box.style.display = "block";
-            couple_input_field.required =  false;
-            place_field.required =  true;
-            organizer.style.display = "block";
-            organizer_input_field.required = true;
-            couple_number.textContent = "numero organisateur"
+        else if (val === "conference") {
+            if (couple_field) couple_field.style.display = "none";
+            if (present_field) present_field.style.display = "none";
+            if (description) description.style.display = "none";
+            if (couple_number_label) couple_number_label.textContent = "Numéro de l'organisateur";
+        }
+        else if (val === "birth_day") {
+            if (couple_field) couple_field.style.display = "none";
+            if (description) description.style.display = "none";
+            if (couple_number_label) couple_number_label.textContent = "Numéro de l'organisateur";
         } 
-         else {
-            couple_field.style.display = "block";
-            img_field.style.display = "block";
-            present_field.style.display = "block";
-            description.style.display = "block";
-            couple_input_field.required =  true;
-            couple_number.textContent = "Numéro de téléphone du couple (Couple's phone number)"
-            greetings.style.display = "none"
-            organizer.style.display = "none"
-            place_field.style.display = "none"
-            is_featured_box.style.display = "none"
-            place_field.required = false
-            organizer_input_field.required = false
+        else if (val === "other") {
+            if (couple_field) couple_field.style.display = "none";
+            if (present_field) present_field.style.display = "none";
+            if (organizer_input_field) organizer_input_field.required = true;
+            if (couple_number_label) couple_number_label.textContent = "Numéro de l'organisateur";
+            if (place_field) {
+                const pInput = place_field.querySelector("input");
+                if (pInput) pInput.required = true;
+            }
+        } 
+        else {
+            // Mode par défaut (Mariage / Wedding)
+            if (greetings) greetings.style.display = "none";
+            if (organizer) organizer.style.display = "none";
+            if (place_field) place_field.style.display = "none";
+            if (is_featured_box) is_featured_box.style.display = "none";
+            if (couple_input_field) couple_input_field.required = true;
+            if (couple_number_label) couple_number_label.textContent = "Numéro de téléphone du couple (Couple's phone number)";
         }
     }
 
     // Vérification initiale au chargement
     toggleCoupleField();
-    // Vérification à chaque changement
-    event_type.addEventListener("change",()=>{
-        toggleCoupleField();
-    } );
+    
+    // Écouteur de changement
+    event_type.addEventListener("change", toggleCoupleField);
 });
-

@@ -7,6 +7,7 @@
 
     <!-- Bootstrap 5 -->
     <link rel="stylesheet" href="/static/Css/bootstrap.min.css">
+    <script src="/static/Js/bootstrap.bundle.js"></script>
         <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
         <!-- Icons -->
@@ -57,34 +58,27 @@
 
 <div class="container py-3">
     <!-- Header -->
-    <div class="mb-3" style="position: relative;">
-        <h5 class="fw-bold mb-0 text-light">📋 Invités </h5>
-        <small class="text-light">Événement : {{event.name}}</small>
-        <div class="home mt-3">
-            <a href="{{url_for('main_page')}}" class="text-decoration-none text-primary"><i class="bi bi-house-check"></i> Accueil</a>
-        </div>
-    </div>
-
     <!-- Stats compactes -->
-    <div class="row g-2 mb-3">
-        <div class="col-4 text-center">
-            <div class="bg-white rounded-3 p-2 shadow-sm">
-                <strong></strong><br>
-                <small>Total : {{guests | length}} </small>
+    <div class="row g-2 mb-3 ">
+            <div class="card rounded-3 p-2 shadow-sm" style="background-color:rgb(255,255,255,0.2);">
+                <div class="mb-3" style="position: relative;">
+                    <h5 class="fw-bold mb-0 text-light">📋 Invités </h5>
+                    <small class="text-light">Événement : {{event.name}}</small>
+                    <div class="home mt-3">
+                        <a href="{{url_for('main_page')}}" class="text-decoration-none text-primary"><i class="bi bi-house-check"></i> Accueil</a>
+                    </div>
+                </div>
+
+                <small class="mb-3 text-light"><strong>Total : {{guests | length}} </strong> </small>
+                <small class="mb-3 text-light"><strong>Présents : {{present_guest}} </strong></small>
+                <small class="mb-3 text-light"><strong>Absent : {{absent_guest}} </strong></small>
+                <hr>
+                <small class="mb-3 text-success"><strong><i class="bi bi-check-circle  "></i> Invitation envoyé :</strong> {{nb_sent_message}}</small>
+                <small class="mb-3 text-danger"><strong><i class="bi bi-x-octagon  "></i> Invitation échoué :</strong> {{nb_failed_message}}</small>
+                <small class="mb-3 text-light"><strong><i class="bi bi-whatsapp"></i> Sans whatsapp :</strong> {{nb_no_whatsapp_message}}</small>
+                <small class="mb-3 text-warning"><strong><i class="bi bi-exclamation-circle  "></i> Invitation en attende :</strong> {{nb_pending_message}}</small>
+                
             </div>
-        </div>
-        <div class="col-4 text-center">
-            <div class="bg-white rounded-3 p-2 shadow-sm">
-                <strong class="text-success"></strong><br>
-                <small>Présents : {{present_guest}}</small>
-            </div>
-        </div>
-        <div class="col-4 text-center">
-            <div class="bg-white rounded-3 p-2 shadow-sm">
-                <strong class="text-secondary"></strong><br>
-                <small>Absent : {{absent_guest}}</small>
-            </div>
-        </div>
     </div>
 
     <!--barre de recherche-->
@@ -92,7 +86,12 @@
         <input type="text" class="form-control me-2" placeholder="Rechercher un invité" name="telephone">
         <button type="submit" class="btn btn-primary">🔍</button>
     </form>
-    
+        {% if request.session.get('flash_message') %}
+    <div class="alert alert-{{ request.session.pop('flash_type', 'info') }} alert-dismissible fade show" role="alert">
+        {{ request.session.pop('flash_message') }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endif %}
     <!-- Liste invités -->
     <div class="d-none  d-md-block d-lg-block" style="position:relative;z-index : 1;">
             <nav class="navbar bg-primary text-white px-3">
@@ -106,68 +105,90 @@
                 {%endif%}
             </nav>
         <div class="table-view">
-            <table class="table table-striped">
+            {% if sent_message %}
+    <div id="success-alert" class="alert alert-success alert-dismissible fade show" role="alert">
+       {{sent_message}}
+    </div>
+    {% endif %}
+
+            <table class="table table-striped align-middle"> 
                 <thead>
                     <tr>
                         <th>Nom</th>
-                        {%if event.type != "Concours"%}
-                        <th>Type</th>
-                        <th>Place</th>
-                        {%endif%}
-                        {%if event.type == "Concours"%}
-                        <th>Type de billet</th>
-                        {%endif%}
+                        {% if event.type != "Concours" %}
+                            <th>Type</th>
+                            <th>Place</th>
+                        {% endif %}
+                        {% if event.type == "Concours" %}
+                            <th>Type de billet</th>
+                        {% endif %}
                         <th>Statut</th>
                         <th>Téléphone</th>
-                        <!-- <th>Email</th> -->
+                        <th>Invitation whatsapp</th>
                         <th>Creation</th>
                         <th>Actions</th>
                     </tr>
                 </thead>   
-                    {% for guest in guests%}
-                <tbody>
+    
+                <tbody> 
+                {% for guest in guests %}
                     <tr>
                         <td>{{ guest.name }}</td>
-                        {%if guest.event.type != "Concours"%}
-                        <td>{{ guest.guest_type }}</td>
-                        <td>{{guest.place}}</td>
-                        {%endif%}
-                        {%if guest.event.type == "Concours"%}
-                        <td>{{guest.invite.type}}</td>
-                        {%endif%}
-                        <td> {% if guest.is_present %}Présent{%else%}Absent {%endif%}</td>
-                        <td>{{guest.telephone}}</td>
-                        <!--<td>{{guest.email}}</td>-->
-                        <td>  {{guest.created_date.strftime('%d-%m-%y')}} {{guest.created_date.strftime('%H:%M')}}</td>
-                        <td class="d-flex justify-content-start  align-items-center">
-                            {%if current_user_role == "admin" or current_user_role == "manager" %}                       
-                                <a href="/share_invite/{{event.id}}/{{guest.id}}"  class="btn btn-outline-success ">
-                                    <i class="bi bi-whatsapp"></i>
-                                </a>
-                            {%endif%}
-                            {%if current_user_role == "admin" or current_user_role == "manager" %}                       
-                                <a href="/sms_sharing_invite/{{event.id}}/{{guest.id}}"  class="btn btn-outline-light ">
-                                    <i class="bi bi-chat-left-text"></i>
-                                </a>
-                            {%endif%}
-                            <a href="/guest/{{guest.id}}/{{event_id}}/detail"  class="btn btn-outline-light">👁</a>
-                            {%if current_user_role == "admin" or current_user_role == "manager" %}
-                            <a href="/invite/{{event_id}}/{{guest.id}}/create" class="btn btn-outline-light"><i class="bi bi-envelope me-1"></i></a>
-                            <a href="/edit_guest_form/{{event_id}}/{{guest.id}}" class="btn btn-outline-light">✏</a>
-                            <form action="/delete_guest/{{event_id}}/guest" method="post">
-                                <input type="hidden" name="guest_id" value="{{guest.id}}">
-                                <button type="submit" onclick="return confirm('voulez-vous supprimer cet invité ???')" class="btn btn-outline-danger">🗑</button>
-                            </form>
-                            {%endif%}
+                        {% if guest.event.type != "Concours" %}
+                            <td>{{ guest.guest_type }}</td>
+                            <td>{{ guest.place }}</td>
+                        {% endif %}
+                        {% if guest.event.type == "Concours" %}
+                            <td>{{ guest.invite.type }}</td>
+                        {% endif %}
+                        <td>{% if guest.is_present %}<span class="text-success"><i class="bi bi-check-circle"></i> Présent</span>{% else %}<span class="text-danger"><i class="bi bi-x-octagon"></i> Absent{% endif %}</span></td>
+                        <td>{{ guest.telephone }}</td>
+                        <td>
+                            {% if guest.whatsapp_status == "pending" %}
+                                <span class="text-warning"><i class="bi bi-exclamation-circle"></i> En attente</span>
+                            {% elif guest.whatsapp_status == "sent" %}
+                                <span class="text-success"><i class="bi bi-check-circle"></i> Envoyé</span>
+                            {% elif guest.whatsapp_status == "failed" %}
+                                <span class="text-danger"><i class="bi bi-x-octagon"></i> échec d'envoi</span> 
+                            {% else %}
+                                <span class="text-danger">Pas de compte whatsapp</span>
+                            {% endif %}
                         </td>
-                    </tr> {% endfor %}
+                        <td>{{ guest.created_date.strftime('%d-%m-%y') }} {{ guest.created_date.strftime('%H:%M') }}</td>
+                        
+                        <td>
+                            <div class="d-flex gap-1 align-items-center justify-content-start">
+                                {% if current_user_role == "admin" or current_user_role == "manager" %}                       
+                                    <form action="/share_invite/{{ guest.event_id }}/{{ guest.id }}" method="post" class="m-0">
+                                        <button class="btn btn-sm btn-outline-success"><i class="bi bi-whatsapp"></i></button>
+                                    </form>
+                                {% endif %}
+
+                                {% if current_user_role == "admin" or current_user_role == "manager" %}                       
+                                    <a href="/sms_sharing_invite/{{ event.id }}/{{ guest.id }}" class="btn btn-sm btn-outline-light text-dark border-secondary">
+                                        <i class="bi bi-chat-left-text"></i>
+                                    </a>
+                                {% endif %}
+
+                                <a href="/guest/{{ guest.id }}/{{ event_id }}/detail" class="btn btn-sm btn-outline-light text-dark border-secondary">👁</a>
+
+                                {% if current_user_role == "admin" or current_user_role == "manager" %}
+                                    <a href="/invite/{{ event_id }}/{{ guest.id }}/create" class="btn btn-sm btn-outline-light text-dark border-secondary"><i class="bi bi-envelope"></i></a>
+                                    <a href="/edit_guest_form/{{ event_id }}/{{ guest.id }}" class="btn btn-sm btn-outline-light text-dark border-secondary">✏</a>
+                                    <form action="/delete_guest/{{ event_id }}/guest" method="post" class="m-0">
+                                        <input type="hidden" name="guest_id" value="{{ guest.id }}">
+                                        <button type="submit" onclick="return confirm('Voulez-vous supprimer cet invité ???')" class="btn btn-sm btn-outline-danger">🗑</button>
+                                    </form>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr> 
+            {% endfor %} 
                 </tbody> 
-                
             </table>
-        </div>  
-          
+            
+        </div>
     </div>
-</div>
 
 <div class="d-block d-md-none d-lg-none d-xl-none">
     <div class="container mobile-list">
@@ -182,7 +203,6 @@
                             <small style="font-size:18px;">{{guest.type}}</small>
                             {%endif%}
                             <small style="font-size:18px;">{{guest.telephone}}</small></br>
-                            <!--<small style="font-size:18px;">{{guest.email}}</small><br>-->
                             <small style="font-size:18px;">{{guest.created_date.strftime('%d-%m-%Y %H:%M' )}}</small>
                         </div>
                     </div>
@@ -194,19 +214,21 @@
                         {%if guest.event.type == "Concours"%}
                             <small style="font-size:18px;">Billet : {{guest.invite.type}}</small>
                         {%endif%}
-                        <small class="text-muted" style="font-size:18px;">{% if guest.is_present %}<i class="bi bi-check-circle-fill text-success"></i>   Present {%else%}<span class="text-danger"><i class="bi bi-x-circle-fill "></i> Absent</span>{%endif%}</small></br>
+                        <small class="text-muted" style="font-size:18px;">{% if guest.is_present %}<i class="bi bi-check-circle-fill text-success"></i>   Present {%else%}<span class="text-danger"><i class="bi bi-x-circle-fill "></i> Absent</span>{%endif%}</small>
+                        <small  style="font-size:18px;">Whatsapp invitation : {%if guest.whatsapp_status == "pending" %}<i class="bi bi-exclamation-circle text-warning"></i> En attente{% elif guest.whatsapp_status == "sent" %}<i class="bi bi-check-circle text-success"></i> Envoyé{%elif guest.whatsapp_status == "failed"%}<i class="bi bi-x-octagon text-danger"></i>  echec {%else%}Pas de compte whatsapp{%endif%}</small><br>
+
                         <div class="btn-group btn-group-sm">
                             <small class="d-flex justify-content-center ">
                                 
-                                <a href="/guest/{{guest.id}}/{{event_id}}/detail"  class="btn btn-outline-light">👁</a>
+                                <a href="/guest/{{guest.id}}/{{event_id}}/detail"  class="btn btn-outline-light ">👁</a>
                                 {%if current_user_role == "admin" or current_user_role == "manager" %}                     
                                 <a href="/share_invite/{{event.id}}/{{guest.id}}"  class="btn btn-outline-success ">
                                     <i class="bi bi-whatsapp"></i>
                                 </a>
-                                <a href="/sms_sharing_invite/{{event.id}}/{{guest.id}}"  class="btn btn-outline-light ">
+                                <a href="/sms_sharing_invite/{{event.id}}/{{guest.id}}"  class="btn btn-outline-light  ">
                                     <i class="bi bi-chat-left-text"></i>
                                 </a>
-                                <a href="/invite/{{event_id}}/{{guest.id}}/create" class="btn btn-outline-light"><i class="bi bi-envelope me-1"></i></a>
+                                <a href="/invite/{{event_id}}/{{guest.id}}/create" class="btn btn-outline-light "><i class="bi bi-envelope me-1"></i></a>
                                 <a href="/edit_guest_form/{{event_id}}/{{guest.id}}" class="btn btn-outline-light ms-2">✏</a>
                                 <form action="/delete_guest/{{event_id}}/guest" method="post" class="ms-2">
                                     <input type="hidden" name="guest_id" value="{{guest.id}}">

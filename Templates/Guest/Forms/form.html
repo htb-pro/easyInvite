@@ -1,152 +1,212 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Créer une invitation</title>
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static',path='Css/bootstrap.min.css')}}">
-  <script src="/static/Js/guest_forms.js" defer></script>
-  <style>
-    body {
-      font-family: "Segoe UI", system-ui, sans-serif;
-      min-height: 100vh;
-      background-color: #0b1c2d;
-      position: relative;
-      overflow-x: hidden;
-    }
-    /* ===== BACKGROUND GEOMETRIQUE ===== */
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      background:
-        linear-gradient(135deg, rgba(255,255,255,0.03) 25%, transparent 25%) -60px 0,
-        linear-gradient(225deg, rgba(255,255,255,0.03) 25%, transparent 25%) -60px 0,
-        linear-gradient(315deg, rgba(255,255,255,0.03) 25%, transparent 25%),
-        linear-gradient(45deg, rgba(255,255,255,0.03) 25%, transparent 25%);
-      background-size: 120px 120px;
-      z-index: 0;
-    }
-    .card
-    {
-         background-color : rgb(0,0,0,0.2);
-         color : white;
-    }
-    .header{
-      background: linear-gradient(135deg, #1f3c88, #2c6bed);
-      color: white;
-      padding: 15px;
-      position: relative;
-      z-index: 2;
-    }
-    .btn-send {
-      background-color: #2c6bed;
-      color: white;
-    }
-    .btn-send:hover
-    {
-      background-color: #13397a;
-    }
-    .referenceName
-    {
-      display: none;
-    }
-  </style>
-</head>
-
-<body>
-<!-- HEADER -->
-<div class="header  fw-bold d-flex align-items-center" style="z-index: 1;">
-  <!-- Bouton retour -->
-    <div class="mb-3">
-        <a href="/guest_list/{{event.id}}" class="btn btn-outline-primary text-light btn-sm">
-            ← Retour à la liste
-        </a>
-    </div>
-   
-</div>
-
-{% if success is true %}
-  <div id="success-alert" class="alert alert-success alert-dismissible fade show col-12 col-lg-6 container mt-2" role="alert">
-      🎉 Invité créé avec succès !
-  </div>
-{% endif %}
-
-<!-- FORM -->
-<div class="container mt-4 mb-5">
-  <div class="card shadow-sm">
-      <span class="mt-2 text-center"> 📩 Nouvel Invité</span>
-    <div class="card-body">
-      <form method="post" action="/create/{{event.id}}/guest" enctype="multipart/form-data">
-     
-        {% if uniqueValueError %}
-        <div class="alert alert-danger">
-                <p>{{uniqueValueError}}</p>
-          </div>
-        {%endif%}
-        <!-- NAME -->
-        <input type="hidden" value="{{event.type}}" class="event_type">
-        <div class="mb-3 guest_name">
-          <label class="form-label">Nom complet (full name)</label>
-          <input type="text" class="form-control" name="guestName" placeholder="ex : Jean Dupont " value="{{guestName}}" required>
-        </div>
-
-           <!-- type -->
-        <div class="mb-3 guest_type_div">
-          <label class="form-label">Type</label>
-          <select class="form-select selectInput" name="guestType"  required>
-            <option value="Singleton" {%if guestType == 'Singleton' %}selected{%endif%}>Singleton (single)</option>
-            <option value="Couple" {% if guestType == 'Couple' %} selected {%endif%}>Couple (couple)</option>
-          </select>
-        </div>
-
-           <!-- table ou sera l'invite -->
-        <div class="mb-3 guest_table_div">
-          <label class="form-label">Table</label>
-          <input type="text" class="form-control" name="guestPlace" placeholder="ex : A1" value="{{guestPlace}}" required>
-        </div>
-
-        <div class="mb-3 ticket_type_div">
-          <label for="ticket_type" class="form-label ">Type de billet</label>
-          <select class="form-select" id="ticket_type" name="ticket_type" required>
-            <option value="standard">Standard</option>
-            <option value="vip">VIP</option>
-          </select>
-        </div>
-
-        <!-- telephone -->
-        <div class="mb-3">
-          <label class="form-label">Telephone </label>
-          <input type="number" class="form-control" maxlength="10" name="guestTel" placeholder="ex : 09900000000" value="{{guestTel}}" required>
-        </div>
-
-        <div class="mb-3">
-          <label for="event_photo" class="form-label fw-bold">Photo de l'invité</label>
-          <!-- accept="image/*" autorise tous les formats d'image -->
-          <input 
-              type="file" 
-              class="form-control" 
-              id="event_photo" 
-              name="photo" 
-              accept="image/*">
-        </div>
-
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EasyInvite - Adaptatif</title>
+    <link rel="stylesheet" href="/static/Css/bootstrap.min.css">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="/static/Js/guest_forms.js" defer></script>
+    <style>
+        * { box-sizing: border-box; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         
-        <!-- SUBMIT -->
-        <div class="d-grid">
-          <button type="submit" class="btn btn-send">
-            📤 Enregistrer
-          </button>
+        body {
+            font-family: "Segoe UI", system-ui, sans-serif;
+            min-height: 100vh;
+            background-color: #0b1c2d;
+            margin: 0;
+            position: relative;
+            overflow-x: hidden;
+            
+            /* 🟢 LES PROPRIÉTÉS MAGIQUES POUR CENTRER LA CARTE ACCUEIL */
+            display: flex;
+            align-items: center;       /* Centrage vertical */
+            justify-content: center;    /* Centrage horizontal */
+            padding: 20px 12px;         /* Sécurité pour éviter le collage sur petit mobile */
+        }
+
+        /* ===== BACKGROUND GEOMETRIQUE ===== */
+        body::before {
+            content: "";
+            position: fixed;
+            inset: 0;
+            background:
+                linear-gradient(135deg, rgba(255,255,255,0.03) 25%, transparent 25%) -60px 0,
+                linear-gradient(225deg, rgba(255,255,255,0.03) 25%, transparent 25%) -60px 0,
+                linear-gradient(315deg, rgba(255,255,255,0.03) 25%, transparent 25%),
+                linear-gradient(45deg, rgba(255,255,255,0.03) 25%, transparent 25%);
+            background-size: 120px 120px;
+            z-index: 0;
+        }
+
+        .card {
+            background-color : rgb(0,0,0,0.2);
+            color : white;
+        }
+       
+        /* 🚨 LE CONTENEUR PRINCIPAL : Configuré en FLEX DIRECTION */
+        .main-container { 
+            width: 100%; 
+            max-width: 900px; /* Plus large pour accueillir la disposition horizontale sur PC */
+            background: white; 
+            border-radius: 16px; 
+            position: relative;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3); /* Ombre légèrement augmentée pour faire ressortir sur fond sombre */
+            overflow: hidden; 
+            display: flex;
+            flex-direction: column; /* Par défaut : Vertical (Mobile) */
+            z-index: 1; /* Assure que la carte passe au-dessus du background ::before */
+        }
+        
+        /* Bannière du haut (Branding) */
+        .branding-card { 
+            background: linear-gradient(135deg, #0d6efd 0%, #0a4ebd 100%); 
+            color: white; 
+            padding: 35px 20px; 
+            text-align: center; 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        .branding-card h2 { margin: 10px 0 5px 0; font-weight: 700; font-size: 24px; }
+        .branding-card p { margin: 0; font-size: 13px; opacity: 0.8; line-height: 1.4; max-width: 300px; }
+        .badge { display: inline-block; background: white; color: #0d6efd; padding: 6px 12px; border-radius: 20px; font-size: 11px; font-weight: 600; margin-top: 15px; }
+        
+        /* Section Formulaire */
+        .form-content { padding: 30px 25px; flex: 1; }
+        .form-title { font-size: 20px; font-weight: 700; color: #212529; margin: 0 0 5px 0; }
+        .form-subtitle { font-size: 12px; color: #6c757d; margin: 0 0 20px 0; }
+        
+        /* Alerte d'erreur */
+        .alert-error { background-color: #f8d7da; color: #842029; border: 1px solid #f5c2c7; padding: 10px 15px; border-radius: 8px; font-size: 13px; margin-bottom: 20px; display: flex; align-items: center; }
+        
+        /* Champs de saisie */
+        .mb-3 { margin-bottom: 15px; }
+        .form-label { display: block; font-size: 11px; font-weight: 700; color: #495057; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .input-group { display: flex; background-color: #f8f9fa; border: 1px solid #dee2e6; border-radius: 8px; overflow: hidden; align-items: center; }
+        .input-icon { padding: 10px 12px; color: #6c757d; background: #e9ecef; border-right: 1px solid #dee2e6; display: flex; align-items: center; }
+        .form-control { border: none; background: transparent; padding: 10px 12px; width: 100%; font-size: 14px; color: #212529; outline: none; }
+        
+        /* Grille 2 colonnes */
+        .row-grid { display: flex; gap: 12px; }
+        .col-6 { flex: 1; }
+        
+        /* Boutons */
+        .btn-submit { background-color: #0d6efd; color: white; border: none; width: 100%; padding: 12px; border-radius: 8px; font-size: 14px; font-weight: 700; margin-top: 10px; cursor: pointer; box-shadow: 0 4px 6px rgba(13, 110, 253, 0.2); }
+        .back-link { display: block; text-align: center; margin-top: 15px; font-size: 13px; color: #6c757d; text-decoration: none; }
+
+        /* 🌐 🚨 LA RÈGLE MAGIQUE POUR LES ÉCRANS PC (Supérieurs à 768px) */
+        @media (min-width: 768px) {
+            .main-container {
+                flex-direction: row; /* Bascule les deux blocs côte à côte en horizontal */
+            }
+            .branding-card {
+                flex: 1; /* Prend exactement 50% de la largeur */
+                padding: 40px;
+            }
+            .form-content {
+                flex: 1; /* Prend exactement 50% de la largeur */
+                padding: 40px;
+            }
+        }
+
+          .app-name
+        {
+            display: inline-block;
+            min-width: 280px;
+            min-height: 40px;
+            vertical-align: bottom;
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-container">
+    
+    <div class="branding-card">
+        <i class="bi bi-envelope-paper-heart-fill" style="font-size: 3rem;"></i>
+        <h2 class="app-name"></h2>
+        <p>Gestion intelligente et sécurisée de vos invitations par QR Code.</p>
+        <div class="mb-3" style="position: relative;">
+            <a href="/guest_list/{{event.id}}" class="btn btn-light mt-3 text-primary btn-sm">
+                ← Retour à la liste
+            </a>
         </div>
-
-      </form>
-
+        <div class="badge">
+            <i class="bi bi-calendar-event me-1"></i> {{event.type}} de {{event.couple_name}}
+        </div>
     </div>
-  </div>
-</div>
 
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <div class="form-content">
+        
+        {% if success is true %}
+        <div id="success-alert" class="alert alert-success alert-dismissible fade show col-12 container mt-2" role="alert">
+            🎉 Invité créé avec succès !
+        </div>
+        {% endif %}
+        {% if error_message %}
+        <div id="success-alert" class="alert alert-danger alert-dismissible fade show col-12 container mt-2" role="alert">
+            {{error_message}}
+        </div>
+        {% endif %}
+        {% if uniqueValueError %}
+        <div id="success-alert" class="alert alert-danger alert-dismissible fade show col-12 container mt-2" role="alert">
+            {{uniqueValueError}}
+        </div>
+        {% endif %}
+
+        <h3 class="form-title">Nouvel invité</h3>
+        <p class="form-subtitle">Configurez l'accès de votre invité.</p>
+        
+        <form method="post" action="/create/{{event.id}}/guest">
+            <input type="hidden" name="csrf_token" value="{{csrf_token}}" required>
+            <div class="mb-3">
+                <label class="form-label">Nom de l'invité (guest name)</label>
+                <div class="input-group">
+                    <div class="input-icon"><i class="bi bi-person"></i></div>
+                    <input type="text" class="form-control" max="60" placeholder="Ex: heritier tshim" name="guestName" value="{{guestName}}" required>
+                </div>
+            </div>
+            
+            <div class="mb-3">
+                <label class="form-label">Téléphone WhatsApp</label>
+                <div class="input-group">
+                    <div class="input-icon"><i class="bi bi-whatsapp"></i></div>
+                    <input type="tel" class="form-control" name="guestTel" placeholder="Ex: 243897408910" value="{{guestTel}}" minlength="9" maxlength="15" required>
+                </div>
+            </div>
+
+            <div class="mb-3 guest_type_div">
+                <label class="form-label">Type d'invité</label>
+                <div class="input-group">
+                    <div class="input-icon"><i class="bi bi-people"></i></div>
+                    
+                    <select class="form-control selectInput" name="guestType" required style="cursor: pointer; -webkit-appearance: none; -moz-appearance: none; appearance: none;">
+                        <option value="Singleton" {% if guestType == 'Singleton' %}selected{% endif %}>Singleton (single)</option>
+                        <option value="Couple" {% if guestType == 'Couple' %}selected{% endif %}>Couple (couple)</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="mb-3 guest_table_div">
+                <label class="form-label">Place / Table</label>
+                <div class="input-group">
+                    <input type="text" class="form-control" name="guestPlace" value="{{guestPlace}}" required>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-submit">
+                <i class="bi bi-plus-circle" style="margin-right: 5px;"></i> Enregistrer
+            </button>
+            
+            <a href="/guest_list/{{event.id}}" class="back-link"><i class="bi bi-arrow-left"></i> Retour à la liste</a>
+        </form>
+    </div>
+
+</div>
+ <script src="https://unpkg.com/typed.js@3.0.0/dist/typed.umd.js"></script>
+ <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 <script>
     setTimeout(() => {
         const alert = document.getElementById("success-alert");
@@ -157,5 +217,17 @@
         }
     }, 3000); // disparaît après 3 secondes
 </script>
+ <script>
+    new Typed('.app-name', {
+                strings: [
+                    'EasyInvite', 
+                ],
+                typeSpeed: 100,
+                backSpeed: 50,
+                shuffle: true,       // : Active le mode aléatoire
+                loop: true
+            });
+ </script>
+
 </body>
 </html>

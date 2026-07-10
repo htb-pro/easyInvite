@@ -3,312 +3,209 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Espace Organisateur - easyInvite</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
+    <title>Dashboard Organisateur - easyInvite</title>
+    <!-- Bootstrap 5 & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        :root {
-            --bg-main: #0B132B;       /* Bleu nuit profond */
-            --bg-card: #141B2D;       /* Slate premium pour les conteneurs */
-            --text-main: #E2E8F0;     /* Blanc cassé */
-            --text-muted: #94A3B8;    /* Gris secondaire */
-            --easy-gold: #F59E0B;     /* Jaune/orange de la marque */
+        body { background-color: #0F172A; color: white; min-height: 100vh; padding-bottom: 70px; } /* padding-bottom pour le menu mobile */
+        .stat-card { background-color: #1E293B; border: none; border-radius: 16px; }
+        .event-card { background-color: #1E293B; border: none; border-radius: 16px; overflow: hidden; transition: transform 0.2s; }
+        .event-card:hover { transform: translateY(-3px); }
+        .nav-tabs { border-bottom: 2px solid #334155; }
+        .nav-tabs .nav-link { color: #94A3B8; border: none; font-weight: 600; }
+        .nav-tabs .nav-link.active { color: #F59E0B; background: none; border-bottom: 3px solid #F59E0B; }
+        
+        /* Menu Mobile de bas d'écran (Bottom Navbar) */
+        @media (max-width: 767.98px) {
+            .mobile-bottom-nav { position: fixed; bottom: 0; start: 0; width: 100%; background-color: #1E293B; border-top: 1px solid #334155; z-index: 1030; }
+            .mobile-bottom-nav .nav-link { color: #94A3B8; font-size: 0.75rem; text-align: center; padding: 8px 0; }
+            .mobile-bottom-nav .nav-link.active { color: #F59E0B; }
+            .mobile-bottom-nav i { font-size: 1.4rem; display: block; }
+            .sidebar-desktop { display: none; }
         }
-
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: var(--bg-main);
-            color: var(--text-main);
-            overflow-x: hidden;
-        }
-
-        /* --- STRUCTURE LAYOUT --- */
-        .wrapper {
-            display: flex;
-            width: 100%;
-            align-items: stretch;
-        }
-
-        /* Sidebar Giga-Stylée */
-        #sidebar {
-            min-width: 260px;
-            max-width: 260px;
-            background-color: var(--bg-card);
-            border-right: 1px solid rgba(255, 255, 255, 0.05);
-            min-height: 100vh;
-            transition: all 0.3s;
-        }
-
-        #content {
-            width: 100%;
-            padding: 30px;
-            min-height: 100vh;
-        }
-
-        /* --- COMPOSANTS INTERNES --- */
-        .brand-logo {
-            font-weight: 800;
-            color: #FFFFFF;
-            text-decoration: none;
-            display: block;
-            padding: 25px 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .sidebar-menu {
-            padding: 20px 10px;
-        }
-
-        .menu-link {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 12px 15px;
-            color: var(--text-muted);
-            text-decoration: none;
-            border-radius: 12px;
-            font-weight: 500;
-            margin-bottom: 5px;
-            transition: all 0.2s ease;
-        }
-
-        .menu-link:hover, .menu-link.active {
-            background-color: rgba(245, 158, 11, 0.1);
-            color: var(--easy-gold);
-        }
-
-        /* Topbar de salutation */
-        .topbar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 35px;
-        }
-
-        /* Cartes Statistiques */
-        .stat-card {
-            background-color: var(--bg-card);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 20px;
-            padding: 25px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-        }
-
-        .icon-box {
-            width: 52px;
-            height: 52px;
-            border-radius: 14px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.5rem;
-        }
-
-        /* Tableaux et Listes d'événements */
-        .custom-table-card {
-            background-color: var(--bg-card);
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            border-radius: 20px;
-            padding: 25px;
-            margin-top: 30px;
-        }
-
-        .table {
-            color: var(--text-main);
-            margin-bottom: 0;
-        }
-
-        .table th {
-            color: var(--text-muted);
-            font-weight: 600;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-            padding: 15px;
-        }
-
-        .table td {
-            padding: 15px;
-            vertical-align: middle;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-            color: #CBD5E1;
-        }
-
-        /* Badge d'état de l'événement */
-        .status-badge {
-            padding: 6px 12px;
-            border-radius: 30px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-        .status-active { background-color: rgba(16, 185, 129, 0.1); color: #10B981; }
-        .status-pending { background-color: rgba(245, 158, 11, 0.1); color: #F59E0B; }
-
-        /* Mini bouton d'action */
-        .btn-action {
-            background-color: rgba(255, 255, 255, 0.05);
-            border: none;
-            color: var(--text-main);
-            padding: 6px 12px;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            transition: all 0.2s;
-        }
-        .btn-action:hover {
-            background-color: var(--easy-gold);
-            color: #0B132B;
+        
+        /* Sidebar pour Écrans PC */
+        @media (min-width: 768px) {
+            .mobile-bottom-nav { display: none; }
+            .sidebar-desktop { background-color: #1E293B; min-height: 100vh; border-right: 1px solid #334155; }
+            .sidebar-link { color: #94A3B8; text-decoration: none; font-weight: 500; padding: 12px; display: block; border-radius: 8px; }
+            .sidebar-link:hover, .sidebar-link.active { background-color: #334155; color: white; }
+            .sidebar-link.active i { color: #F59E0B; }
         }
     </style>
 </head>
 <body>
 
-    <div class="wrapper">
-        
-        <nav id="sidebar">
-            <a href="#" class="brand-logo">
-                <i class="bi bi-ticket-perforated-fill text-warning me-2"></i>easy<span class="text-warning">Invite</span>
-            </a>
-            
-            <div class="sidebar-menu">
-                <p class="text-uppercase tracking-wider px-3 fs-7 text-muted fw-bold mb-2">Pilotage</p>
-                <a href="#" class="menu-link active">
-                    <i class="bi bi-grid-1x2-fill"></i> Tableau de bord
-                </a>
-                <a href="#" class="menu-link">
-                    <i class="bi bi-calendar-event"></i> Mes Événements
-                </a>
-                <a href="#" class="menu-link">
-                    <i class="bi bi-people"></i> Participants
-                </a>
-
-                <p class="text-uppercase tracking-wider px-3 fs-7 text-muted fw-bold mt-4 mb-2">Configuration</p>
-                <a href="#" class="menu-link">
-                    <i class="bi bi-qr-code-scan"></i> Équipe de Scan
-                </a>
-                <a href="#" class="menu-link">
-                    <i class="bi bi-gear"></i> Paramètres du compte
-                </a>
-                
-                <hr class="border-secondary border-opacity-25 my-4">
-                <a href="/logout" class="menu-link text-danger">
-                    <i class="bi bi-box-arrow-left"></i> Déconnexion
-                </a>
+<div class="container-fluid">
+    <div class="row">
+        <!-- 💻 SIDEBAR DESKTOP (Masquée sur Mobile) -->
+        <nav class="col-md-3 col-lg-2 sidebar-desktop p-3">
+            <div class="d-flex align-items-center mb-4 px-2">
+                <h3 class="fw-bold text-warning m-0"><i class="bi bi-ticket-perforated-fill me-2"></i>easyInvite</h3>
+            </div>
+            <div class="d-flex flex-column gap-2">
+                <a href="#" class="sidebar-link active"><i class="bi bi-grid-1x2-fill me-2"></i> Événements</a>
+                <a href="#" class="sidebar-link"><i class="bi bi-wallet2 me-2"></i> Revenus</a>
+                <a href="#" class="sidebar-link"><i class="bi bi-people me-2"></i> Participants</a>
+                <a href="#" class="sidebar-link"><i class="bi bi-gear me-2"></i> Paramètres</a>
+                <hr class="border-secondary my-2">
+                <a href="/organizer/auth/logout" class="btn btn-danger sidebar-link " ><i class="bi bi-box-arrow-left me-2"></i> Déconnexion</a>
             </div>
         </nav>
 
-        <main id="content">
+        <!-- 📱/💻 CONTENU PRINCIPAL (S'adapte aux deux écrans) -->
+        <main class="col-12 col-md-9 col-lg-10 ms-auto p-4">
             
-            <div class="topbar">
+            <!-- Header du haut -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
-                    <h4 class="fw-bold mb-1"><i class="bi bi-emoji-smile text-warning me-2"></i>Ravis de vous revoir !</h4>
-                    <p class="text-muted small mb-0">Voici les performances globales de votre activité aujourd'hui.</p>
+                    <h2 class="fw-bold m-0 h4-mobile">Bonjour, {{ company_name }}</h2>
+                    <p class="text-secondary small mb-0">Voici l'état actuel de vos billetteries</p>
                 </div>
-                <div class="d-flex align-items-center gap-3 bg-dark bg-opacity-20 p-2 rounded-4 border border-secondary border-opacity-10">
-                    <div class="bg-warning text-dark fw-bold rounded-circle d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
-                        {{ initials if initials else "HT" }}
+                <a href="/dashboard/event/create" class="btn btn-warning fw-bold text-dark d-none d-md-inline-block" style="border-radius: 8px;">
+                    <i class="bi bi-plus-circle-fill me-2"></i>Créer un événement
+                </a>
+            </div>
+
+            <!-- 📊 ZONE DES STATS GLOBALES (Responsive Grid) -->
+            <div class="row g-3 mb-4">
+                <div class="col-6 col-md-3">
+                    <div class="card stat-card p-3 h-100">
+                        <span class="text-secondary small fw-bold">Recettes en cours</span>
+                        <h3 class="fw-bold text-success mt-1 mb-0" style="font-size: calc(1.3rem + 0.6vw);">{{ active_revenue|int }} $</h3>
                     </div>
-                    <div class="d-none d-sm-block text-start me-2">
-                        <p class="small fw-bold mb-0 text-white">{{ user_name if user_name else "Organisateur" }}</p>
-                        <p class="mb-0 text-muted" style="font-size: 0.75rem;">Compte Pro</p>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card stat-card p-3 h-100">
+                        <span class="text-secondary small fw-bold">Billets vendus</span>
+                        <h3 class="fw-bold text-white mt-1 mb-0" style="font-size: calc(1.3rem + 0.6vw);">{{ total_sold_tickets }}</h3>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card stat-card p-3 h-100">
+                        <span class="text-secondary small fw-bold">Événements Actifs</span>
+                        <h3 class="fw-bold text-warning mt-1 mb-0" style="font-size: calc(1.3rem + 0.6vw);">{{ active_events|length }}</h3>
+                    </div>
+                </div>
+                <div class="col-6 col-md-3">
+                    <div class="card stat-card p-3 h-100">
+                        <span class="text-secondary small fw-bold">Historique Total</span>
+                        <h3 class="fw-bold text-info mt-1 mb-0" style="font-size: calc(1.3rem + 0.6vw);">{{ total_historical_revenue|int }} $</h3>
                     </div>
                 </div>
             </div>
 
-            <div class="row g-4">
-                <div class="col-12 col-sm-6 col-lg-4">
-                    <div class="stat-card">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <p class="text-muted small fw-medium mb-1">Recettes générées</p>
-                                <h3 class="fw-bold text-white mb-0">1,450.00 $</h3>
-                            </div>
-                            <div class="icon-box bg-success bg-opacity-10 text-success">
-                                <i class="bi bi-cash-coin"></i>
+            <!-- 📑 LOGIQUE DES ONGLETS (Bootstrap Nav-Tabs) -->
+            <ul class="nav nav-tabs mb-4" id="eventTabs" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="active-tab" data-bs-toggle="tab" data-bs-target="#active-pane" type="button" role="tab">
+                        À venir ({{ active_events|length }})
+                    </button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="past-tab" data-bs-toggle="tab" data-bs-target="#past-pane" type="button" role="tab">
+                        Passés ({{ past_events|length }})
+                    </button>
+                </li>
+            </ul>
+
+            <!-- PANELS DES ONGLETS -->
+            <div class="tab-content" id="eventTabsContent">
+                
+                <!-- 🚀 1. LISTE DES ÉVÉNEMENTS EN COURS -->
+                <div class="tab-pane fade show active" id="active-pane" role="tabpanel" aria-labelledby="active-tab">
+                    <div class="row g-3">
+                        {% for event in active_events %}
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="card event-card h-100">
+                                {% if event.photo_url %}
+                                <img src="{{ event.photo_url }}" class="card-img-top" style="height: 140px; object-fit: cover;" alt="...">
+                                {% endif %}
+                                <div class="card-body d-flex flex-column">
+                                    <h5 class="fw-bold text-white mb-1 text-truncate">{{ event.name }}</h5>
+                                    <p class="text-secondary small mb-3"><i class="bi bi-calendar3 me-1"></i> {{ event.date.strftime('%d-%m-%Y') }}</p>
+                                    
+                                    <div class="mt-auto d-flex gap-2">
+                                        <a href="/dashboard/event/{{ event.id }}" class="btn btn-warning btn-sm fw-bold text-dark flex-grow-1" style="border-radius: 8px;">
+                                            <i class="bi bi-sliders me-1"></i> Gérer
+                                        </a>
+                                        <a href="/event/details/{{ event.id }}" target="_blank" class="btn btn-outline-light btn-sm" style="border-radius: 8px;" title="Voir le lien public">
+                                            <i class="bi bi-eye"></i>
+                                        </a>
+                                    </div>
+                                </div>
                             </div>
                         </div>
+                        {% else %}
+                        <div class="col-12 text-center text-secondary py-5">
+                            <i class="bi bi-calendar-plus fs-1 text-muted"></i>
+                            <p class="mt-2">Aucun événement en cours. Lancez votre premier projet !</p>
+                            <a href="/dashboard/event/create" class="btn btn-warning btn-sm text-dark fw-bold mt-2">Créer un événement</a>
+                        </div>
+                        {% endfor %}
                     </div>
                 </div>
 
-                <div class="col-12 col-sm-6 col-lg-4">
-                    <div class="stat-card">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <p class="text-muted small fw-medium mb-1">Billets vendus</p>
-                                <h3 class="fw-bold text-white mb-0">142 <span class="fs-6 text-muted">/ 500</span></h3>
-                            </div>
-                            <div class="icon-box bg-primary bg-opacity-10 text-primary">
-                                <i class="bi bi-ticket-detailed"></i>
+                <!-- 🗄️ 2. LISTE DES ÉVÉNEMENTS PASSÉS -->
+                <div class="tab-pane fade" id="past-pane" role="tabpanel" aria-labelledby="past-tab">
+                    <div class="row g-3">
+                        {% for event in past_events %}
+                        <div class="col-12 col-md-6 col-lg-4">
+                            <div class="card event-card h-100 opacity-75" style="border: 1px solid #334155;">
+                                <div class="card-body d-flex flex-column">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h5 class="fw-bold text-secondary mb-0 text-truncate" style="max-width: 75%;">{{ event.name }}</h5>
+                                        <span class="badge bg-secondary style-font-size: 0.75rem;">Terminé</span>
+                                    </div>
+                                    <p class="text-secondary small mb-3"><i class="bi bi-calendar-check me-1"></i> Tenu le {{ event.date.strftime('%d-%m-%Y') }}</p>
+                                    
+                                    <a href="/dashboard/event/{{ event.id }}" class="btn btn-outline-secondary btn-sm mt-auto w-100" style="border-radius: 8px;">
+                                        <i class="bi bi-file-earmark-bar-graph me-1"></i> Voir le bilan comptable
+                                    </a>
+                                </div>
                             </div>
                         </div>
+                        {% else %}
+                        <div class="col-12 text-center text-secondary py-5">
+                            <i class="bi bi-archive fs-1 text-muted"></i>
+                            <p class="mt-2">Aucun historique d'événement archivé.</p>
+                        </div>
+                        {% endfor %}
                     </div>
                 </div>
 
-                <div class="col-12 col-sm-6 col-lg-4">
-                    <div class="stat-card">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <p class="text-muted small fw-medium mb-1">Taux de présence (Scans)</p>
-                                <h3 class="fw-bold text-white mb-0">68 <span class="fs-6 text-warning">(47%)</span></h3>
-                            </div>
-                            <div class="icon-box bg-warning bg-opacity-10 text-warning">
-                                <i class="bi bi-qr-code-scan"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
-
-            <div class="custom-table-card">
-                <div class="d-flex justify-content-between align-items-center mb-4">
-                    <div>
-                        <h5 class="fw-bold mb-1">Vos événements récents</h5>
-                        <p class="text-muted small mb-0">Suivi en direct des réservations et des statuts de publication.</p>
-                    </div>
-                    <a href="/create-event" class="btn btn-warning btn-sm fw-bold px-3 py-2 rounded-3 text-dark">
-                        <i class="bi bi-plus-lg me-1"></i> Nouvel Événement
-                    </a>
-                </div>
-
-                <div class="table-responsive">
-                    <table class="table">
-                        <thead>
-                            <tr>
-                                <th>Nom de l'événement</th>
-                                <th>Date de début</th>
-                                <th>Ville</th>
-                                <th>Statut</th>
-                                <th class="text-end">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td class="fw-bold text-white">Make DRC Great 2026</td>
-                                <td>01 Juil 2026 à 16:00</td>
-                                <td>Lubumbashi</td>
-                                <td><span class="status-badge status-pending">En attente</span></td>
-                                <td class="text-end">
-                                    <a href="/edit_event/9b53705e-24e4-4b64-9c5f-56317837c98f" class="btn btn-action"><i class="bi bi-pencil-square me-1"></i> Gérer</a>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td class="fw-bold text-white">Gala des Entrepreneurs VIP</td>
-                                <td>18 Aoû 2026 à 19:30</td>
-                                <td>Kinshasa</td>
-                                <td><span class="status-badge status-active">En ligne</span></td>
-                                <td class="text-end">
-                                    <button class="btn btn-action"><i class="bi bi-pencil-square me-1"></i> Gérer</button>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
         </main>
     </div>
+</div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/dist/js/bootstrap.bundle.min.js"></script>
+<!-- 📱 BARRE DE NAVIGATION COMMANDE MOBILE (Fixée en bas, masquée sur PC) -->
+<div class="mobile-bottom-nav container-fluid">
+    <div class="row text-center">
+        <div class="col-3">
+            <a href="#" class="nav-link active">
+                <i class="bi bi-ticket-perforated-fill"></i>Events
+            </a>
+        </div>
+        <div class="col-3">
+            <a href="/dashboard/event/create" class="nav-link text-warning fw-bold">
+                <i class="bi bi-plus-circle-fill"></i>Créer
+            </a>
+        </div>
+        <div class="col-3">
+            <a href="#" class="nav-link">
+                <i class="bi bi-wallet2"></i>Revenus
+            </a>
+        </div>
+        <div class="col-3">
+            <a href="#" class="nav-link">
+                <i class="bi bi-gear"></i>Config
+            </a>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Création d'un invite</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static',path='Css/bootstrap.min.css')}}">
+  <script src="/static/Js/guest_forms.js" defer></script>
+  <style>
+    body {
+      font-family: "Segoe UI", system-ui, sans-serif;
+      min-height: 100vh;
+      background-color: #0b1c2d;
+      position: relative;
+      overflow-x: hidden;
+    }
+    /* ===== BACKGROUND GEOMETRIQUE ===== */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,0.03) 25%, transparent 25%) -60px 0,
+        linear-gradient(225deg, rgba(255,255,255,0.03) 25%, transparent 25%) -60px 0,
+        linear-gradient(315deg, rgba(255,255,255,0.03) 25%, transparent 25%),
+        linear-gradient(45deg, rgba(255,255,255,0.03) 25%, transparent 25%);
+      background-size: 120px 120px;
+      z-index: 0;
+    }
+    .card
+    {
+         background-color : rgb(0,0,0,0.2);
+         color : white;
+    }
+    .header{
+      background: linear-gradient(135deg, #1f3c88, #2c6bed);
+      color: white;
+      padding: 15px;
+      position: relative;
+      z-index: 2;
+    }
+    .btn-send {
+      background-color: #2c6bed;
+      color: white;
+    }
+    .btn-send:hover
+    {
+      background-color: #13397a;
+    }
+    .referenceName
+    {
+      display: none;
+    }
+  </style>
+</head>
+
+<body>
+<!-- HEADER -->
+<div class="header  fw-bold d-flex align-items-center" style="z-index: 1;">
+  <!-- Bouton retour -->
+    <div class="mb-3">
+        <a href="/guest_list/{{event.id}}" class="btn btn-outline-primary text-light btn-sm">
+            ← Retour à la liste
+        </a>
+    </div>
+   
+</div>
+
+
+
+<!-- FORM -->
+<div class="container mt-4 mb-5">
+  <div class="card shadow-sm">
+      <span class="mt-2 text-center"> 📩 Nouvel Invité</span>
+    <div class="card-body">
+      <form method="post" action="/create/{{event.id}}/guest" enctype="multipart/form-data">
+        <!-- NAME -->
+        <input type="hidden" value="{{event.type}}" class="event_type">
+        <div class="mb-3 guest_name">
+          <label class="form-label">Nom complet (full name)</label>
+          <input type="text" class="form-control" name="guestName" placeholder="ex : Jean Dupont " value="{{guestName}}" required>
+        </div>
+
+           <!-- type -->
+        <div class="mb-3 guest_type_div">
+          <label class="form-label">Type</label>
+          <select class="form-select selectInput" name="guestType"  required>
+            <option value="Singleton" {%if guestType == 'Singleton' %}selected{%endif%}>Singleton (single)</option>
+            <option value="Couple" {% if guestType == 'Couple' %} selected {%endif%}>Couple (couple)</option>
+          </select>
+        </div>
+
+           <!-- table ou sera l'invite -->
+        <div class="mb-3 guest_table_div">
+          <label class="form-label">Table</label>
+          <input type="text" class="form-control" name="guestPlace" placeholder="ex : A1" value="{{guestPlace}}" required>
+        </div>
+
+        <div class="mb-3 ticket_type_div">
+          <label for="ticket_type" class="form-label ">Type de billet</label>
+          <select class="form-select" id="ticket_type" name="ticket_type" required>
+            <option value="standard">Standard</option>
+            <option value="vip">VIP</option>
+          </select>
+        </div>
+
+        <!-- telephone -->
+        <div class="mb-3">
+          <label class="form-label">Telephone </label>
+          <input type="number" class="form-control" maxlength="10" name="guestTel" placeholder="ex : 09900000000" value="{{guestTel}}" required>
+        </div>
+
+        <div class="mb-3">
+          <label for="event_photo" class="form-label fw-bold">Photo de l'invité</label>
+          <!-- accept="image/*" autorise tous les formats d'image -->
+          <input 
+              type="file" 
+              class="form-control" 
+              id="event_photo" 
+              name="photo" 
+              accept="image/*">
+        </div>
+
+        
+        <!-- SUBMIT -->
+        <div class="d-grid">
+          <button type="submit" class="btn btn-send">
+            📤 Enregistrer
+          </button>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    setTimeout(() => {
+        const alert = document.getElementById("success-alert");
+        if (alert) {
+            alert.classList.remove("show");
+            alert.classList.add("fade");
+            setTimeout(() => alert.remove(), 500);
+        }
+    }, 3000); // disparaît après 3 secondes
+</script>
+</body>
+</html>

@@ -3,7 +3,7 @@ import uuid
 from sqlalchemy.orm import relationship
 from db_setting import Base
 from uuid import uuid4
-from datetime import datetime,date
+from datetime import datetime,timezone
 
 
 def generate_serie(even_name:str):#la methode de creation de la serie d'un event
@@ -51,27 +51,6 @@ class User(Base):
     groups = relationship("Group",secondary = user_groups,back_populates = "users")
     roles = relationship("Role",secondary = user_roles,back_populates = "users")
 
-class ExternalUser(Base):
-    __tablename__ = "external_users"
-    id = Column(String,primary_key = True,default = lambda : str(uuid4()))
-    phone_number = Column(String, unique=True, index=True)
-    name = Column(String)
-    password = Column(String, nullable=False)  #le mot de passe doit etre hasher  avant de le stocker
-    created_at = Column(DateTime,default=datetime.utcnow)
-
-    orders = relationship("Order", back_populates="external_user")
-    ext_user = relationship("OTP", back_populates="current_otp",uselist=False)#external user
-
-class OTP(Base):
-    __tablename__ = "otps"
-    id = Column(String, primary_key=True,default = lambda : str(uuid4()))
-    ext_user_id = Column(String, ForeignKey('external_users.id', ondelete="CASCADE"), nullable=True) #la cle etrangere de external_user_id
-    code = Column(String)
-    otp_attempts = Column(Integer, default=0) # Sécurité pour bloquer après 3 essais ratés
-    expires_at = Column(DateTime) # Très important pour la sécurité l'expiration du code otp
-
-    current_otp = relationship("ExternalUser", back_populates="ext_user")
-
 class Group(Base):
     __tablename__= "groups"
     id = Column(String,primary_key = True,default = lambda : str(uuid4()))
@@ -115,6 +94,7 @@ class Event(Base): #event table
     guest_present = Column(Boolean,default=False)
     created_by = Column(String,ForeignKey("users.id"))
     group_id= Column(String,ForeignKey("groups.id"))
+    organizer_id = Column(String, ForeignKey("organizers.id", ondelete="SET NULL"), nullable=True)
     organizer = Column(String(255))#organisateur d'evenement
     greeting_message = Column(Text,nullable=True)#message d'accueil d'invite
     photo_url=Column(String(255),nullable=True)
@@ -130,6 +110,7 @@ class Event(Base): #event table
     orders = relationship("Order",back_populates ="events")
     tickets = relationship("Ticket",back_populates ="events")
     ticket_prices= relationship("Ticket_price",back_populates ="events")
+    organizers = relationship("Organizer", back_populates="events")
 
 class Guest(Base):
     __tablename__="guests"
@@ -142,6 +123,7 @@ class Guest(Base):
     event_id  = Column(String,ForeignKey('events.id'),nullable=False)
     created_date  = Column(DateTime,default=datetime.utcnow)
     is_present  = Column(Boolean,default=False)
+    whatsapp_status = Column(String,default="pending")
     qr_token  = Column(String,unique=True,nullable=False,default=lambda : str(uuid4()),index=True)
     get_pass = Column(String,unique=True,default=lambda : str(uuid4()),index=True)
     photo_url=Column(String(255),nullable=True)
@@ -165,19 +147,68 @@ class PresenceConfirmation(Base):
     invite = relationship("Invite",back_populates = "guestResponse",uselist=False)
 
 class Invite(Base):
-    __tablename__= "invites"
-    id =Column(String,primary_key=True,unique=True,default = lambda :str(uuid4()))
-    guest_id  =Column(String,ForeignKey('guests.id',ondelete="CASCADE"))
-    qr_token  = Column( String,unique=True,nullable=False,default=lambda : str(uuid4()),index=True)
-    created_date  = Column(DateTime,default=datetime.utcnow)
-    is_used= Column(Boolean,default = False)
-    used_at = Column(DateTime,default=datetime.now())
+    __tablename__ = "invites"
+    
+    id = Column(String, primary_key=True, unique=True, default=lambda: str(uuid4()))
+    guest_id = Column(String, ForeignKey('guests.id', ondelete="CASCADE"), unique=True, nullable=False)
+    qr_token = Column(String, unique=True, nullable=False, default=lambda: str(uuid4()), index=True)
+    created_date = Column(DateTime, default=datetime.utcnow)
+    is_used = Column(Boolean, default=False)
+    used_at = Column(DateTime, nullable=True)
+    guest = relationship("Guest", back_populates="invite")
   
 
     guest=relationship("Guest",back_populates="invite",uselist=False)
     guestResponse=relationship("PresenceConfirmation",back_populates="invite",cascade = "all,delete-orphan",uselist=False)
 
-#--------------------------------------------Ticket table
+#--------------------------------------------e-ticket tables---------------------------------------------
+class ExternalUser(Base):
+    __tablename__ = "external_users"
+    id = Column(String,primary_key = True,default = lambda : str(uuid4()))
+    phone_number = Column(String, unique=True, index=True)
+    name = Column(String)
+    password = Column(String, nullable=False)  #le mot de passe doit etre hasher  avant de le stocker
+    created_at = Column(DateTime,default=datetime.utcnow)
+     # Gestion de Compte & Sécurité
+    is_active = Column(Boolean, default=True)  
+
+    orders = relationship("Order", back_populates="external_user")
+    ext_user = relationship("OTP", back_populates="current_otp",uselist=False)#external user
+
+class OTP(Base):
+    __tablename__ = "otps"
+    id = Column(String, primary_key=True,default = lambda : str(uuid4()))
+    ext_user_id = Column(String, ForeignKey('external_users.id', ondelete="CASCADE"), nullable=True) #la cle etrangere de external_user_id
+    organizer_id = Column(String, ForeignKey('organizers.id', ondelete="CASCADE"), nullable=True) #la cle etrangere de organizer_id
+    code = Column(String)
+    otp_attempts = Column(Integer, default=0) # Sécurité pour bloquer après 3 essais ratés
+    expires_at = Column(DateTime) # Très important pour la sécurité l'expiration du code otp
+
+    current_otp = relationship("ExternalUser", back_populates="ext_user")
+    organisers = relationship("Organizer", back_populates="org_otp")
+
+class Organizer(Base):
+    __tablename__ = "organizers"
+
+    id = Column(String,primary_key = True,default = lambda : str(uuid4()))
+    #  Informations de Profil & Connexion
+    company_name = Column(String, nullable=False, index=True)  # Nom de l'agence ou de l'organisateur
+    email = Column(String, unique=True, nullable=False, index=True)
+    phone_number = Column(String, unique=True, nullable=False)
+    password = Column(String, nullable=False)
+    # Gestion de Compte & Sécurité
+    is_active = Column(Boolean, default=True)      # Permet de bloquer un compte si besoin
+    is_verified = Column(Boolean, default=False)  # Pour la validation des documents/identité en prod
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # 🔗 RELATION 1 à N (Un organisateur possède plusieurs événements)
+    # user.events renverra la liste de tous ses événements
+    events = relationship(
+        "Event", 
+        back_populates="organizers",
+    )
+    org_otp = relationship("OTP", back_populates="organisers")
+
 class Order(Base):
     __tablename__ = "orders"
     id = Column(String, primary_key=True, index=True,default = lambda :str(uuid4()))
@@ -213,7 +244,7 @@ class Ticket(Base):
     get_pass = Column(String,index=True)          # Code de secours (8 caractères)
     totp_secret = Column(String(32), nullable=True)#l'totp
     is_scanned = Column(Boolean, default=False) # Pour le contrôle à l'entrée
-    creation = Column(DateTime,default=datetime.utcnow)
+    creation = Column(DateTime(timezone=True),default=lambda:datetime.now(timezone.utc))
     
     orders = relationship("Order", back_populates="tickets")
     events = relationship("Event",back_populates="tickets")

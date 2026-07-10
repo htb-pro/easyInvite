@@ -5,7 +5,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.concurrency import run_in_threadpool
 from uuid import uuid4
-import os,cloudinary,cloudinary.uploader
+import os,cloudinary,cloudinary.uploader,secrets
 from db_setting import engine,connecting
 from sqlalchemy.orm import selectinload
 from sqlalchemy import func,desc,select
@@ -18,7 +18,7 @@ from openpyxl import Workbook
 from io import BytesIO
 from Routers.loging import get_current_user_from_cookie
 from app.security.permissions import permission_required,has_permission
-from config import secret,algo
+from config import secret,algo,set_secure_cookie,verify_csrf
 from urllib.parse import quote
 
 Root = APIRouter(tags = ["easyInvite"],dependencies =[Depends(get_current_user_from_cookie)])
@@ -86,6 +86,7 @@ async def getEventForm(request:Request,event_id :str,
     per_page = 50 #notre d'items par page
     offset = (page - 1) * per_page #decalage
     total_pages = (total_ticket + per_page - 1) // per_page #le nombre total de page
+    #total__guest_pages = (await db.execute(select(func.count()).select_from(Guest).where(Guest.event_id == event_id))).scalar() or 0
     stmt = (
     select(Ticket)
     .where(Ticket.event_id == event_id)
@@ -111,10 +112,21 @@ async def eventDetail(request:Request,event_id : str,access_token = Cookie(None)
     event = get_Event.scalars().first()
     return templates.TemplateResponse("Event/List/detail.html",{'request':request,"event":event,'curent_user_role':user_role})
 
-@Root.get("/event_form",name="event_form")#event form request
+@Root.get("/event_form",name="event_form")#lq route renvoyant le formuliare de creation d'un evenment
 def getEventForm(request:Request,user=Depends(permission_required("create_event"))):
     success_message = request.session.get("success")
-    return templates.TemplateResponse("Event/Forms/event_form.html",{'request':request, "creation_success": success_message})
+    csrf_token = secrets.token_urlsafe(32)
+    response =  templates.TemplateResponse("Event/Forms/event_form.html",{'request':request,"csrf_token":csrf_token, "creation_success": success_message})
+    response.set_cookie(
+        key = "fastapi-csrf-token",
+        value = csrf_token,
+        httponly = True,
+        samesite = "lax",
+        secure = set_secure_cookie,
+        path = "/"
+    )
+    return response
+
 #------------------------------------------l'addresse du dossier de stockage des image
 FOLDER_MAPPING = {
     "Mariage": "EasyInvite/wedding_events",
@@ -142,6 +154,8 @@ greetings:str = Form(None),#message de bienvenu
 total_place:int = Form(None),#espace d'accueil  ou le nombre de place prevu
 is_featured:bool = Form(None),#l'event est a la une?
 Db:AsyncSession = Depends(connecting),
+csrf_token :str = Form(...),
+_=Depends(verify_csrf)
 ):
     res = jwt.decode(access_token,secret,algorithms=[algo])
     user_id = res.get("user")
@@ -156,11 +170,13 @@ Db:AsyncSession = Depends(connecting),
         user_role = user.roles[0].name if user.roles else None
     if eventDate < datetime.now():
         return templates.TemplateResponse("Event/Forms/event_form.html",{'request':request,"dateError":' Entrez une date superieur a la date actuelle ou entrer une date correcte  !!!',
-            'eventName':eventName, 'eventType':eventType,'couple_name':couple_name,'location':location,'is_active':is_active,'couple_phone_number':couple_phone_number, 'eventDate':eventDate, 'eventAddress':eventAddress,'organizer':organizer,'greetings':greetings, 'eventDescription':eventDescription}, status_code=400)
+            'eventName':eventName, 'eventType':eventType,'couple_name':couple_name,'location':location,'is_active':is_active,
+            'couple_phone_number':couple_phone_number, 'eventDate':eventDate, 'eventAddress':eventAddress,'organizer':organizer,'greetings':greetings, 
+            'eventDescription':eventDescription, 'csrf_token': csrf_token}, status_code=400)
     if photo and photo.filename:
         if not photo.content_type or not photo.content_type.startswith("image/"):
             return templates.TemplateResponse("Event/Forms/event_form.html",{'request':request,"img_error":' le fichier doit etre une image !!!',
-            'eventName':eventName, 'eventType':eventType, 'eventDate':eventDate, 'eventAddress':eventAddress, 'eventDescription':eventDescription
+            'eventName':eventName, 'eventType':eventType, 'eventDate':eventDate, 'eventAddress':eventAddress, 'eventDescription':eventDescription, 'csrf_token': csrf_token
             },status_code=400)
     try:
         if photo and photo.filename:
@@ -209,15 +225,26 @@ async def editEvent(request:Request,event_id : str,user=Depends(permission_requi
     res = await db.execute(edit_Event)
     editEvent = res.scalars().first()
     success = request.session.pop("success",None)
-    return templates.TemplateResponse("Event/Forms/edit_form.html",{'request':request,"event":editEvent,"success":success})
+    csrf_token = secrets.token_urlsafe(32)
+    response =  templates.TemplateResponse("Event/Forms/edit_form.html",{'request':request,"event":editEvent,"success":success})
+    response.set_cookie(
+        key = "fastapi-csrf-token",
+        value = csrf_token,
+        httponly = True,
+        secure = set_secure_cookie,
+        samesite = "lax",
+        path = "/"
+    )
+    return response
 
 @Root.post("/edit_event/{event_id}")#la root pour modifier un evenement
 async def editEvent(request:Request,event_id : str,access_token = Cookie(None),eventName:str = Form(...),coupleName:str = Form(...),couple_phone_number:str = Form(...),eventType:str = Form(...),eventDate: str = Form(...),
                     eventAddress:str = Form(...),location:str = Form(...),eventDescription: Optional[str] = Form(None),
                     eventState: str = Form(...),photo:UploadFile = File(None),is_active:bool = Form(None),language:str = Form(...),organizer:str = Form(None),greetings:str = Form(None),total_place:int = Form(None),
                     is_featured:bool = Form(None),db:AsyncSession = Depends(connecting)
-                    ,user=Depends(permission_required("edit_event"))):
-    print(f"======================================={is_featured}")
+                    ,user=Depends(permission_required("edit_event")),
+                    csrf_token :str = Form(...),
+                    _=Depends(verify_csrf)):
 
     edited_Event_Data = select(Event).where(Event.id == event_id)
     res = await db.execute(edited_Event_Data)
@@ -290,30 +317,54 @@ async def editEvent(request:Request,event_id : str,access_token = Cookie(None),e
     return RedirectResponse("/event_list",status_code=303)
 
 @Root.post("/delete_event/{event_id}")
-async def deleteEvent(request:Request,event_id:str,user=Depends(permission_required("delete_event")),db:AsyncSession = Depends(connecting)):
-    event_to_delete =select(Event).where(Event.id==event_id)
-    res = await db.execute(event_to_delete)
+async def deleteEvent(
+    request: Request,
+    event_id: str,
+    user=Depends(permission_required("delete_event")),
+    db: AsyncSession = Depends(connecting)
+):
+    # 1. On ne récupère l'événement QUE s'il n'est pas déjà soft-deleté
+    event_query = select(Event).where(Event.id == event_id, Event.is_deleted == False)
+    res = await db.execute(event_query)
     eventToDelete = res.scalars().first()
+    
     if not eventToDelete:
-        raise HTTPException(status_code=404,detail="cette evenement n'existe pas")
-    Picture_to_be_deleted= eventToDelete.photo_public_id #recuprer l'addresse de l'image a supprimer
+        raise HTTPException(status_code=404, detail="Cet événement n'existe pas ou a déjà été supprimé")
+    
+    picture_to_be_deleted = eventToDelete.photo_public_id 
+    is_wedding = eventToDelete.type.strip().lower() == "Mariage"
+    
     try:
-        await db.delete(eventToDelete)
-    except Exception:
-        await db.rollback()
-        raise HTTPException(status_code=500,detail="Erreur lors de la suppression de l'événement")
-    if Picture_to_be_deleted:
-        try:
-            await run_in_threadpool(cloudinary.uploader.destroy,Picture_to_be_deleted)
-        except Exception as e:
-            raise HTTPException(status_code=500,detail=f"Erreur lors de la suppression de l'image: {str(e)}")
-    try:
+        if is_wedding:
+            # --- HARD DELETE ---
+            await db.delete(eventToDelete)
+        else:
+            # --- SOFT DELETE ---
+            eventToDelete.is_deleted = True
+            db.add(eventToDelete)
+
+        # On valide d'abord la base de données de manière TRÈS stricte
         await db.commit()
-    except Exception:
+
+    except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=500,detail="Erreur lors de la suppression de l'événement")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Erreur lors du traitement de la suppression en base de données : {str(e)}"
+        )
+        
+    # 2. Une fois et UNIQUEMENT si le commit BDD a réussi, on nettoie Cloudinary
+    if is_wedding and picture_to_be_deleted:
+        try:
+            await run_in_threadpool(cloudinary.uploader.destroy, picture_to_be_deleted)
+        except Exception as e:
+            # À la place, on log l'erreur pour que l'admin nettoie Cloudinary plus tard, 
+            # sans bloquer l'expérience de l'utilisateur qui voit son événement bien supprimé.
+            print(f"[WARNING] Impossible de supprimer l'image Cloudinary {picture_to_be_deleted}: {str(e)}")
+
+    # 3. Notification et Redirection
     request.session["success"] = "🎉 Événement supprimé avec succès !"
-    return RedirectResponse("/event_list",status_code=303)
+    return RedirectResponse("/event_list", status_code=303)
 
 @Root.get("/download/list_guest/{event_id}/export_excel") #endpoint pour le telechargement du fichier des invités
 async def downloadGuestList(request:Request,event_id:str,db:AsyncSession = Depends(connecting),user=permission_required("view_guest")):

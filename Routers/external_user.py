@@ -1,19 +1,20 @@
 from datetime import datetime, time
-from fastapi import APIRouter, Request, Form,Depends,Cookie,HTTPException,status,responses
+import re
+from fastapi import APIRouter, Request, Form,Query,Depends,Cookie,HTTPException,status,responses
 from fastapi.responses import HTMLResponse, RedirectResponse,Response ,StreamingResponse,JSONResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi.staticfiles import StaticFiles 
 from fastapi.templating import Jinja2Templates  
 from requests import request
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, asc, desc
+from sqlalchemy import select, func, asc, desc,delete
 from sqlalchemy.orm import selectinload
 from db_setting import connecting
 from config import secret, algo,REDIS_SETTINGS,set_secure_cookie,verify_csrf
 import jwt,random,io,secrets,urllib
-from models import Ticket_price, User, Order, Event,ExternalUser,OTP,Ticket
+from models import Organizer, Ticket_price, User, Order, Event,ExternalUser,OTP,Ticket
 from app.security.permissions import permission_required
-from datetime import datetime, timedelta,timezone
+from datetime import datetime, timedelta,timezone,date
 from utils.sms_setting.sms_utils import send_otp_sms
 from utils.redis_config import redis_conn
 from uuid import UUID
@@ -82,19 +83,22 @@ async def get_list_of_events(request: Request,  page: int = 1, db: AsyncSession 
     offset = (page - 1) * per_page #decalage
     total_event = (await db.execute(select(func.count()).select_from(Event).where(Event.type == "other"))).scalar() or 0 #le total de commandes
     total_pages = (total_event + per_page - 1) // per_page #le nombre total de page
-    orders_query = select(Event).where(Event.type == "other").options(selectinload(Event.ticket_prices))\
+    orders_query = select(Event).where(Event.type == "other", Event.is_deleted == False).options(selectinload(Event.ticket_prices))\
         .order_by(desc(Event.created_date))\
         .offset(offset)\
         .limit(per_page)
     events = (await db.execute(orders_query)).scalars().all()
-    query = select(Event).where(Event.type == "other",Event.is_featured == True).options(selectinload(Event.ticket_prices))\
+    query = select(Event).where(Event.type == "other",Event.is_featured == True,Event.is_deleted == False).options(selectinload(Event.ticket_prices))\
         .order_by(desc(Event.created_date))\
         .offset(offset)\
         .limit(per_page)
     featured_events = (await db.execute(query)).scalars().all()
-    from models import Ticket
     
-    #print(f"--------------------{remaining_place}----------------------------")
+    maintenant = datetime.now()
+    for event in events:
+        # On crée une variable à la volée sur l'objet Event
+        event.is_past = event.date < maintenant
+    
     copyright = datetime.now().year
     # 4. Récupération événements et rendu du template    
     return templates.TemplateResponse("e-ticket/main/index.html", {
@@ -215,11 +219,7 @@ async def send_whatsapp_redirect(request:Request):
     # 5. Rediriger l'utilisateur directement vers WhatsApp
     return RedirectResponse(url=whatsapp_url)
 #---------------------------------organisateur
-@Root.get("/organizer/dashboard")
-async def organisar_dashboard(request: Request):
-    return templates.TemplateResponse("e-ticket/organizer/dashboard.html", {
-        'request': request,
-    })
+
 
 #----------------------------OTP
 @Root.get("/my_account")
@@ -355,7 +355,6 @@ async def user_tickets(
             response.delete_cookie("session_user_id")
             return response
 
-        # 3. Requête ultra-optimisée avec jointures chargées en mémoire (Eager Loading)
         # On ne prend que les commandes PAYÉES (Order.paid == True)
         result = await db.execute(
             select(Order)
@@ -435,12 +434,13 @@ async def user_list_events_json(
             select(Event)
             .where(
                 Event.date >= today_midnight,
-                Event.is_deleted == False
+                Event.is_deleted == False,
+                Event.type == "other"  # FILTRE SUR TON CHAMP CLÉ
             )
             .order_by(Event.date.asc())
         )
         upcoming_res = await db.execute(upcoming_query)
-        upcoming_events = upcoming_res.scalars().all()
+        upcoming_events = upcoming_res.scalars().all()#les evenements avenir pour la liste generale dans le compte du participant
 
         # 4. Formatage et retour des deux listes bien distinctes
         return {
@@ -512,116 +512,155 @@ async def user_profil(
         }
     )
 
-@Root.post("/user/profile/update")
+# Autorise les lettres, espaces, tirets et accents pour le nom (min 2 caractères)
+NAME_REGEX = re.compile(r"^[A-Za-zÀ-ÖØ-öø-ÿ\s\'-]{2,50}$")
+# Autorise uniquement les chiffres (entre 8 et 15 chiffres, ex: 243XXXXXXXXX)
+PHONE_REGEX = re.compile(r"^\d{8,15}$")
+@Root.post("/user/update-profile")
 async def update_profile(
     request: Request,
-    name: str = Form(...),
-    phone: str = Form(...),
+    user_name: str = Form(...),
+    user_phone: str = Form(...),
+    password: str = Form(...),
     db: AsyncSession = Depends(connecting)
 ):
-    # 1. Vérification de l'authentification via le cookie
+    # 1. Sécurité d'authentification : Vérification de la session active
     user_id = request.cookies.get("session_user_id")
     if not user_id:
-        request.session['invalid_number'] = "Veuillez vous connecter pour accéder à vos billets."
-        return RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
-        
-    # 2. Récupération de l'utilisateur (Correction de l'indentation ici)
-    user_res = await db.execute(select(ExternalUser).where(ExternalUser.id == user_id))
-    current_user = user_res.scalars().first()
-        
-    if not current_user:
-        response = RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
-        response.delete_cookie("session_user_id")
-        return response
-
-    # 3. Nettoyage strict des inputs
-    clean_name = name.strip()
-    clean_phone = phone.strip()
-    
-    # Validation du nom
-    if not clean_name or len(clean_name) < 2:
-        request.session['invalid_name'] = "Veuillez entrer un nom valide."
-        return RedirectResponse("/user/profile", status_code=303)
-
-    # 4. SÉCURITÉ : Vérifier si le nouveau numéro est déjà utilisé par un AUTRE compte
-    if clean_phone != current_user.phone_number: # (Remplace par .phone si c'est le vrai nom)
-        phone_check = await db.execute(
-            select(ExternalUser).where(
-                ExternalUser.phone_number == clean_phone, 
-                ExternalUser.id != user_id # On cherche quelqu'un d'autre que lui
-            )
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={"error": "Votre session a expiré. Veuillez vous reconnecter."}
         )
-        if phone_check.scalars().first():
-            request.session['invalid_phone'] = "Ce numéro de téléphone est déjà associé à un autre compte."
-            return RedirectResponse("/user/profile", status_code=303)
 
-    # 5. Assignation des modifications sur l'objet SQLAlchemy chargé
-    current_user.name = clean_name
-    current_user.phone_number = clean_phone  # Ajusté selon tes routes précédentes
-    
-    # 6. Validation et sauvegarde asynchrone
+    # 2. Nettoyage et Normalisation des données entrantes
+    clean_name = " ".join(user_name.strip().split())  # Supprime les espaces doubles internes
+    clean_phone = user_phone.strip().replace(" ", "").replace("+", "") # Supprime les espaces et le +
+
+    # 3. Validation de Production (Data Integrity)
+    if not NAME_REGEX.match(clean_name):
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content={"error": "Le nom complet est invalide ou contient des caractères non autorisés."}
+        )
+        
+    if not PHONE_REGEX.match(clean_phone):
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            content={"error": "Le numéro de téléphone doit contenir uniquement des chiffres (entre 8 et 15)."}
+        )
+
     try:
-        await db.commit()    # Valide la transaction en BDD
+        # 4. Récupération sécurisée de l'utilisateur
+        user_res = await db.execute(select(ExternalUser).where(ExternalUser.id == user_id))
+        current_user = user_res.scalars().first()
+
+        if not current_user:
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND,
+                content={"error": "Utilisateur introuvable."}
+            )
+
+        # 5. Sécurité Critique : Vérification cryptographique du mot de passe
+        if not verify_password(password, current_user.password):
+            # En prod, tu devrais enregistrer cette tentative échouée pour détecter les attaques
+            print(f"[SECURITY ALERT] Échec de vérification de mot de passe pour l'utilisateur ID: {user_id}")
+            return JSONResponse(
+                status_code=status.HTTP_401_UNAUTHORIZED, # Code 401 plus précis pour un échec d'auth
+                content={"error": "Mot de passe actuel incorrect. Action refusée."}
+            )
+
+        # 6. Contrainte d'unicité sur le numéro de téléphone
+        if clean_phone != current_user.phone_number:
+            phone_check = await db.execute(
+                select(ExternalUser).where(ExternalUser.phone_number == clean_phone, ExternalUser.id != user_id)
+            )
+            if phone_check.scalars().first():
+                return JSONResponse(
+                    status_code=status.HTTP_409_CONFLICT, # Code 409 (Conflict) idéal pour les doublons
+                    content={"error": "Ce numéro de téléphone est déjà associé à un autre compte."}
+                )
+
+        # 7. Persistance sécurisée des données
+        current_user.name = clean_name
+        current_user.phone_number = clean_phone
+        
+        db.add(current_user)
+        try:
+            await db.commit()
+        except Exception as e:
+            await db.rollback() # Sécurité maximale : on annule si le commit crash
+            print(f"[PROD CRITICAL ERROR] Échec du commit SQL : {str(e)}")
+            return JSONResponse(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                content={"error": "Une erreur technique est survenue lors de l'enregistrement."}
+            )
+
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={"message": "Votre profil a été mis à jour avec succès !"}
+        )
+
     except Exception as e:
-        await db.rollback()  # Annulation en cas de pépin
-        print(f"Erreur de mise à jour profil : {str(e)}") # Pratique pour le debug en console
-        raise HTTPException(status_code=500, detail="Erreur lors de la mise à jour.")
-
-    # 7. Redirection vers le dashboard
-    return responses.RedirectResponse(url="/my_account", status_code=status.HTTP_303_SEE_OTHER)
-
+        # En cas de crash inattendu (ex: coupure BDD), on rollback immédiatement la transaction SQL
+        await db.rollback()
+        # Log de production anonymisé (on ne logge jamais les infos sensibles comme le password ou le numéro)
+        print(f"[PROD CRITICAL ERROR] Erreur lors de la mise à jour du profil de l'utilisateur {user_id}: {str(e)}")
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"error": "Une erreur technique est survenue. Veuillez réessayer plus tard."}
+        )
 
 @Root.get("/user/historique")
 async def user_historique(
     request: Request, 
     db: AsyncSession = Depends(connecting)
 ):
-    # 1. Vérification de l'authentification via le cookie
+    # 1. Sécurité de session
     user_id = request.cookies.get("session_user_id")
     if not user_id:
-        # Si le participant n'est pas connecté, redirection flash vers la page de login
         request.session['invalid_number'] = "Veuillez vous connecter pour accéder à vos billets."
         return RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
-    invalid_name = request.session.pop('invalid_name',None)
+        
+    request.session.pop('invalid_name', None)
+    
     try:
-        # 2. Récupération de l'utilisateur pour afficher ses infos (optionnel mais pro)
+        # 2. Récupération de l'utilisateur
         user_res = await db.execute(select(ExternalUser).where(ExternalUser.id == user_id))
         current_user = user_res.scalars().first()
         
         if not current_user:
-            # Sécurité si le cookie contient un ID qui n'existe plus en BDD
             response = RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
             response.delete_cookie("session_user_id")
             return response
         
+        # 3. Requête SQL
         result = await db.execute(
-            select(Order).where(Order.user_id == current_user.id) # on recupere ses commande deja payer
-            .options(
-                selectinload(Order.events),   # Jointure pour récupérer le titre/date de l'événement
-                selectinload(Order.tickets)  # Jointure pour récupérer la liste des tickets associés
-            )
-            .order_by(Order.creation.desc()) # Les billets les plus récents en premier
+            select(Order)
+            .where(Order.user_id == current_user.id)
+            .options(selectinload(Order.events))
+            .order_by(Order.creation.desc())
         )
         orders = result.scalars().all()
 
-    # 4. Envoi des données triées au template HTML
+        today = date.today()
+
+        # 4. Filtrage et formatage (Avec la correction .date() pour la comparaison)
         return [
             {
-                #"id": order.id,
-                # On prend les 8 premiers caractères de l'ID en majuscule pour la Réf
-                #"ref": order.id[:8].upper() if order.id else "INCONNU",
-                # On récupère le nom de l'événement lié de manière sécurisée
                 "event_name": order.events.name if order.events else "Événement sans nom",
-                "event_photo_url":order.events.photo_url,
-                "location":order.events.location
+                "location": order.events.location if order.events else "Lieu non spécifié",
+                "event_date": order.events.date.strftime("%d/%m/%Y") if order.events and order.events.date else "Date inconnue"
             }
             for order in orders
+            # 💡 FIX PROD : On ajoute .date() pour convertir le datetime en date pure avant la comparaison
+            if order.events and order.events.date and order.events.date.date() < today
         ]
+        
     except Exception as e:
-        print(f"Erreur lors du chargement de l'espace compte pour l'user {user_id}: {str(e)}")
+        print(f"[ERROR] Échec de l'historique pour l'utilisateur {user_id} : {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Impossible de charger vos billets pour le moment."
+            detail="Impossible de charger votre historique pour le moment."
         )
 
 @Root.get("/user/register/form")#formulaire d'inscription pour un nouvel utilisateur
@@ -693,83 +732,79 @@ async def get_user_number(request: Request):
 # ==========================================
 # 1. ENVOI DE L'OTP (Quand l'utilisateur clique sur "Mot de passe oublié")
 # ==========================================
-@Root.post("/auth/forgot-password/otp")
-async def send_otp(
+@Root.post("/auth/forgot_password")
+async def forgot_password(
     request: Request,
     phone_input: str = Form(...),
+    user_type: str = Form(...),
     db: AsyncSession = Depends(connecting),
-    _=Depends(verify_csrf)
+    _ = Depends(verify_csrf)
 ):
-    phone = format_to_drc_phone(phone_input.strip())
+    phone_clean = format_to_drc_phone(phone_input.strip())
+    user_found = None
     
-    # 1. Recherche de l'utilisateur
-    res = await db.execute(select(ExternalUser).where(ExternalUser.phone_number == phone))
-    user = res.scalars().first()
-    
-    # 2. Préparation du jeton CSRF (Valable pour tout le monde)
-    csrf_token = secrets.token_urlsafe(32)
-    request.session['csrf_token'] = csrf_token 
-    
-    request.session['success_message'] = "Un code de validation à 6 chiffres vous a été envoyé par SMS si le numéro est valide."
-    request.session['reset_phone'] = phone 
-
-    # Préparation de la réponse de redirection générique
-    response = RedirectResponse(url="/user/otp/form", status_code=status.HTTP_303_SEE_OTHER)
-    response.set_cookie(
-        key="fastapi-csrf-token",   
-        value=csrf_token,
-        httponly=True,
-        samesite="lax",
-        secure=set_secure_cookie,
-        path="/"
-    )
-
-    # 3. Si l'utilisateur n'existe pas, on simule visuellement le même comportement
-    if not user:
-        return response
-
-    # 🎲 Génération du code à 6 chiffres
-    otp_code = f"{random.randint(100000, 999999)}"
-    expires_at_time = datetime.now() + timedelta(minutes=5)
-
     try:
-        # 4. On vérifie s'il y a déjà une ligne OTP pour cet utilisateur
-        otp_res = await db.execute(select(OTP).where(OTP.ext_user_id == user.id))
-        existing_otp = otp_res.scalars().first()
-        
-        if existing_otp:
-            # Si une ligne existe, on recycle la ligne en mettant à jour les infos
-            existing_otp.code = otp_code
-            existing_otp.expires_at = expires_at_time
-            existing_otp.otp_attempts = 0
+        # 1. Recherche de l'utilisateur selon son type
+        if user_type == "organizer":
+            res = await db.execute(select(Organizer).where(Organizer.phone_number == phone_clean))
+            user_found = res.scalars().first()
         else:
-            # Si aucune ligne n'existe, on crée une nouvelle entrée
-            new_otp = OTP(
-                ext_user_id=user.id,
-                code=otp_code,
-                expires_at=expires_at_time,
-                otp_attempts=0
+            res = await db.execute(select(ExternalUser).where(ExternalUser.phone_number == phone_clean))
+            user_found = res.scalars().first()
+
+        # SÉCURITÉ : Réponse identique même si le compte n'existe pas (Anti-Énumération)
+        if not user_found:
+            return JSONResponse(
+                status_code=status.HTTP_200_OK,
+                content={"message": "Si ce numéro existe, un code OTP de réinitialisation vous a été envoyé."}
             )
-            db.add(new_otp)
+
+        # 2. Nettoyage initial : On supprime les anciens OTP de cet utilisateur pour éviter les conflits
+        if user_type == "organizer":
+            await db.execute(delete(OTP).where(OTP.organizer_id == user_found.id))
+        else:
+            await db.execute(delete(OTP).where(OTP.ext_user_id == user_found.id))
             
+        # 3. Génération cryptographique de l'OTP à 6 chiffres
+        otp_code = str(secrets.randbelow(900000) + 100000)
+        expiration_time = datetime.now() + timedelta(minutes=5) # Valide 5 minutes
+        
+        # 4. 💾 Insertion dans la classe OTP
+        nouvel_otp = OTP(
+            code=otp_code,
+            expires_at=expiration_time,
+            otp_attempts=0,
+            ext_user_id=user_found.id if user_type != "organizer" else None,
+            organizer_id=user_found.id if user_type == "organizer" else None
+        )
+        db.add(nouvel_otp)
         await db.commit()
         
-        # 📲 Envoi du vrai SMS ici (Twilio, etc.)
-        print(f"--- [SMS/WhatsApp easyInvite] --- Code OTP pour {phone} : {otp_code}")
+        # 5. Stockage des variables pivots dans la session chiffrée du navigateur
+        request.session['reset_user_phone'] = str(phone_clean)
+        request.session['reset_user_type'] = str(user_type)
         
+        # Simulation de l'envoi du SMS (Log console)
+        print(f"--- 💬 SMS OTP ENVOI A ({phone_clean}) ({user_type}) --- Code : {otp_code} (Valide 5 min)")
+        
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={"message": "Un code de vérification OTP vous a été envoyé par SMS."}
+        )
+
     except Exception as e:
         await db.rollback()
-        print(f"Erreur BDD OTP : {str(e)}") # Pour ton débuggage en console
-        request.session['error_message'] = "Erreur technique, veuillez réessayer."
-        return RedirectResponse(url="/user/otp/form", status_code=status.HTTP_303_SEE_OTHER)
-        
-    return response
+        print(f"🚨 Erreur lors de la génération de l'OTP : {str(e)}")
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"detail": "Une erreur interne est survenue."}
+        )
 
 @Root.get("/user/otp/form")#la root pour le formulaire de verification de l'otp
 async def otp_form(request: Request):
     csrf_token = secrets.token_urlsafe(32)
     success_message = request.session.pop('success_message', None)
-    reset_phone = request.session.pop('reset_phone', None)
+    reset_phone = request.session.get('reset_phone', None)
     request.session['user_phone'] = reset_phone
     error_message = request.session.pop('error_message', None)  
     response= templates.TemplateResponse("external_user/forms/otp_verification.html", {"request": request, "csrf_token": csrf_token, "success_message": success_message, "reset_phone": reset_phone, "error_message": error_message})
@@ -784,120 +819,135 @@ async def otp_form(request: Request):
     return response
 
 # ==========================================
-# 2. VÉRIFICATION DE L'OTP
+# 2. VÉRIFICATION DE L'OTP  
 # ==========================================
-@Root.post("/auth/verify-otp") # 👈 URL pour la verification de l'otp
+@Root.post("/auth/verify-otp")
 async def verify_otp(
-    request: Request,
-    otp_input: str = Form(...),  
-    db: AsyncSession = Depends(connecting),
-    _=Depends(verify_csrf)
+    request: Request, 
+    otp_input: str = Form(...), 
+    db: AsyncSession = Depends(connecting)
 ):
-    # 1. Récupération sécurisée du téléphone (Correction du bug potentiel sur None)
-    phone = request.session.get('user_phone')
-    if not phone:
-        request.session['reset_phone'] = phone
-        request.session['error_message'] = "Session expirée ou invalide. Veuillez recommencer."
-        return RedirectResponse(url="/user/otp/form", status_code=status.HTTP_303_SEE_OTHER)
-        
-    formated_phone = format_to_drc_phone(phone.strip())
+    # 1. Vérification de la session navigateur
+    phone = request.session.get('reset_user_phone')
+    user_type = request.session.get('reset_user_type')
 
-    # 2. Recherche de l'utilisateur
-    res = await db.execute(select(ExternalUser).where(ExternalUser.phone_number == formated_phone))
-    user = res.scalars().first()
-    
-    if not user :
-        request.session['error_message'] = "Aucun code demandé pour ce numéro."
-        request.session['reset_phone'] = phone
-        return RedirectResponse(url="/user/otp/form", status_code=status.HTTP_303_SEE_OTHER)
-    otp_res = await db.execute(select(OTP).where(OTP.ext_user_id ==user.id))
-    user_otp = otp_res.scalars().first()
-    if not user_otp:
-        request.session['error_message'] = "Aucun code OTP trouvé pour cet utilisateur."
-        request.session['reset_phone'] = phone
-        return RedirectResponse(url="/user/otp/form", status_code=status.HTTP_303_SEE_OTHER)
-    
-    # 4. Sécurité anti-brute force
-    if user_otp.otp_attempts >= 3:
-        request.session['error_message'] = "Trop de tentatives infructueuses. Demandez un nouveau code."
-        request.session['reset_phone'] = phone
-        return RedirectResponse(url="/user/otp/form", status_code=status.HTTP_303_SEE_OTHER)
+    if not phone or not user_type:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            content={"status": "SESSION_EXPIRED", "detail": "Votre session a expiré. Veuillez recommencer la demande."}
+        )
 
-    # 5. Vérification de l'expiration
-    if user_otp.expires_at < datetime.now():
-        request.session['error_message'] = "Le code OTP a expiré (valide 5 min)."
-        return RedirectResponse(url="/user/otp/form", status_code=status.HTTP_303_SEE_OTHER)    
-    # 6. Vérification du code saisi
-    
-    if user_otp.code != otp_input.strip():
-        user_otp.otp_attempts += 1 
-        await db.commit()
-        request.session['reset_phone'] = phone
-        request.session['error_message'] = f"Code OTP incorrect. Il vous reste {3 - user_otp.otp_attempts} essais."
-        return RedirectResponse(url="/user/otp/form", status_code=status.HTTP_303_SEE_OTHER)
-
-    # 🎉 LE CODE EST BON ! On finalise la transaction de sécurité directement ici
-    # Redirection vers la page de modification du mot de passe 
-    request.session['user_phone'] = phone
-    request.session['otp_verified'] = True  # 👈 LA CLÉ DE SÉCURITE
-    response = RedirectResponse(url="/user/reset_password", status_code=status.HTTP_303_SEE_OTHER)   
-    return response
-
-@Root.post("/auth/forgot_password")#la modification du mot de passe oublier d'un utilisateur deja inscrit
-async def forgot_password(
-    request: Request,
-    phone_input: str = Form(...),
-    db: AsyncSession = Depends(connecting),
-    _=Depends(verify_csrf)
-):
-    # Nettoyage et formatage strict du numéro (ex: 243...)
-    phone = format_to_drc_phone(phone_input.strip())
-    
-    # Recherche de l'utilisateur
-    res = await db.execute(select(ExternalUser).where(ExternalUser.phone_number == phone))
-    user = res.scalars().first()
-    
-    # 🚨 Sécurité : Même si l'utilisateur n'existe pas, on affiche un message générique
-    # pour éviter que les pirates sachent quels numéros sont inscrits.
-    if not user:
-        request.session['success_message'] = "Si ce numéro existe, un lien de réinitialisation vous a été envoyé."
-        return RedirectResponse(url="/auth/forgot-password/form", status_code=status.HTTP_303_SEE_OTHER)
-
-    # Génération d'un token sécurisé unique et aléatoire
-    token = secrets.token_urlsafe(32)
-    
-    # Définition de l'expiration (Valide pendant 15 minutes)
-    expiration_time = datetime.now() + timedelta(minutes=15)
-    
-    # Mise à jour de l'utilisateur en BDD
-    user.reset_token = token
-    user.reset_token_expires = expiration_time
-    
     try:
+        # 2. Récupération de l'utilisateur pour lier l'ID
+        if user_type == "organizer":
+            res_user = await db.execute(select(Organizer).where(Organizer.phone_number == phone))
+        else:
+            res_user = await db.execute(select(ExternalUser).where(ExternalUser.phone_number == phone))
+            
+        user_found = res_user.scalars().first()
+        if not user_found:
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                content={"status": "USER_NOT_FOUND", "detail": "Compte introuvable."}
+            )
+
+        # 3. Récupération de l'OTP actif associé dans la table `otps`
+        if user_type == "organizer":
+            res_otp = await db.execute(select(OTP).where(OTP.organizer_id == user_found.id))
+        else:
+            res_otp = await db.execute(select(OTP).where(OTP.ext_user_id == user_found.id))
+            
+        db_otp = res_otp.scalars().first()
+        if not db_otp:
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST, 
+                content={"status": "NO_ACTIVE_OTP", "detail": "Aucun code OTP actif trouvé. Veuillez refaire une demande."}
+            )
+
+        # 🛡️ SÉCURITÉ 1 : Limite de tentatives (Max 3)
+        if db_otp.otp_attempts >= 3:
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST, 
+                content={"status": "OTP_BLOCKED", "detail": "Ce code a été suspendu suite à trop de tentatives infructueuses."}
+            )
+
+        # 🛡️ SÉCURITÉ 2 : Validation du temps (Strictement en UTC pour la prod)
+        if datetime.now(timezone.utc) > db_otp.expires_at.replace(tzinfo=timezone.utc):
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST, 
+                content={"status": "OTP_EXPIRED", "detail": "Le code OTP a expiré (limite de 5 minutes dépassée)."}
+            )
+
+        # 🛡️ SÉCURITÉ 3 : Confrontation du code
+        if db_otp.code != otp_input.strip():
+            db_otp.otp_attempts += 1
+            await db.commit()
+            
+            essais_restants = max(0, 3 - db_otp.otp_attempts)
+            return JSONResponse(
+                status_code=status.HTTP_400_BAD_REQUEST, 
+                content={
+                    "status": "INVALID_CODE", 
+                    "detail": "Code OTP incorrect.",
+                    "attempts_left": essais_restants
+                }
+            )
+
+        # 🟢 SUCCÈS : Le code est bon ! On le consomme immédiatement (destruction BDD)
+        await db.delete(db_otp)
+        
+        # 🔑 Génération d'un token sécurisé à usage unique pour l'Étape Finale
+        reset_token = secrets.token_urlsafe(32)
+        
+        # Stockage du token et de son expiration en session
+        request.session['reset_token'] = reset_token
+        request.session['reset_token_expires'] = (datetime.now(timezone.utc) + timedelta(minutes=5)).timestamp()
         await db.commit()
-        
-        # ✉️ ICI : Tu envoies le lien par SMS ou via un service tiers.
-        # Le lien ressemblera à : /auth/reset-password/form?token=LE_TOKEN
-        print(f"--- SIMULATION ENVOI --- Link: http://localhost:8000/auth/reset-password/form?token={token}")
-        
+
+        # On renvoie le token au frontend (ton JS pourra le stocker ou l'inclure dans l'URL/Formulaire final)
+        return JSONResponse(
+            status_code=status.HTTP_200_OK, 
+            content={
+                "status": "SUCCESS", 
+                "detail": "Code vérifié avec succès.",
+                "reset_token": reset_token
+            }
+        )
+
     except Exception as e:
         await db.rollback()
-        request.session['error_message'] = "Une erreur est survenue, veuillez réessayer."
-        return RedirectResponse(url="/auth/forgot-password/form", status_code=status.HTTP_303_SEE_OTHER)
-
-    request.session['success_message'] = "Un lien de réinitialisation vous a été envoyé."
-    
-    return RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
-
+        print(f"🚨 [PROD ERROR] verify_otp : {str(e)}")
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            content={"status": "SERVER_ERROR", "detail": "Une erreur interne est survenue."}
+        )
 
 @Root.get("/user/reset_password")
-async def reset_password_page(request: Request):
+async def reset_password_page(request: Request,token: str =Query(...)):
     csrf_token = secrets.token_urlsafe(32)
+    session_token = request.session.get('reset_token')
+    token_expires = request.session.get('reset_token_expires')
+
+    # 🛡️ Barrière 1 : Session vide
+    if not session_token or not token_expires:
+        return RedirectResponse(url="/auth/forgot_password?error=Session+invalide", status_code=status.HTTP_303_SEE_OTHER)
+
+    # 🛡️ Barrière 2 : Le token de l'URL ne correspond pas à la session
+    if token.strip() != session_token:
+        return RedirectResponse(url="/auth/forgot_password?error=Jeton+invalide", status_code=status.HTTP_303_SEE_OTHER)
+
+    # 🛡️ Barrière 3 : Expiration temporelle
+    current_timestamp = datetime.now(timezone.utc).timestamp()
+    if current_timestamp > token_expires:
+        request.session.pop('reset_token', None)
+        request.session.pop('reset_token_expires', None)
+        return RedirectResponse(url="/auth/forgot_password?error=Le+delai+est+depasse", status_code=status.HTTP_303_SEE_OTHER)
     response = templates.TemplateResponse(
         "external_user/forms/reset_password.html", 
         {
             "request": request,
-            "csrf_token": csrf_token
+            "csrf_token": csrf_token,
+            "reset_token": session_token  # On renvoie le token pour l'inclure dans le formulaire final
         }
     )
     response.set_cookie(
@@ -911,67 +961,99 @@ async def reset_password_page(request: Request):
     return response
 
 # ==========================================
-# 2. SOUMISSION DU NOUVEAU MOT DE PASSE
+# 2. SOUMISSION DU NOUVEAU MOT DE PASSE new_password: str = Form(...),
+    confirm_password: str = Form(...),
 # ==========================================
-@Root.post("/auth/reset-password")
-async def reset_password(
+
+@Root.post("/auth/reset-password-form")
+async def reset_password_final(
     request: Request,
+    token_input: str = Form(...),
     new_password: str = Form(...),
     confirm_password: str = Form(...),
     db: AsyncSession = Depends(connecting),
-    _=Depends(verify_csrf)
+    _ = Depends(verify_csrf)
 ):
-    user_phone = request.session.get('user_phone')
-    is_otp_verified = request.session.get('otp_verified') # 👈 On récupère le badge de sécurité
-    
-    # 🚨 SÉCURITÉ : Si le badge n'est pas True, redirection immédiate !
-    if not user_phone or is_otp_verified is not True:
-        request.session['error_message'] = "Action non autorisée ou session expirée. Veuillez recommencer."
-        return RedirectResponse(url="/auth/forgot-password/form", status_code=status.HTTP_303_SEE_OTHER)
-    formated_phone = format_to_drc_phone(user_phone.strip())
-    # 1. Vérifications de base
+    # 1. Extraction des preuves depuis la session
+    session_token = request.session.get('reset_token')
+    token_expires = request.session.get('reset_token_expires')
+    phone = request.session.get('reset_user_phone')  # 💡 Harmonisé
+    user_type = request.session.get('reset_user_type')
+
+    # 🛡️ BARRIÈRE 1 : Absence de session de réinitialisation
+    if not session_token or not token_expires or not phone or not user_type:
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            content={"status": "UNAUTHORIZED", "detail": "Action interdite. Veuillez recommencer le processus."}
+        )
+
+    # 🛡️ BARRIÈRE 2 : Vérification de la correspondance des tokens
+    if token_input.strip() != session_token:
+        return JSONResponse(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            content={"status": "INVALID_TOKEN", "detail": "Jeton de réinitialisation invalide."}
+        )
+
+    # 🛡️ BARRIÈRE 3 : Vérification du timeout du token (5 minutes max après validation OTP)
+    if datetime.now(timezone.utc).timestamp() > token_expires:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            content={"status": "TOKEN_EXPIRED", "detail": "Le délai pour modifier votre mot de passe est dépassé."}
+        )
+
+    # 🛡️ BARRIÈRE 4 : Validation et confrontation des mots de passe
     if new_password != confirm_password:
-        request.session['error_message'] = "Les deux mots de passe ne correspondent pas."
-        return RedirectResponse(url=f"/auth/reset-password/form", status_code=status.HTTP_303_SEE_OTHER)
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            content={"status": "PASSWORD_MISMATCH", "detail": "Les deux mots de passe ne correspondent pas."}
+        )
         
     if len(new_password) < 8:
-        request.session['error_message'] = "Le mot de passe doit contenir au moins 8 caractères."
-        return RedirectResponse(url=f"/auth/reset-password/form", status_code=status.HTTP_303_SEE_OTHER)
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            content={"status": "PASSWORD_TOO_WEAK", "detail": "Le mot de passe doit contenir au moins 8 caractères."}
+        )
 
-    # 2. Chercher l'utilisateur possédant ce token
-    res = await db.execute(select(ExternalUser).where(ExternalUser.phone_number == formated_phone))
-    user = res.scalars().first()
-
-    # 3. Vérifier si le token existe et s'il n'est pas expiré
-    if not user :
-        request.session['error_message'] = "Le lien de réinitialisation est invalide ou a expiré."
-        return RedirectResponse(url="/auth/forgot-password/form", status_code=status.HTTP_303_SEE_OTHER)
-    get_otp_res = await db.execute(select(OTP).where(OTP.ext_user_id == user.id))
-    user_otp = get_otp_res.scalars().first()
-    if not user_otp:
-        request.session['error_message'] = "Le lien de réinitialisation est invalide ou a expiré."
-        return RedirectResponse(url="/auth/forgot-password/form", status_code=status.HTTP_303_SEE_OTHER)
-    # 4. Appliquer le nouveau mot de passe haché
     try:
-        user.password = hash_password(new_password.strip())
+        # 2. Recherche de l'utilisateur concerné
+        if user_type == "organizer":
+            res = await db.execute(select(Organizer).where(Organizer.phone_number == phone))
+            user = res.scalars().first()
+        else:
+            res = await db.execute(select(ExternalUser).where(ExternalUser.phone_number == phone))
+            user = res.scalars().first()
+
+        if not user:
+            return JSONResponse(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                content={"status": "USER_LOST", "detail": "Utilisateur introuvable."}
+            )
+
+        # 3.  Mise à jour sécurisée du mot de passe
+        user.password = hash_password(new_password) 
         
-        # 🚨 TRÈS IMPORTANT : On détruit le token pour qu'il ne puisse plus être réutilisé
-        user_otp.code = None
-        user_otp.expires_at = None
-        user_otp.otp_attempts = 0
+        #  NETTOYAGE CRUCIAL DE PROD : On nettoie TOUTES les clés de session utilisées
+        request.session.pop('reset_user_phone', None)  # Correctement nettoyé ici
+        request.session.pop('reset_user_type', None)
+        request.session.pop('reset_token', None)
+        request.session.pop('reset_token_expires', None)
+        request.session.pop('otp_verified', None)  # Optionnel : nettoie aussi le flag d'état si présent
         
         await db.commit()
-        # 🌟 AJOUTE CES DEUX LIGNES ICI POUR TOUT NETTOYER :
-        request.session.pop('user_phone', None)
-        request.session.pop('otp_verified', None)
+
+        return JSONResponse(
+            status_code=status.HTTP_200_OK,
+            content={"status": "PASSWORD_CHANGED", "detail": "Votre mot de passe a été modifié avec succès. Vous pouvez vous connecter."}
+        )
+
     except Exception as e:
         await db.rollback()
-        request.session['error_message'] = "Erreur interne lors de la mise à jour."
-        return RedirectResponse(url=f"/auth/reset-password/form", status_code=status.HTTP_303_SEE_OTHER)
-
-    request.session['success_update_message'] = "Votre mot de passe a été modifié avec succès. Connectez-vous !"
-    return RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
-
+        print(f"🚨 [PROD ERROR] reset_password_final : {str(e)}")
+        return JSONResponse(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            content={"status": "SERVER_ERROR", "detail": "Erreur lors de la mise à jour du mot de passe."}
+        )
+    
 @Root.get("/auth/login")
 async def login_page(request: Request, db: AsyncSession = Depends(connecting)):
     # 1. Récupération du message d'erreur flash (ex: numéro invalide)
@@ -979,7 +1061,7 @@ async def login_page(request: Request, db: AsyncSession = Depends(connecting)):
     invalid_user = request.session.pop('invalid_user', None)
     csrf_token = secrets.token_urlsafe(32)
     # 2. Vérification si l'utilisateur possède déjà un cookie de session
-    current_user_id = request.cookies.get("session_user_id")
+    current_user_id = request.cookies.get("session_user_id",None)
     success_message = request.session.pop('success_message', None)
     success_update_message = request.session.pop('success_update_message', None)
     if current_user_id:
@@ -1081,9 +1163,6 @@ async def verify_user(
     if not verify_password(password, user.password):
         request.session['invalid_user'] = error_message
         return RedirectResponse("/auth/login", status_code=status.HTTP_303_SEE_OTHER)
-        
-    # 4. AUTHENTIFICATION & REDIRECTION 🎉
-    response = RedirectResponse(url="/my_account", status_code=status.HTTP_303_SEE_OTHER)
     # 4. AUTHENTIFICATION & REDIRECTION 🎉
     response = RedirectResponse(url="/my_account", status_code=status.HTTP_303_SEE_OTHER)
     response.set_cookie(key="session_user_id", value=user.id, httponly=True)

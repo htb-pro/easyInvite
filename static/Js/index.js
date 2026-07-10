@@ -2,72 +2,95 @@ document.addEventListener("DOMContentLoaded", function () {
     
     if (typeof Html5QrcodeScanner !== "undefined") {
         
+        // --- FONCTIONS D'AFFICHAGE ---
         function showMessage(text, color) {
             document.getElementById("result").innerHTML =
                 `<div class="alert alert-${color} mt-3">${text}</div>`;
         }
 
+        // Affichage pour les invitations
         function showLink(name, guest) {
             document.getElementById("result").innerHTML = `
-                <a href="/invite/result/${guest}" class="result-link bg-success text-white">
-                    Voir résultat de ${name}
+                <div class="alert alert-info mt-3">📩 Invitation détectée</div>
+                <a href="/invite/result/${guest}" class="result-link bg-success text-white d-block text-center p-3 mt-2 font-weight-bold text-uppercase text-decoration-none rounded">
+                    Vérifier l'invitation de : ${name}
                 </a>
             `;
         }
 
-        function showLinkTicket(name, ticketId,ticket_type) {
+        // Affichage dynamique pour les billets (S'adapte selon l'état d'utilisation)
+        function showLinkTicket(name, ticketId, ticket_type, isScanned, message) {
+            let alertClass = "alert-info";
+            let btnClass = "bg-success"; // Vert par défaut (Valide)
+            let prefixIcon = "🎟️ Billet Valide";
+
+            // Si le serveur indique que le billet a déjà été validé/scanné
+            if (isScanned) {
+                alertClass = "alert-warning";
+                btnClass = "bg-warning text-dark"; // Orange (Déjà utilisé)
+                prefixIcon = "⚠️ Billet Déjà Utilisé";
+            }
+
             document.getElementById("result").innerHTML = `
-                <div class="alert alert-success mt-3">✅ Billet ${ticket_type} Validé !</div>
-                <a href="/ticket/view/${ticketId}" class="result-link bg-primary text-white d-block text-center p-2 mt-2" target="_blank">
-                    Voir le Ticket de ${name}
+                <div class="alert ${alertClass} mt-3">${prefixIcon} (${ticket_type})</div>
+                <p class="text-center small text-muted my-1">${message || ""}</p>
+                <a href="/ticket/view/${ticketId}" class="result-link ${btnClass} d-block text-center p-3 mt-2 font-weight-bold text-uppercase text-decoration-none rounded">
+                    Voir le detail
                 </a>
             `;
         }
 
-        // Fonction principale de détection et d'analyse du scan
-// Fonction principale de détection et d'analyse du scan
-function onScanSuccess(decodedText) {
-    console.log("Donnée scannée : ", decodedText);
+        // --- VERROU DU SCAN ---
+        let scanEnCours = false;
 
-    // Désormais, on ne cherche plus à deviner le type via l'URL.
-    // On envoie systématiquement la donnée au serveur.
-    // Le serveur, lui, saura décrypter et vérifier si c'est un ticket ou une invitation.
-    
-    fetch(`/scan-ticket-secure?qr_data=${encodeURIComponent(decodedText)}`)
-    .then(res => res.json())
-    .then(data => {
-            // 1. Vérification si le code est invalide (n'existe pas dans la DB)
-            if (!data.valid) {
-                showMessage(data.message || "Code invalide ou inconnu", "danger");
-                return;
-            }
+        // --- FONCTION DE DETECTION UNIFIÉE ---
+        async function onScanSuccess(decodedText) {
+            if (scanEnCours) return; // Bloque les lectures en rafale
             
-            // 2. Vérification si le code a déjà été utilisé (state === true)
-            if (data.state === true) {
-                showMessage("⚠️ Attention : Ce QR code a déjà été utilisé.", "warning");
-                return;
-            }
+            scanEnCours = true; // Enclenche le verrou
             
-            // 3. Traitement des cas valides
-            if (data.type === 'ticket') {
-                showLinkTicket(data.name || "Billet", data.ticket_id,data.ticket_type);
-            } else {
-                showLink(data.name || "Invité", data.guest_id);
+            try {
+                // Envoi de la requête de vérification sécurisée à FastAPI
+                const response = await fetch(`/scan-ticket-secure?qr_data=${encodeURIComponent(decodedText)}`);
+                const result = await response.json();
+                
+                // Si le serveur valide la structure et le jeton TOTP
+                if (result.valid) {
+                    if (result.type === "invitation") {
+                        showLink(result.name, result.guest_id);
+                    } else {
+                        // On passe le booléen 'is_scanned' et le message pour appliquer la bonne couleur
+                        showLinkTicket(
+                            result.name, 
+                            result.ticket_id, 
+                            result.ticket_type, 
+                            result.is_scanned, 
+                            result.message
+                        );
+                    }
+                } else {
+                    // Code TOTP expiré ou mauvais QR code (Écran Rouge)
+                    showMessage(`❌ ${result.message || "Code invalide ou expiré."}`, "danger");
+                }
+            } catch (error) {
+                console.error("Erreur réseau :", error);
+                showMessage("❌ Erreur de communication avec le serveur.", "danger");
+            } finally {
+                // Maintien du blocage pendant 2,5 secondes
+                setTimeout(() => {
+                    scanEnCours = false;
+                }, 2500);
             }
-            
-            if (navigator.vibrate) navigator.vibrate(200);
-        })
-    .catch(() => showMessage("Erreur réseau lors de la validation", "danger"));
-}
+        }
 
-        // Initialisation du scanner sur l'élément HTML 'reader'
+        // Initialisation du scanner
         const scanner = new Html5QrcodeScanner(
             "reader",
             { fps: 10, qrbox: 250 }
         );
         scanner.render(onScanSuccess);
 
-        // Gestion de l'affichage du formulaire manuel
+        // Gestion du formulaire manuel
         const form = document.querySelector(".form-section");
         const show_form = document.querySelector("#show-form");
 

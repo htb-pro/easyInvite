@@ -16,6 +16,8 @@ from Routers.user import Root as user_root
 from Routers.admin import Root as admin_root
 from Routers.event_dashboard import Root as event_dashboard_root
 from Routers.external_user import Root as external_user_root
+#from Routers.easyevent import Root as easyevent_root
+from Routers.organizer import Root as organizer_root
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from db_setting import init_db,AsyncSessionLocal
@@ -65,6 +67,8 @@ Apk.include_router(user_root)
 Apk.include_router(admin_root)
 Apk.include_router(event_dashboard_root)
 Apk.include_router(external_user_root)
+#Apk.include_router(easyevent_root)
+Apk.include_router(organizer_root)
 
 @Apk.exception_handler(HTTPException)
 def auth_exception_handler(request,exc):
@@ -99,3 +103,9 @@ def get_csrf_config():
     return CsrfSettings(
         csrf_token_key="csrf_token" 
     )
+
+import uvicorn
+if __name__ == '__main__':
+    # Pour FastAPI, on utilise uvicorn.run et non app.run
+    uvicorn.run("rooting:Apk", host="0.0.0.0", port=8000, reload=True)#public acces
+    #uvicorn.run("rooting:Apk", host="127.0.0.1", port=8000, reload=True) #acces privee

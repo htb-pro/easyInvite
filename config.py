@@ -17,6 +17,19 @@ algo = os.getenv('ALGO')#type d'algorithme
 africa_talking_key = os.getenv('africa_talking_key')#at key
 token_expire_minute = int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTE',60))#duree d'expiration du token
 
+#====================whatsapp
+whatsap_phone_Number_ID = os.getenv('Phone_Number_ID')
+
+whatsapp_token = os.getenv('whatsapp_token')
+
+#=======================
+account_sid = os.getenv('twilio_account_sid')
+auth_token = os.getenv('twilio_auth_token')
+twilio_number = os.getenv('twilio_whatsapp_number')
+text_content= os.getenv('text_content_sid')
+media_content = os.getenv('media_content_sid')
+#=======================
+
 # Remplace ton dictionnaire actuel par ceci :
 redis_url = os.getenv("REDIS_URL")
 REDIS_SETTINGS = RedisSettings.from_dsn(redis_url)

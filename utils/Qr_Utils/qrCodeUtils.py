@@ -2,7 +2,9 @@ import qrcode
 from qrcode import QRCode
 import os,io
 from utils.cryptography.crypt_file import encrypt_token
-def createInviteQrCode(guest_id):
+
+
+def generateInviteQrCode(guest_id):
     secure_id = encrypt_token(guest_id) #on encrypte l'id de l'inviter
     qr = QRCode(
         version=1,

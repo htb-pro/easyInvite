@@ -45,7 +45,7 @@ body::before {
           </svg>
         </div>
         <h5 class="card-title text-danger">QR Code d'acces déjà utilisé</h5>
-        <p class="card-text text-light">Ce QR Code a déjà été utilisé a {{invite_used_at.time().strftime("%H:%M")}} pour cet événement.</p>
+        <p class="card-text text-light">Ce QR Code a déjà été utilisé a {{invite_used_at}} pour cet événement.</p>
         <a href="{{ url_for('scanning') }}" class="btn btn-danger">Retour à l'accueil</a>
       </div>
     </div>

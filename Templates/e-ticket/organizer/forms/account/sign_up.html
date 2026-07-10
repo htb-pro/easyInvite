@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inscription Organisateur - easyInvite</title>
+    <!-- Bootstrap 5 & Icons -->
+    <link href="/static/Css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="/static/Js/sign-up.js"></script>
+    <style>
+        body { background-color: #0F172A; color: white; min-height: 100vh; display: flex; align-items: center; }
+        .register-card { background-color: #1E293B; border: none; border-radius: 16px; }
+        .form-control { background-color: #0F172A; border: 1px solid #334155; color: white; }
+        .form-control:focus { background-color: #0F172A; color: white; border-color: #F59E0B; box-shadow: none; }
+        input::placeholder
+        {
+            color: #a2afc1 !important;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-12 col-md-6 col-lg-5">
+            
+            <div class="text-center mb-4">
+                <h2 class="fw-bold text-warning"><i class="bi bi-ticket-perforated-fill me-2"></i> EasyTicket</h2>
+                <p class="text-secondary">Créez votre compte organisateur pro</p>
+            </div>
+
+            <div class="card register-card p-4 shadow-lg">
+                <!-- Zone de message d'erreur dynamique -->
+                <div id="error-alert" class="alert alert-danger d-none" role="alert"></div>
+                <form id="form-register">
+                    <input type="hidden" name="csrf_token" id="csrf_token" value="{{ csrf_token }}">
+                    <div class="mb-3">
+                        <label for="company_name" class="form-label small text-secondary">Nom de l'entreprise / Structure</label>
+                        <input type="text" class="form-control" name="company_name" required placeholder="Ex: Agence Horizon">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="email" class="form-label small text-secondary">Adresse Email Professionnelle</label>
+                        <input type="email" class="form-control" name="email" required placeholder="nom@entreprise.com">
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="phone" class="form-label small text-secondary">Numéro de Téléphone</label>
+                        <input type="tel" class="form-control" name="phone" required placeholder="Ex: +33 6 12 34 56 78">
+                    </div>
+
+                    <div class="mb-4">
+                        <label for="password" class="form-label small text-secondary">Mot de passe</label>
+                        <input type="password" class="form-control" name="password" minlength="8" required placeholder="••••••••">
+                    </div>
+
+                    <button type="submit" class="btn btn-warning btn-lg w-100 fw-bold text-dark mb-3" style="border-radius: 8px;">
+                        Créer mon compte
+                    </button>
+
+                    <div class="text-center">
+                        <a href="/organizer/sign-in" class="text-secondary small text-decoration-none">Déjà inscrit ? Connectez-vous</a>
+                    </div>
+                </form>
+            </div>
+
+        </div>
+    </div>
+</div>
+</body>
+</html>
