@@ -37,4 +37,4 @@ CMD ["uvicorn", "rooting:Apk", "--host", "0.0.0.0", "--port", "10000"]
 
 # 3. AJOUTE CETTE LIGNE JUSTE ICI : Installer Chromium pour Playwright
 # ❌ Remplace l'ancien RUN playwright install chromium par :
-RUN playwright install --with-deps chromium
+RUN playwright install --with-deps chromium 
