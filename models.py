@@ -1,4 +1,4 @@
-from sqlalchemy import Column,String,Integer,DateTime,Text,Uuid,Date,ForeignKey,Boolean,UniqueConstraint,Table,Float
+from sqlalchemy import Column,String,Integer,DateTime,Text,Uuid,Date,ForeignKey,Boolean,UniqueConstraint,Table,Float,JSON
 import uuid
 from sqlalchemy.orm import relationship
 from db_setting import Base
@@ -84,7 +84,7 @@ class Event(Base): #event table
     name= Column(String(50),index=True)
     type = Column(String(50))
     date = Column(DateTime)
-    address =Column(String(50))
+    address =Column(String(255))
     location =Column(String(50))
     description = Column(Text,nullable=True)
     created_date =Column(DateTime,default=datetime.utcnow)
@@ -166,6 +166,7 @@ class ExternalUser(Base):
     __tablename__ = "external_users"
     id = Column(String,primary_key = True,default = lambda : str(uuid4()))
     phone_number = Column(String, unique=True, index=True)
+    email = Column(String(150), nullable=True)
     name = Column(String)
     password = Column(String, nullable=False)  #le mot de passe doit etre hasher  avant de le stocker
     created_at = Column(DateTime,default=datetime.utcnow)
@@ -258,3 +259,19 @@ class Ticket_price(Base):
     device= Column(String(15))
 
     events = relationship("Event",back_populates="ticket_prices")
+
+#--------------------------------------------e-event tables---------------------------------------------
+class EventRequest(Base):
+    __tablename__ = 'event_requests'
+    id = Column(String, primary_key=True, index=True,default = lambda :str(uuid4()))
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    event_type = Column(String(50), nullable=False) # Étape 1 : Type d'événement (prive, professionnel, public, cle_en_main)
+    guest_count = Column(String(20), nullable=False)  # Stocke "0-50", "50-150", "150-500", "500+"
+    event_city = Column(String(100), nullable=False)   # Kinshasa, Lubumbashi, etc.
+    cadre_lieu = Column(String(50), nullable=True)     # Nullable si l'utilisateur choisit "clé en main" direct   
+    services = Column(JSON, nullable=True) # Stockera un tableau JSON comme : ["deco", "sonorisation", "mc"]
+
+    # Étape 4 : Coordonnées du visiteur
+    client_name = Column(String(150), nullable=False)
+    client_phone = Column(String(30), nullable=False)
+    

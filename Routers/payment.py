@@ -12,7 +12,7 @@ from jose import jwt
 from config import secret,algo,csrf_key,verify_csrf,set_secure_cookie
 import secrets,hmac
 from itsdangerous import URLSafeTimedSerializer, BadSignature
-
+from Routers.guest import format_to_drc_phone
 
 Root = APIRouter()
 templates = Jinja2Templates(directory="Templates")  
@@ -82,7 +82,8 @@ async def get_paiement_data(
     converted_transaction_id = transaction_id.lower().strip()
     
     # Nettoyage et uniformisation immédiate du numéro de téléphone
-    clean_phone = "".join(filter(str.isdigit, buyer_phone))
+    clean_phone = format_to_drc_phone(buyer_phone)
+    print(f"-------------------------Numéro de téléphone nettoyé : {clean_phone}")
     if not clean_phone:
         request.session['invalid_number'] = "Format du numéro de téléphone invalide"
         return RedirectResponse(f"/payments/{event_id}", status_code=303)
@@ -153,14 +154,14 @@ async def get_paiement_data(
             
             res_tickets = await db.execute(select(Ticket_price).where(Ticket_price.event_id == event_id))
             tickets = res_tickets.scalars().all()
-            
+            csrf_token = request.cookies.get("fastapi-csrf-token")
             return templates.TemplateResponse(
                 "order/forms/order_form.html",
                 {
                     "request": request, "event": event_with_prices, "tickets": tickets, "show_modal": True,
                     'insuffisant_place_message': insuffisant_place_message, "buyer_name": buyer_name, 
                     "buyer_phone": buyer_phone, "ticket_type": ticket_type, "quantity": quantity, 
-                    'remaining_place': remaining_place, "transaction_id": transaction_id
+                    'remaining_place': remaining_place, "transaction_id": transaction_id,'csrf_token': csrf_token
                 }
             )
 

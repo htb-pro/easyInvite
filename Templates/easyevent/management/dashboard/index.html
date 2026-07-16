@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="/static/Css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <title>Data Management</title>
+</head>
+<body>
+<div class="container-fluid py-4" style="background-color: #0f172a; color: #fff; min-height: 100vh;">
+    
+    <!-- EN-TÊTE DU DASHBOARD -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <h2 class="fw-bold text-info mb-0">EasyEvent Admin</h2>
+            <p class="text-secondary small mb-0">Gestion des demandes et de l'écosystème</p>
+        </div>
+        <button class="btn btn-outline-info btn-sm" onclick="window.location.reload()">
+            <i class="bi bi-arrow-clockwise"></i> Actualiser
+        </button>
+    </div>
+
+    <!-- CARTES DE STATISTIQUES RAPIDES -->
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-md-3">
+            <div class="p-3 rounded-4 bg-dark border border-secondary border-opacity-25">
+                <span class="text-secondary small d-block">Total Demandes</span>
+                <span class="fs-3 fw-bold text-white">48</span>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="p-3 rounded-4 bg-dark border border-secondary border-opacity-25">
+                <span class="text-secondary small d-block">En attente</span>
+                <span class="fs-3 fw-bold text-warning">12</span>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="p-3 rounded-4 bg-dark border border-secondary border-opacity-25">
+                <span class="text-secondary small d-block">Clé en Main</span>
+                <span class="fs-3 fw-bold text-danger">5</span>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="p-3 rounded-4 bg-dark border border-secondary border-opacity-25">
+                <span class="text-secondary small d-block">Taux de Conversion</span>
+                <span class="fs-3 fw-bold text-success">74%</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- LISTE FLUIDE DES DEMANDES (PARFAIT POUR MOBILE ET DESKTOP) -->
+    <div class="card bg-dark border-secondary border-opacity-25 rounded-4 overflow-hidden">
+        <div class="card-header bg-transparent border-secondary border-opacity-25 p-3">
+            <h5 class="mb-0 fw-semibold text-white">Flux des demandes récentes</h5>
+        </div>
+        <div class="list-group list-group-flush">
+            
+            <!-- DEMANDE 1 : Projet Classique -->
+            <div class="list-group-item bg-transparent text-white p-3 border-secondary border-opacity-25">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+                    <div>
+                        <span class="badge bg-info text-dark me-2">💍 Privé</span>
+                        <strong class="text-white-50">Kinshasa</strong>
+                    </div>
+                    <span class="badge bg-warning text-dark">En attente</span>
+                </div>
+                
+                <h6 class="mb-1 fw-bold">Mariage - Christian Mwamba</h6>
+                <p class="text-muted small mb-2">📞 +243 812 345 678 | 👥 150-500 invités</p>
+                
+                <!-- Les prestations choisies sous forme de mini-jetons -->
+                <div class="d-flex flex-wrap gap-1 mb-3">
+                    <span class="badge bg-secondary bg-opacity-50 text-white-50 small">🌸 Déco</span>
+                    <span class="badge bg-secondary bg-opacity-50 text-white-50 small">🔊 Sono</span>
+                    <span class="badge bg-secondary bg-opacity-50 text-white-50 small">🎙️ MC</span>
+                    <span class="badge bg-secondary bg-opacity-50 text-white-50 small">🍽️ Traiteur</span>
+                </div>
+
+                <div class="d-flex gap-2 justify-content-end">
+                    <button class="btn btn-sm btn-outline-secondary text-white border-secondary">Refuser</button>
+                    <button class="btn btn-sm btn-info text-dark fw-semibold" onclick="traiterDemande(1)">Valider & Assigner</button>
+                </div>
+            </div>
+
+            <!-- DEMANDE 2 : Projet Clé en Main VIP -->
+            <div class="list-group-item bg-transparent text-white p-3 border-secondary border-opacity-25" style="background: linear-gradient(145deg, rgba(15, 23, 42, 0.4), rgba(30, 27, 75, 0.4));">
+                <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+                    <div>
+                        <span class="badge bg-danger me-2">✨ Clé en Main</span>
+                        <strong class="text-white-50">Lubumbashi</strong>
+                    </div>
+                    <span class="badge bg-danger animate-pulse">Urgent</span>
+                </div>
+                
+                <h6 class="mb-1 fw-bold text-warning">Séminaire Corpo - Vodacom RDC</h6>
+                <p class="text-muted small mb-2">📧 contact@corporate.cd | 👥 50-150 invités</p>
+                
+                <p class="small text-white-50 bg-black bg-opacity-25 p-2 rounded-3 border border-warning border-opacity-25">
+                    "Demande de prise en charge totale de A à Z. Rappeler le responsable logistique au plus vite."
+                </p>
+
+                <div class="d-flex gap-2 justify-content-end">
+                    <a href="tel:+2430000000" class="btn btn-sm btn-warning text-dark fw-semibold">Appeler le Client</a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    function traiterDemande(id) {
+    // Ici, tu feras plus tard un appel fetch() vers ton serveur pour changer le statut en DB
+    alert(`Demande N°${id} validée. Les e-mails de mise en relation ont été envoyés aux prestataires !`);
+    
+    // Exemple d'effet visuel : on pourrait changer le badge de statut
+    console.log(`Statut mis à jour pour la demande ${id}`);
+}
+</script>
+</body>
+</html>

@@ -116,7 +116,20 @@ async def eventDetail(request:Request,event_id : str,access_token = Cookie(None)
 def getEventForm(request:Request,user=Depends(permission_required("create_event"))):
     success_message = request.session.get("success")
     csrf_token = secrets.token_urlsafe(32)
-    response =  templates.TemplateResponse("Event/Forms/event_form.html",{'request':request,"csrf_token":csrf_token, "creation_success": success_message})
+    event_error = request.session.pop('event_error',None)
+    session_form_data = request.session.pop('form_data',None)
+    if session_form_data is None :
+        form_data = {
+            "errors":{"error":event_error},
+            "fields":{},
+            "system": {},
+        }
+    else : 
+        form_data = session_form_data #les donnees renvoyeé la premiere fois qui doivent preremplire les champs
+        if event_error:
+            form_data["errors"]["error"] = event_error
+
+    response =  templates.TemplateResponse("Event/Forms/event_form.html",{'request':request,"csrf_token":csrf_token, "creation_success": success_message,"data":form_data})
     response.set_cookie(
         key = "fastapi-csrf-token",
         value = csrf_token,
@@ -137,50 +150,143 @@ FOLDER_MAPPING = {
 DEFAULT_FOLDER = "EasyInvite/ticket_pictures"
 #------------------------------------------
 
+
 @Root.post("/create_event") #create an event
-async def creatEvent(request:Request,eventName:str = Form(...),
-eventType:str =Form(...), eventDate: datetime = Form(...),
-eventAddress:str = Form(),eventDescription: Optional[str] = Form(None),
-location:str = Form(...),
-photo:UploadFile = File(None),
-user=Depends(permission_required("create_event")),
-couple_name :str = Form(None),
-couple_phone_number :str = Form(...),
-access_token =Cookie(None),
-is_active : bool = Form(None),#le cadeau
-language :str = Form(...),#la langue
-organizer :str = Form(None),#organisateeur
-greetings:str = Form(None),#message de bienvenu
-total_place:int = Form(None),#espace d'accueil  ou le nombre de place prevu
-is_featured:bool = Form(None),#l'event est a la une?
-Db:AsyncSession = Depends(connecting),
-csrf_token :str = Form(...),
-_=Depends(verify_csrf)
+async def creatEvent(
+    request: Request,
+    eventName: str = Form(...),
+    eventType: str = Form(...), 
+    eventDate: datetime = Form(...),
+    eventAddress: str = Form(),
+    eventDescription: Optional[str] = Form(None),
+    location: str = Form(...),
+    photo: UploadFile = File(None),
+    user = Depends(permission_required("create_event")),
+    couple_name: str = Form(None),
+    couple_phone_number: str = Form(...),
+    access_token = Cookie(None),
+    is_gift_active: bool = Form(None), #le cadeau
+    language: str = Form(...), #la langue
+    organizer: str = Form(None), #organisateur
+    greetings: str = Form(None), #message de bienvenu
+    total_place: int = Form(None), #espace d'accueil ou le nombre de place prevu
+    is_featured: bool = Form(None), #l'event est a la une?
+    Db: AsyncSession = Depends(connecting),
+    csrf_token: str = Form(...),
+    _ = Depends(verify_csrf)
 ):
-    res = jwt.decode(access_token,secret,algorithms=[algo])
+    res = jwt.decode(access_token, secret, algorithms=[algo])
     user_id = res.get("user")
-    user_res = await Db.execute(select(User).where(User.id == user_id).options(selectinload(User.groups),selectinload(User.roles)))
+    user_res = await Db.execute(
+        select(User)
+        .where(User.id == user_id)
+        .options(selectinload(User.groups), selectinload(User.roles))
+    )
     user = user_res.scalars().first()
     group_id = None
     user_role = None #le role de l'utilisateur sera none par defaut pour eviter les erreurs
-    is_event_photo =  False
-    photo_url,photo_public_id = None,None
+    is_event_photo = False
+    photo_url, photo_public_id = None, None
+
+    # 💾 Construction du dictionnaire de données (Sécurisé pour la session JSON)
+    form_data = {
+        "errors": {
+            "error": "",
+        },
+        "fields": {
+            "event_name": eventName.strip() if eventName else "",
+            "event_type": eventType if eventType else "",
+            "event_organizer": organizer if organizer else "",
+            "language": language if language else "",
+            "total_place": total_place if total_place else "",
+            "couple_name": couple_name.strip() if couple_name else "",
+            "couple_phone_number": couple_phone_number.strip() if couple_phone_number else "",
+            "event_date": eventDate.isoformat() if eventDate else "",  # On transforme l'objet datetime en chaîne de caractères (ISO)
+            "event_address": eventAddress.strip() if eventAddress else "",
+            "location": location.strip() if location else "",
+            "greetings": greetings if greetings else "",
+            "event_description": eventDescription.strip() if eventDescription else "",
+            "is_gift_active": bool(is_gift_active), 
+            "is_featured": bool(is_featured), 
+        },
+        "system": {
+            "csrf_token": csrf_token,
+            "organizer": organizer
+        }
+    }
+
+    max_length = {
+        "event_name": 50,
+        "event_address" : 100,
+        "event_location" : 50,
+        "couple_name" :  50,
+        "couple_phone_number": 15,
+        "event_organizer" :  255,
+        "event_photo_url": 255
+    }
+
     if user.groups:
         group_id = user.groups[0].id if user.groups else None
         user_role = user.roles[0].name if user.roles else None
+
+    # 1. Validation de la date
     if eventDate < datetime.now():
-        return templates.TemplateResponse("Event/Forms/event_form.html",{'request':request,"dateError":' Entrez une date superieur a la date actuelle ou entrer une date correcte  !!!',
-            'eventName':eventName, 'eventType':eventType,'couple_name':couple_name,'location':location,'is_active':is_active,
-            'couple_phone_number':couple_phone_number, 'eventDate':eventDate, 'eventAddress':eventAddress,'organizer':organizer,'greetings':greetings, 
-            'eventDescription':eventDescription, 'csrf_token': csrf_token}, status_code=400)
+        request.session['event_error'] = "Entrez une date supérieure à la date actuelle ou entrez une date correcte !!!"
+        request.session['form_data'] = form_data
+        return RedirectResponse("/event_form", status_code=303)
+
+    # 2. Validation du type de fichier
     if photo and photo.filename:
         if not photo.content_type or not photo.content_type.startswith("image/"):
-            return templates.TemplateResponse("Event/Forms/event_form.html",{'request':request,"img_error":' le fichier doit etre une image !!!',
-            'eventName':eventName, 'eventType':eventType, 'eventDate':eventDate, 'eventAddress':eventAddress, 'eventDescription':eventDescription, 'csrf_token': csrf_token
-            },status_code=400)
+            # Si erreur directe sans redirection, on passe form_data directement au template
+            return templates.TemplateResponse(
+                "Event/Forms/event_form.html",
+                {
+                    'request': request,
+                    "img_error": 'Le fichier doit être une image !!!',
+                    'form_data': form_data,
+                    "csrf_token": csrf_token
+                },
+                status_code=400
+            )
+
+    # 3. Validations des longueurs (Sécurité BDD)
+    if len(eventName) > max_length["event_name"]:
+        request.session['event_error'] = f"Le nom de l'événement est trop long ({max_length['event_name']} caractères max)."
+        request.session['form_data'] = form_data
+        return RedirectResponse("/event_form", status_code=303)
+
+    if len(eventAddress) > max_length["event_address"]:
+        request.session['event_error'] = f"L'adresse est trop longue ({max_length['event_address']} caractères max)."
+        request.session['form_data'] = form_data
+        return RedirectResponse("/event_form", status_code=303)
+
+    if len(location) > max_length["event_location"]:
+        request.session['event_error'] = f"Le nom de la localisation est trop long ({max_length['event_location']} caractères max)."
+        request.session['form_data'] = form_data
+        return RedirectResponse("/event_form", status_code=303)
+
+    #  CORRECTION ICI : On utilise la variable "organizer" (en minuscule)
+    if organizer and len(organizer) > max_length["event_organizer"]:
+        request.session['event_error'] = f"Le nom de l'organisateur est trop long ({max_length['event_organizer']} caractères max)."
+        request.session['form_data'] = form_data
+        return RedirectResponse("/event_form", status_code=303)
+
+    if len(couple_name) and len(couple_name) > max_length["couple_name"]:
+        request.session['event_error'] = f"Le nom du couple est trop long ({max_length['couple_name']} caractères max)."
+        request.session['form_data'] = form_data
+        return RedirectResponse("/event_form", status_code=303)
+
+    #  CORRECTION ICI : On vérifie la longueur du nom de fichier (.filename) et non de l'objet UploadFile
+    if photo and photo.filename and len(photo.filename) > max_length["event_photo_url"]:
+        request.session['event_error'] = f"Le nom de l'image est trop long ({max_length['event_photo_url']} caractères max)."
+        request.session['form_data'] = form_data
+        return RedirectResponse("/event_form", status_code=303)
+
+    # 4. Upload Cloudinary
     try:
         if photo and photo.filename:
-            target_folder = FOLDER_MAPPING.get(eventType,DEFAULT_FOLDER)
+            target_folder = FOLDER_MAPPING.get(eventType, DEFAULT_FOLDER)
             upload_result = await run_in_threadpool(
                 cloudinary.uploader.upload, photo.file, folder=target_folder,
                 transformation=[{'width': 1000, 'height': 1000, 'crop': 'limit'}, {'quality': "auto"}]
@@ -188,36 +294,41 @@ _=Depends(verify_csrf)
             photo_url = upload_result['secure_url']
             photo_public_id = upload_result['public_id']
     except Exception as e:
-        raise HTTPException(status_code=500,detail=f"Erreur lors du chargement de l'image: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Erreur lors du chargement de l'image: {str(e)}")
+
+    # 5. Enregistrement en Base de données
     try:
         newEvent = Event(
-        name = eventName,
-        type = eventType,
-        date = eventDate,
-        address = eventAddress,
-        description = eventDescription,
-        location = location,
-        couple_name = couple_name,
-        couple_phone_number = couple_phone_number,
-        created_by = user_id,
-        guest_present = is_active if is_active else None,
-        group_id = group_id,
-        photo_url = photo_url if photo_url else None,
-        photo_public_id=photo_public_id if photo_public_id else None,
-        language=language,
-        organizer=organizer,
-        greeting_message = greetings,
-        total_capacity=total_place,
-        is_featured = is_featured
-            )
+            name=eventName,
+            type=eventType,
+            date=eventDate,  # Ici, on passe bien l'objet datetime à SQLAlchemy
+            address=eventAddress,
+            description=eventDescription,
+            location=location,
+            couple_name=couple_name,
+            couple_phone_number=couple_phone_number,
+            created_by=user_id,
+            guest_present=is_gift_active if is_gift_active else None,
+            group_id=group_id,
+            photo_url=photo_url if photo_url else None,
+            photo_public_id=photo_public_id if photo_public_id else None,
+            language=language,
+            organizer=organizer,
+            greeting_message=greetings,
+            total_capacity=total_place,
+            is_featured=is_featured
+        )
         Db.add(newEvent)
         await Db.commit()
         await Db.refresh(newEvent)
-    except Exception :
+    except Exception as e:
         await Db.rollback()
-        raise HTTPException(status_code=500,detail="Erreur lors de la création de l'événement")
-    request.session["success"] = " Événement créé avec succès !"
-    return RedirectResponse("/event_form",status_code=303)
+        print(f"🚨 [DB ERROR] : {str(e)}")
+        raise HTTPException(status_code=500, detail="Erreur lors de la création de l'événement")
+
+    # 6. Succès !
+    request.session["success"] = "Événement créé avec succès !"
+    return RedirectResponse("/event_form", status_code=303)
 
 @Root.get("/edit_event/{event_id}")#la root pour la modification d'un evenement
 async def editEvent(request:Request,event_id : str,user=Depends(permission_required("edit_event")),db:AsyncSession = Depends(connecting)):
@@ -226,7 +337,25 @@ async def editEvent(request:Request,event_id : str,user=Depends(permission_requi
     editEvent = res.scalars().first()
     success = request.session.pop("success",None)
     csrf_token = secrets.token_urlsafe(32)
-    response =  templates.TemplateResponse("Event/Forms/edit_form.html",{'request':request,"event":editEvent,"success":success})
+    session_form_data = request.session.pop("form_data",None) #les donnees soumis dans les form qui seront renvoyee lors de l'erreur
+    if not editEvent:
+        raise HTTPException(status_code=404, detail="Événement introuvable")
+    if session_form_data is None:
+        form_data = {
+            "errors":{
+           'event_name' : "",
+            'event_date' : "",
+            'event_address' : "",
+            'event_location' : "",
+            'event_organizer' : "",
+            'couple_name' : "",
+            },
+            "fields":{},
+            "system":{}
+        }
+    else:
+        form_data = session_form_data
+    response =  templates.TemplateResponse("Event/Forms/edit_form.html",{'request':request,"csrf_token":csrf_token,"event":editEvent,"success":success,"data":form_data})
     response.set_cookie(
         key = "fastapi-csrf-token",
         value = csrf_token,
@@ -237,47 +366,120 @@ async def editEvent(request:Request,event_id : str,user=Depends(permission_requi
     )
     return response
 
-@Root.post("/edit_event/{event_id}")#la root pour modifier un evenement
-async def editEvent(request:Request,event_id : str,access_token = Cookie(None),eventName:str = Form(...),coupleName:str = Form(...),couple_phone_number:str = Form(...),eventType:str = Form(...),eventDate: str = Form(...),
-                    eventAddress:str = Form(...),location:str = Form(...),eventDescription: Optional[str] = Form(None),
-                    eventState: str = Form(...),photo:UploadFile = File(None),is_active:bool = Form(None),language:str = Form(...),organizer:str = Form(None),greetings:str = Form(None),total_place:int = Form(None),
-                    is_featured:bool = Form(None),db:AsyncSession = Depends(connecting)
-                    ,user=Depends(permission_required("edit_event")),
-                    csrf_token :str = Form(...),
-                    _=Depends(verify_csrf)):
-
-    edited_Event_Data = select(Event).where(Event.id == event_id)
-    res = await db.execute(edited_Event_Data)
+@Root.post("/edit_event/{event_id}")
+async def editEvent(
+    request: Request,
+    event_id: str,
+    access_token = Cookie(None),
+    eventName: str = Form(...),
+    coupleName: str = Form(...),
+    couple_phone_number: str = Form(...),
+    eventType: str = Form(...),
+    eventDate: datetime = Form(...),
+    eventAddress: str = Form(...),
+    location: str = Form(...),
+    eventDescription: Optional[str] = Form(None),
+    eventState: str = Form(...),
+    photo: UploadFile = File(None),
+    is_gift_active: bool = Form(None),
+    language: str = Form(...),
+    organizer: str = Form(None),
+    greetings: str = Form(None),
+    total_place: int = Form(None),
+    is_featured: bool = Form(None),
+    db: AsyncSession = Depends(connecting),
+    user = Depends(permission_required("edit_event")),
+    csrf_token: str = Form(...),
+    _ = Depends(verify_csrf)
+):
+    # 1. Récupération de l'événement en BDD
+    res = await db.execute(select(Event).where(Event.id == event_id))
     editedEventData = res.scalars().first() 
-    res = jwt.decode(access_token,secret,algorithms=[algo])
-    user_id = res.get("user")
-    user_res = await db.execute(select(User).where(User.id == user_id).options(selectinload(User.groups)))
+    if not editedEventData:
+        raise HTTPException(status_code=404, detail="Événement introuvable")
+
+    # 2. Récupération de l'utilisateur connecté
+    res_jwt = jwt.decode(access_token, secret, algorithms=[algo])
+    user_id = res_jwt.get("user")
+    user_res = await db.execute(
+        select(User)
+        .where(User.id == user_id)
+        .options(selectinload(User.groups), selectinload(User.roles))
+    )
     user = user_res.scalars().first()
-    if user.groups:
-        group_id = editedEventData.group_id
-    for role in user.roles:
-            user_role = role.name
+
+    user_role = user.roles[0].name if user.roles else None
+
+    # 3. Limites de caractères
+    max_length = {
+        "event_name": 50,
+        "event_address" : 50,
+        "event_location" : 50,
+        "couple_name" :  50,
+        "couple_phone_number": 15,
+        "event_organizer" :  255,
+        "event_photo_url": 255
+    }
+
+    # 4. Construction du dictionnaire de données et validation des erreurs
+    form_data = {
+        "errors": {
+            "event_name": f"Le nom de l'événement est trop long ({max_length['event_name']} caractères max)." if len(eventName) > max_length["event_name"] else None,
+            "event_date": "Entrez une date supérieure à la date actuelle ou entrez une date correcte !!!" if eventDate < datetime.now() else None,
+            "event_address": f"L'adresse est trop longue ({max_length['event_address']} caractères max)." if len(eventAddress) > max_length["event_address"] else None,
+            "event_location": f"Le nom de la localisation est trop long ({max_length['event_location']} caractères max)." if len(location) > max_length["event_location"] else None,
+            "event_organizer": f"Le nom de l'organisateur est trop long ({max_length['event_organizer']} caractères max)." if organizer and len(organizer) > max_length["event_organizer"] else None,
+            "couple_name": f"Le nom du couple est trop long ({max_length['couple_name']} caractères max)." if coupleName and len(coupleName) > max_length["couple_name"] else None,
+        },
+        "fields": {
+            "event_name": eventName,
+            "couple_name": coupleName,
+            "couple_phone_number": couple_phone_number,
+            "event_type": eventType,
+            "event_date": eventDate.isoformat() if eventDate else "",
+            "event_address": eventAddress,
+            "location": location,
+            "event_description": eventDescription,
+            "event_state": eventState,
+            "is_gift_active": bool(is_gift_active),
+            "language": language,
+            "organizer": organizer,
+            "greetings": greetings,
+            "total_place": total_place,
+            "is_featured": bool(is_featured)
+        }
+    }
+
+    # 5. Redirection si erreurs détectées
+    if any(form_data["errors"].values()):
+        request.session['form_data'] = form_data
+        return RedirectResponse(f"/edit_event/{event_id}", status_code=303)
+
+    # 6. Gestion du groupe de l'utilisateur (Non-admin)
+    group_id = editedEventData.group_id
+    groups = None
     if user_role != "admin":
         groups_res = await db.execute(select(Group).where(Group.id == group_id))
         groups = groups_res.scalars().first()
-    try:
-        parsed_modified_date = datetime.fromisoformat(eventDate)
-        if(parsed_modified_date < datetime.now()):
-            return templates.TemplateResponse("Event/Forms/edit_form.html",{'request':request,"dateError":'La date doit etre superieur a l\'actuelle !!!','event':editedEventData}, status_code=400)
-    except (ValueError,TypeError):
-        return templates.TemplateResponse("Event/Forms/edit_form.html",{'request':request,'error':'veillez entrer une date correcte','event':editedEventData},status_code=400)
-    if not editedEventData:
-        raise HTTPException(status_code=400,detail="Evenement intouvable")
-    event_photo_public_id = editedEventData.photo_public_id
+
+    # 7. Gestion de l'image (Cloudinary)
     photo_url = editedEventData.photo_url
     photo_public_id = editedEventData.photo_public_id
-    if photo and photo.filename:#si la photo a ete envoye
-        if not photo.content_type or not photo.content_type.startswith("image/"):#si ce n'est pas une image
-            return templates.TemplateResponse("Event/Forms/edit_form.html",{'request':request,"img_error":' le fichier doit etre une image !!!','event':editedEventData},status_code=400)
+    
+    if photo and photo.filename:
+        # Sécurité format
+        if not photo.content_type or not photo.content_type.startswith("image/"):
+            request.session['form_data'] = form_data
+            request.session['event_error'] = "Le fichier doit être une image !!!"
+            return RedirectResponse(f"/edit_event/{event_id}", status_code=303)
+            
         try:
-            target_folder = FOLDER_MAPPING.get(eventType,DEFAULT_FOLDER)
-            if event_photo_public_id:
-                await run_in_threadpool(cloudinary.uploader.destroy,event_photo_public_id)
+            target_folder = FOLDER_MAPPING.get(eventType, DEFAULT_FOLDER)
+            # Suppression de l'ancienne image si elle existe sur Cloudinary
+            if photo_public_id:
+                await run_in_threadpool(cloudinary.uploader.destroy, photo_public_id)
+            
+            # Upload de la nouvelle image
             upload_result = await run_in_threadpool(
                 cloudinary.uploader.upload, photo.file, folder=target_folder,
                 transformation=[{'width': 1000, 'height': 1000, 'crop': 'limit'}, {'quality': "auto"}]
@@ -285,18 +487,19 @@ async def editEvent(request:Request,event_id : str,access_token = Cookie(None),e
             photo_url = upload_result['secure_url']
             photo_public_id = upload_result['public_id']
         except Exception as e:
-            raise HTTPException(status_code=500,detail=f"Erreur lors du téléchargement de l'image: {str(e)}") 
+            raise HTTPException(status_code=500, detail=f"Erreur lors du téléchargement de l'image: {str(e)}") 
+
+    # 8. Mise à jour de l'objet SQLAlchemy
     editedEventData.name = eventName
     editedEventData.couple_name = coupleName
     editedEventData.couple_phone_number = couple_phone_number
     editedEventData.type = eventType
-    editedEventData.date = parsed_modified_date
+    editedEventData.date = eventDate
     editedEventData.address = eventAddress
     editedEventData.location = location
     editedEventData.description = eventDescription
     editedEventData.state = eventState
-    editedEventData.guest_present = is_active if is_active else None
-    editedEventData.created_by = user_id
+    editedEventData.guest_present = is_gift_active if is_gift_active else None
     editedEventData.photo_public_id = photo_public_id 
     editedEventData.photo_url = photo_url  
     editedEventData.organizer = organizer
@@ -304,17 +507,21 @@ async def editEvent(request:Request,event_id : str,access_token = Cookie(None),e
     editedEventData.greeting_message = greetings
     editedEventData.total_capacity = total_place
     editedEventData.is_featured = is_featured
-    if user_role != "admin":
-        edited_Event_Data.groups = [groups]
-    edited_Event_Data.groups = []
+    
+    # Gestion propre de la relation de groupe
+    if user_role != "admin" and groups:
+        editedEventData.groups = [groups]
+
+    # 9. Commit sécurisé
     try:
         await db.commit()
-    except Exception:
+    except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=500,detail="Erreur lors de la modification de l'événement")
-    request.session["success"] = "🎉 Événement modifié avec succès !"
+        print(f"🚨 [PROD DB ERROR] : {str(e)}")
+        raise HTTPException(status_code=500, detail="Erreur lors de la modification de l'événement")
 
-    return RedirectResponse("/event_list",status_code=303)
+    request.session["success"] = "🎉 Événement modifié avec succès !"
+    return RedirectResponse("/event_list", status_code=303)
 
 @Root.post("/delete_event/{event_id}")
 async def deleteEvent(

@@ -50,11 +50,37 @@ def get_curent_user(token:str = Depends(oauth_scheme)):
         raise HTTPException(status_code = status.HTTP_401_UNAUTHORIZED,detail = "non autorisé")
     return user
 
-def hash_password(password:str):#methode pour le hashage du password
-    return pwd_context.hash(password[:1024])
+def hash_password(password: str) -> str:
+    """
+    Méthode pour le hachage sécurisé du password.
+    Limite à 72 caractères pour éviter le crash matériel de l'algorithme Bcrypt.
+    """
+    if not password:
+        raise ValueError("Le mot de passe ne peut pas être vide.")
+        
+    # 🛡️ Sécurité & Stabilité : On tronque manuellement à 72 caractères maximum
+    safe_password = password[:72]
+    
+    # On génère et on retourne le hash Bcrypt standard (qui fera toujours 60 caractères)
+    return pwd_context.hash(safe_password)
 
-def verify_password(password:str,hashed:str):#verifier le password
-    return pwd_context.verify(password,hashed)#hashed est le mot de passe contentu dans la db
+def verify_password(password: str, hashed: str) -> bool:
+    # 1. Protection contre les valeurs vides ou None
+    if not password or not hashed:
+        return False
+
+    # 2. 🛡️ Sécurité Bcrypt : On tronque à 72 caractères maximum
+    # pour éviter le crash "password cannot be longer than 72 bytes"
+    safe_password = password[:72]
+
+    try:
+        # 3. Vérification classique
+        return pwd_context.verify(safe_password, hashed)
+    except ValueError as e:
+        # Si le mot de passe en BDD est mal formé ou en texte brut,
+        # on capture l'erreur pour éviter le crash de l'application.
+        print(f"⚠️ [BDD] Le hash en base de données est invalide ou corrompu : {hashed}. Erreur : {e}")
+        return False
 
 def create_token(data:dict):#Creation du token
     data_to_encode = data.copy()

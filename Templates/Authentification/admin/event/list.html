@@ -76,10 +76,10 @@
                     <a href="/edit_event/{{event.id}}" class="btn btn-sm btn-outline-warning">
                     <i class="bi bi-pencil"></i>
                     </a>
+                    {% if event.type == "other"%}
                     <a href="/ticket/{{event.id}}"  class="btn btn-outline-success text-dark">
                         Set ticket
                     </a>
-                    {% if event.type == "other"%}
                     <a href="/delete_all_order/{{event.id}}"  class="btn btn-outline-danger text-dark" onclick="return confirm('Voulez-vous vraiment supprimer toutes les commandes de cet evenement')">
                         delete_all_order
                     </a>

@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>E-Ticket - Choisissez votre espace</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            min-height: 100vh;
+        }
+        .card-choice {
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .card-choice:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2) !important;
+        }
+    </style>
+</head>
+<body class="d-flex align-items-center justify-content-center">
+
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-md-8 col-lg-6 text-center text-white mb-4">
+                <h2 class="fw-bold">Connexion Réussie ! </h2>
+                <p class="lead">Votre compte possède un double accès. Vers quel espace souhaitez-vous vous diriger ?</p>
+            </div>
+        </div>
+
+        <div class="row justify-content-center gap-4 px-3">
+            
+            <div class="col-md-5">
+                <div class="card card-choice border-0 shadow h-100 p-4 text-center" onclick="submitChoice('external')">
+                    <div class="card-body">
+                        <div class="display-4 text-primary mb-3">
+                            <i class="bi bi-ticket-perforated-fill"></i>
+                        </div>
+                        <h4 class="card-title fw-bold text-dark">Espace Participant</h4>
+                        <p class="card-text text-muted">Achetez des tickets, accédez à vos billets, et visualisez vos historiques d'achat.</p>
+                        <button class="btn btn-primary w-100 mt-3">Accéder à mes billets</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-5">
+                <div class="card card-choice border-0 shadow h-100 p-4 text-center" onclick="submitChoice('organizer')">
+                    <div class="card-body">
+                        <div class="display-4 text-danger mb-3">
+                            <i class="bi bi-building-fill-gear"></i>
+                        </div>
+                        <h4 class="card-title fw-bold text-dark">Espace Organisateur</h4>
+                        <p class="card-text text-muted">Créez et configurez vos événements, gérez vos ventes de billets et suivez votre tableau de bord.</p>
+                        <button class="btn btn-danger w-100 mt-3">Gérer mes événements</button>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <form id="roleForm" action="/auth/choose-role/submit" method="POST">
+        <input type="hidden" name="role" id="roleInput">
+        <input type="hidden" name="csrf_token" value="{{csrf_token}}">
+    </form>
+
+    <script>
+        function submitChoice(role) {
+            document.getElementById('roleInput').value = role;
+            document.getElementById('roleForm').submit();
+        }
+    </script>
+</body>
+</html>

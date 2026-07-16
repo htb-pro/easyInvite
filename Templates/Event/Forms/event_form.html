@@ -127,28 +127,24 @@
         <h2 class="app-name"></h2>
         <p>Configurez et lancez votre nouvel événement en quelques clics.</p>
         <div class="mt-3" style="position: relative;">
-            <a href="/event_list/" class="btn btn-outline-light text-light btn-sm">
+            <a href="/event_list/" class="btn btn-outline-light text-secondary  btn-sm">
                 ← Retour à la liste
             </a>
         </div>
     </div>
 
     <div class="form-content">
-        
-        {% if dateError or error or img_error %}
-        <div class="alert-error">
-            <i class="bi bi-exclamation-triangle-fill" style="margin-right: 8px; flex-shrink: 0;"></i>
+        <h3 class="form-title">Créer un événement</h3>
+        <p class="form-subtitle">Remplissez les champs ci-dessous pour la creation d'un evenement.</p>
+        {% if data.errors.error %}
+        <div class="alert alert-danger d-flex align-items-center border-0 rounded-2 mb-4" 
+            style="background-color: #3a1c24; color: #ff859d; font-size: 0.9rem;" role="alert">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>
             <div>
-                {% if dateError %}{{ dateError }}{% endif %}
-                {% if error %}{{ error }}{% endif %}
-                {% if img_error %}{{ img_error }}{% endif %}
+                {{ data.errors.error }}
             </div>
         </div>
         {% endif %}
-
-        <h3 class="form-title">Créer un événement</h3>
-        <p class="form-subtitle">Remplissez les champs ci-dessous pour la creation d'un evenement.</p>
-        
         <form method="post" action="/create_event" enctype="multipart/form-data">
             {% block content %}
             <input type="hidden" name="csrf_token" value="{{csrf_token}}" required>
@@ -159,12 +155,12 @@
                         <div class="input-icon"><i class="bi bi-grid"></i></div>
                         <select name="eventType" id="event_type" class="form-control" style="appearance:none; -webkit-appearance:none; cursor:pointer;" required>
                             <option value="" disabled selected>Choisir le type</option>
-                            <option value="Mariage" {%if eventType == "Mariage"%}selected{%endif%}>Mariage (wedding)</option>
-                            <option value="concours" {%if eventType == "concours"%}selected{%endif%}>Concours</option>
-                            <option value="birth_day" {%if eventType == "birth_day"%}selected{%endif%}>Anniversaire (birthday)</option>
-                            <option value="conference" {%if eventType == "conference"%}selected{%endif%}>Conférence</option>
-                            <option value="meeting" {%if eventType == "meeting"%}selected{%endif%}>Réunion (meeting)</option>
-                            <option value="other" {%if eventType == "other"%}selected{%endif%}>Autres (other)</option>
+                            <option value="Mariage" {%if data.fields.event_type == "Mariage"%}selected{%endif%}>Mariage (wedding)</option>
+                            <option value="concours" {%if data.fields.event_type == "concours"%}selected{%endif%}>Concours</option>
+                            <option value="birth_day" {%if data.fields.event_type == "birth_day"%}selected{%endif%}>Anniversaire (birthday)</option>
+                            <option value="conference" {%if data.fields.event_type == "conference"%}selected{%endif%}>Conférence</option>
+                            <option value="meeting" {%if data.fields.event_type == "meeting"%}selected{%endif%}>Réunion (meeting)</option>
+                            <option value="other" {%if data.fields.event_type == "other"%}selected{%endif%}>Autres (other)</option>
                         </select>
                     </div>
                 </div>
@@ -175,8 +171,8 @@
                         <div class="input-icon"><i class="bi bi-translate"></i></div>
                         <select class="form-control" id="language" name="language" style="appearance:none; -webkit-appearance:none; cursor:pointer;" required>
                             <option value="" disabled selected>Choisir la langue</option>
-                            <option value="fr">Français</option>
-                            <option value="en">English</option>
+                            <option value="fr" {%if data.fields.language == "fr"%}selected{%endif%}>Français</option>
+                            <option value="en" {%if data.fields.language == "en"%}selected{%endif%}>English</option>
                         </select>
                     </div>
                 </div>
@@ -186,7 +182,7 @@
                 <label class="form-label">Nom de l'événement</label>
                 <div class="input-group">
                     <div class="input-icon"><i class="bi bi-bookmark-star"></i></div>
-                    <input type="text" class="form-control" name="eventName"  value="{{eventName}}" placeholder="Ex : Gala Annuel 2026" required>
+                    <input type="text" class="form-control" name="eventName"  value="{{data.fields.event_name}}" placeholder="Ex : Gala Annuel 2026" required>
                 </div>
             </div>
 
@@ -194,7 +190,7 @@
                 <label class="form-label">Organisateur (Organizer)</label>
                 <div class="input-group">
                     <div class="input-icon"><i class="bi bi-building"></i></div>
-                    <input type="text" class="form-control" name="organizer" value="{{organizer}}" placeholder="Ex : Direction Générale" required>
+                    <input type="text" class="form-control" name="organizer" value="{{data.fields.event_organizer}}" placeholder="Ex : Direction Générale" required>
                 </div>
             </div>
 
@@ -202,7 +198,7 @@
                 <label class="form-label">Nom du couple (Couple's name)</label>
                 <div class="input-group">
                     <div class="input-icon"><i class="bi bi-heart-fill text-danger"></i></div>
-                    <input type="text" class="form-control" name="couple_name" value="{{couple_name}}" placeholder="Ex : Joël & Alliance" required>
+                    <input type="text" class="form-control" name="couple_name" value="{{data.fields.couple_name}}" placeholder="Ex : Joël & Alliance" required>
                 </div>
             </div>
             <div class="row-grid">
@@ -211,7 +207,7 @@
                         <label class="form-label">Téléphone de contact du couple</label>
                         <div class="input-group">
                             <div class="input-icon"><i class="bi bi-whatsapp"></i></div>
-                            <input type="tel" class="form-control" name="couple_phone_number" minlength="8" maxlength="15" value="{{couple_phone_number}}" placeholder="Ex : 24399xxxxxxx" required>
+                            <input type="tel" class="form-control" name="couple_phone_number" minlength="8" maxlength="15" value="{{data.fields.couple_phone_number}}" placeholder="Ex : 24399xxxxxxx" required>
                         </div>
                     </div>
                 </div>
@@ -220,7 +216,7 @@
                         <label class="form-label">Date et Heure de l'événement</label>
                         <div class="input-group">
                             <div class="input-icon"><i class="bi bi-calendar3"></i></div>
-                            <input type="datetime-local" class="form-control" name="eventDate" value="{{eventDate}}" required style="cursor: text;">
+                            <input type="datetime-local" class="form-control" name="eventDate" value="{{data.fields.event_date}}" required style="cursor: text;">
                         </div>
                     </div>
                 </div>
@@ -230,7 +226,7 @@
                 <label class="form-label">Adresse physique</label>
                 <div class="input-group">
                     <div class="input-icon"><i class="bi bi-geo-alt"></i></div>
-                    <input type="text" class="form-control" name="eventAddress" placeholder="Ex: Av. de l'Église, Gombe, Kinshasa" value="{{eventAddress}}" required>
+                    <input type="text" class="form-control" name="eventAddress" placeholder="Ex: Av. de l'Église, Gombe, Kinshasa" value="{{data.fields.event_address}}" required>
                 </div>
             </div>
 
@@ -239,7 +235,7 @@
                     <label class="form-label">Nom de la Salle</label>
                     <div class="input-group">
                         <div class="input-icon"><i class="bi bi-door-open"></i></div>
-                        <input type="text" class="form-control" name="location" placeholder="Ex : Salle du Royaume" value="{{location}}" required>
+                        <input type="text" class="form-control" name="location" placeholder="Ex : Salle du Royaume" value="{{data.fields.location}}" required>
                     </div>
                 </div>
 
@@ -247,19 +243,19 @@
                     <label class="form-label">Nombre de places total</label>
                     <div class="input-group">
                         <div class="input-icon"><i class="bi bi-hash"></i></div>
-                        <input type="number" class="form-control" name="total_place" placeholder="Ex: 250" value="{{total_place}}">
+                        <input type="number" class="form-control" name="total_place" placeholder="Ex: 250" value="{{data.fields.total_place}}">
                     </div>
                 </div>
             </div>
 
             <div class="row-grid mb-3">
                 <label class="check-container col-6">
-                    <input type="checkbox" name="is_featured" {% if is_featured %}checked{% endif %}>
+                    <input type="checkbox" name="is_featured" {% if data.fields.is_featured %}checked{% endif %}>
                     <span>Mettre à la une</span>
                 </label>
                 
                 <label class="check-container col-6">
-                    <input type="checkbox" name="is_active" {% if is_active %}checked{% endif %}>
+                    <input type="checkbox" name="is_gift_active" {% if data.fields.is_gift_active %}checked{% endif %}>
                     <span>Cadeau en espèce (Cash gift)</span>
                 </label>
             </div>
@@ -320,3 +316,4 @@
 </script>
 </body>
 </html>
+

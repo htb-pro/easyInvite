@@ -78,16 +78,16 @@
                             <input type="hidden" id="csrf_token" name="csrf_token" value="{{csrf_token}}">
                             
                             <div class="mb-4">
-                                <label class="form-label text-white-50 small fw-semibold">Numéro de téléphone</label>
+                                <label class="form-label text-white-50 small fw-semibold">Adresse email</label>
                                 <div class="input-group">
-                                    <span class="input-group-text text-secondary border-0" style="background-color: #1E293B; border-radius: 12px 0 0 12px;">+243</span>
+                                    <span class="input-group-text text-secondary border-0" style="background-color: #1E293B; border-radius: 12px 0 0 12px;">@</span>
                                     <input 
-                                        type="tel" 
-                                        name="phone_input" 
-                                        id="phone_input"
+                                        type="email" 
+                                        name="email_input" 
+                                        id="email_input"
                                         class="form-control text-white border-0" 
-                                        placeholder="812345678" 
-                                        pattern="[0-9]{9}" 
+                                        placeholder="heritiertshim@gmail.com" 
+                                        pattern="[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}" 
                                         required
                                         style="background-color: #1E293B; border-radius: 0 12px 12px 0; padding: 12px;"
                                     >
@@ -104,8 +104,8 @@
                                     </span>
                                     <select name="user_type" id="user_type" class="form-select custom-select text-white border-0 border-start-0" style="background-color: #1E293B; border-radius: 0 12px 12px 0; padding: 12px;" required>
                                         <option value="" disabled selected hidden>Choisissez votre type de compte...</option>
-                                        <option value="external_user">🎟️ Je suis un Participant (Achat de billets)</option>
-                                        <option value="organizer">💼 Je suis un Organisateur (Gestion d'événements)</option>
+                                        <option value="external_user">Je suis un Participant (Achat de billets)</option>
+                                        <option value="organizer">Je suis un Organisateur (Gestion d'événements)</option>
                                     </select>
                                 </div>
                                 <div class="form-text text-secondary small mt-1">

@@ -10,7 +10,7 @@ from models import ExternalUser
 
 load_dotenv()
 
-set_secure_cookie = False #la variable permettant l'usage du csrf_token Fasle en locale et True en ligne ou prod#
+set_secure_cookie = True #la variable permettant l'usage du csrf_token Fasle en locale et True en ligne ou prod#
 
 secret = os.getenv('SECRET')#le secret ou sinature du token
 algo = os.getenv('ALGO')#type d'algorithme
@@ -28,6 +28,8 @@ auth_token = os.getenv('twilio_auth_token')
 twilio_number = os.getenv('twilio_whatsapp_number')
 text_content= os.getenv('text_content_sid')
 media_content = os.getenv('media_content_sid')
+
+resend_api_key = os.getenv('RESEND_API_KEY')
 #=======================
 
 # Remplace ton dictionnaire actuel par ceci :

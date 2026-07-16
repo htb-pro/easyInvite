@@ -22,12 +22,12 @@ async def organisar_dashboard(
     db: AsyncSession = Depends(connecting)
 ):
     # 💡 CORRECTIF MAJEUR : Récupération depuis la session (aligné avec le reste de l'auth)
-    current_organizer_id = request.session.get("session_user_id")
+    current_organizer_id = request.session.get("user_id")
     
     if not current_organizer_id:
         # Si l'organisateur n'est pas connecté, redirection avec message flash
         request.session['invalid_number'] = "Veuillez vous connecter pour accéder à votre espace."
-        return RedirectResponse(url="/organizer/sign-in", status_code=status.HTTP_303_SEE_OTHER)
+        return RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
         
     try:
         # 1. Récupération de l'organisateur pour valider qu'il existe toujours
@@ -81,17 +81,21 @@ async def organisar_dashboard(
         )
 
 #====================organizer acount management
-@Root.get("/organizer/sign-up", response_class=HTMLResponse)
+@Root.get("/auth/register/organizer", response_class=HTMLResponse)
 async def get_register_page(
     request: Request):
     # 1. Génération d'un jeton CSRF unique et aléatoire
     csrf_token = secrets.token_urlsafe(32)
     # 2. Envoi du jeton au template HTML
+    error = request.session.pop('register_error', None)
+    form_data = request.session.pop('form_data', {})
     response = templates.TemplateResponse(
         "e-ticket/organizer/forms/account/sign_up.html", 
         {
             "request": request,
             "csrf_token": csrf_token,
+            "error": error,
+            "form_data": form_data, #les donnees envoye dans le formulaire
         }
     )
     
@@ -107,77 +111,97 @@ async def get_register_page(
     
     return response
 
-@Root.post("/organizer/register")
+@Root.post("/auth/register/organizer")
 async def register_organizer(
     request: Request,
-    company_name: str = Form(...),
-    email: str = Form(...),
+    csrf_token: str = Form(...),
+    organization_name: str = Form(...),
+    contact_name: str = Form(...),
     phone: str = Form(...),
-    password: str = Form(...,min_length=8),# 🔒 Sécurité : 8 caractères minimum requis !
-    csrf_token: str = Form(...),          
+    email: str = Form(...),
+    password: str = Form(...),
     db: AsyncSession = Depends(connecting),
-    _ = Depends(verify_csrf)               
+    _=Depends(verify_csrf)
 ):
-    # Nettoyage des données
+    # Nettoyage rapide des entrées utilisateur
+    phone_clean = phone.strip()
     email_clean = email.strip().lower()
-    phone_clean = format_to_drc_phone(phone.strip())
+    org_name_clean = organization_name.strip()
+    contact_clean = contact_name.strip()
+    
+    # On prépare un dictionnaire avec les données saisies pour les garder en mémoire en cas d'échec
+    form_data = {
+        "organization_name": organization_name.strip(),
+        "contact_name": contact_name.strip(),
+        "phone": phone.strip(),
+        "email": email.strip().lower()
+    }
+
+    # 1. Validation basique des données
+    if not phone_clean or not email_clean or not password or len(password) < 8:
+        request.session["form_data"] = form_data
+        request.session['register_error'] = "Veuillez remplir tous les champs correctement (mot de passe : min 8 caractères)."
+        return RedirectResponse("/auth/register/organizer", status_code=status.HTTP_303_SEE_OTHER)
 
     try:
-        # 🛡️ SÉCURITÉ 1 : Vérifier l'email (Correction de l'attribut si nécessaire)
-        email_check = await db.execute(select(Organizer).where(Organizer.email == email_clean))
-        if email_check.scalars().first():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Cette adresse email est déjà associée à un compte."
-            )
+        # 2. Standardisation du numéro de téléphone
+        formatted_phone = format_to_drc_phone(phone_clean)
+    except Exception:
+        request.session["form_data"] = form_data
+        request.session['register_error'] = "Format du numéro de téléphone invalide."
+        return RedirectResponse("/auth/register/organizer", status_code=status.HTTP_303_SEE_OTHER)
 
-        # 🛡️ SÉCURITÉ 2 : Vérifier le téléphone -> Utilisation de .phone_number (ton vrai attribut de modèle)
-        phone_check = await db.execute(select(Organizer).where(Organizer.phone_number == phone_clean))
-        if phone_check.scalars().first():
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Ce numéro de téléphone est déjà utilisé."
-            )
+    try:
+        # 3. Vérification si le numéro de téléphone ou l'email existe déjà
+        # (Évite de créer deux comptes avec les mêmes identifiants)
+        query = select(Organizer).where(
+            (Organizer.phone_number == formatted_phone) | (Organizer.email == email_clean)
+        )
+        result = await db.execute(query)
+        existing_org = result.scalars().first()
 
-        # Hachage sécurisé du mot de passe
-        hashed_pwd = hash_password(password)
-        
-        # Création du nouvel organisateur avec les attributs EXACTS de ton modèle de BDD
+        if existing_org:
+            if existing_org.phone_number == formatted_phone:
+                request.session["form_data"] = form_data
+                request.session['register_error'] = "Ce numéro de téléphone est déjà associé à un compte."
+            else:
+                request.session["form_data"] = form_data
+                request.session['register_error'] = "Cette adresse email est déjà associée à un compte."
+            return RedirectResponse("/auth/register/organizer", status_code=status.HTTP_303_SEE_OTHER)
+     
+        #  hachage du mot de passe
+        hashed_password = hash_password(password)
+
+        # 5. Création de l'organisateur dans la base de données
         new_organizer = Organizer(
-            company_name=company_name.strip(),
-            email=email_clean,
-            phone_number=phone_clean,                
-            password=hashed_pwd,       
-            is_active=True,
-            is_verified=False
+            company_name =org_name_clean,
+            phone_number=formatted_phone,
+            email =email_clean,
+            password=hashed_password
         )
 
         db.add(new_organizer)
         await db.commit()
         await db.refresh(new_organizer)
 
-        return JSONResponse(
-            status_code=status.HTTP_201_CREATED,
-            content={"message": "Votre compte organisateur a été créé avec succès !"}
-        )
+        # 6. Connexion automatique de l'utilisateur (Gestion des sessions)
+        request.session['user_id'] = new_organizer.id
+        request.session['user_type'] = "organizer"
+        
+        # On nettoie les messages d'erreurs d'inscription précédents s'il y en avait
+        request.session.pop('register_error', None)
 
-    # 💡 On intercepte les HTTPException pour qu'elles passent normalement sans déclencher le 500
-   # 💡 Remplacer les anciens blocs 'except' par celui-ci :
-    except HTTPException as http_err:
-        # En cas d'erreur métier (Email/Tel déjà pris), on renvoie un JSON direct.
-        # Cela évite le crash interne et donne exactement ce que le JavaScript attend !
-        return JSONResponse(
-            status_code=http_err.status_code,
-            content={"detail": http_err.detail}
-        )
+        # Redirection vers le dashboard de l'organisateur
+        return RedirectResponse(url="/organizer/account", status_code=status.HTTP_303_SEE_OTHER)
 
     except Exception as e:
+        # En cas de plantage BDD, on annule la transaction en cours (sécurité)
         await db.rollback()
-        print(f"Erreur critique inscription : {str(e)}")
-        return JSONResponse(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            content={"detail": "Une erreur interne est survenue sur le serveur."}
-        )
+        # On enregistre l'erreur réelle dans les logs du serveur (invisible pour le client)
+        print(f"🚨 [PROD ERROR] Inscription Organisateur échouée : {str(e)}")
+        
+        request.session['register_error'] = "Une erreur technique est survenue. Veuillez réessayer."
+        return RedirectResponse("/auth/register/organizer", status_code=status.HTTP_303_SEE_OTHER)
     
 @Root.get("/organizer/sign-in", response_class=HTMLResponse)
 async def get_register_page(
@@ -293,7 +317,7 @@ async def logout(request: Request):
     
     # 💡 2. NETTOYAGE RÉSIDUEL : Si jamais tu utilises encore le cookie CSRF
     # Il est sain de le supprimer aussi au logout pour repartir sur une base neuve au prochain login.
-    response = RedirectResponse(url="/organizer/sign-in", status_code=status.HTTP_303_SEE_OTHER)
+    response = RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
     response.delete_cookie(key="fastapi-csrf-token", path="/")
     
     return response

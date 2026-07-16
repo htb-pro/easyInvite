@@ -23,7 +23,7 @@ from Routers.tasks import generer_qr_code_base64
 from utils.redis_config import redis_conn
 from utils.Qr_Utils.qrCodeUtils import createTicketQrCode
 
-Root = APIRouter(tags =["easyInvite"],dependencies =[Depends(get_current_user_from_cookie),Depends(admin_required)])
+Root = APIRouter(tags =["easyInvite"],dependencies =[Depends(get_current_user_from_cookie)])
 templates = Jinja2Templates(directory="Templates")  
 Root.mount("/static",StaticFiles(directory="static"),name="static")#ou sont stocker les fichier static
 # Configuration de Jinja2 pour charger notre template HTML
@@ -168,6 +168,7 @@ async def get_ticket_list(request:Request,event_id:str,page:int = 1,access_token
         user = user_res.scalars().first()
         for role in user.roles:
              user_role = role.name
+    print(f"-----------------user: {user_role}-------------------")
     event_res = await db.execute(select(Event).where(Event.id==event_id))
     event = event_res.scalars().first()
     total_ticket = (await db.execute(select(func.count()).select_from(Ticket))).scalar() or 0

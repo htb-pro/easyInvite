@@ -3,70 +3,173 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Inscription Organisateur - easyInvite</title>
-    <!-- Bootstrap 5 & Icons -->
-    <link href="/static/Css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
-    <script src="/static/Js/sign-up.js"></script>
+    <title>Créer un compte Organisateur - EasyTicket</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" rel="stylesheet">
+    
     <style>
-        body { background-color: #0F172A; color: white; min-height: 100vh; display: flex; align-items: center; }
-        .register-card { background-color: #1E293B; border: none; border-radius: 16px; }
-        .form-control { background-color: #0F172A; border: 1px solid #334155; color: white; }
-        .form-control:focus { background-color: #0F172A; color: white; border-color: #F59E0B; box-shadow: none; }
-        input::placeholder
-        {
-            color: #a2afc1 !important;
+        /* Charte graphique EasyTicket */
+        body {
+            background-color: #0b132b; /* Bleu nuit très sombre */
+            color: #ffffff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .register-card {
+            background-color: #1c2541; /* Bleu marine foncé (comme ta boîte de connexion) */
+            border-radius: 16px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            width: 100%;
+        }
+
+        /* Personnalisation des champs de saisie (Inputs) */
+        .form-control, .input-group-text {
+            background-color: #222b45 !important; /* Légèrement plus clair que la carte */
+            border: 1px solid #3a506b !important;
+            color: #ffffff !important;
+        }
+
+        .form-control::placeholder {
+            color: #6c757d !important;
+            opacity: 0.8;
+        }
+
+        .form-control:focus {
+            border-color: #ffbc0a !important; /* Focus Jaune */
+            box-shadow: 0 0 0 0.25rem rgba(255, 188, 10, 0.15) !important;
+            outline: none;
+        }
+
+        /* Liens de navigation (Cyan) */
+        .custom-link {
+            color: #5bc0be !important;
+            text-decoration: none;
+            font-weight: 500;
+            transition: color 0.2s ease-in-out;
+        }
+
+        .custom-link:hover {
+            color: #6fffe9 !important;
+            text-decoration: underline;
+        }
+
+        /* Bouton Jaune d'or EasyTicket */
+        .btn-yellow {
+            background-color: #ffbc0a !important;
+            color: #0b132b !important;
+            border: none !important;
+            font-weight: bold;
+            padding: 12px;
+            transition: background-color 0.2s ease-in-out, transform 0.1s ease;
+        }
+
+        .btn-yellow:hover {
+            background-color: #e0a300 !important;
+        }
+
+        .btn-yellow:active {
+            transform: scale(0.98);
+        }
+
+        /* Labels et textes secondaires */
+        .form-label {
+            color: #a5b1c2;
+        }
+        
+        .text-muted-custom {
+            color: #8fa0b5;
         }
     </style>
 </head>
 <body>
 
-<div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-12 col-md-6 col-lg-5">
-            
-            <div class="text-center mb-4">
-                <h2 class="fw-bold text-warning"><i class="bi bi-ticket-perforated-fill me-2"></i> EasyTicket</h2>
-                <p class="text-secondary">Créez votre compte organisateur pro</p>
-            </div>
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-8 col-lg-6 col-xl-5">
+                
+                <div class="text-center mb-4">
+                    <h1 class="fw-bold mb-1" style="color: #ffbc0a; letter-spacing: 0.5px;">EasyTicket</h1>
+                    <p class="text-muted-custom small">Espace d'inscription pour les partenaires organisateurs</p>
+                </div>
 
-            <div class="card register-card p-4 shadow-lg">
-                <!-- Zone de message d'erreur dynamique -->
-                <div id="error-alert" class="alert alert-danger d-none" role="alert"></div>
-                <form id="form-register">
-                    <input type="hidden" name="csrf_token" id="csrf_token" value="{{ csrf_token }}">
-                    <div class="mb-3">
-                        <label for="company_name" class="form-label small text-secondary">Nom de l'entreprise / Structure</label>
-                        <input type="text" class="form-control" name="company_name" required placeholder="Ex: Agence Horizon">
+                <div class="card register-card p-4 p-md-5">
+                    
+                    <h2 class="h4 fw-bold mb-4 text-white">Espace Organisateur</h2>
+
+                    <form action="/auth/register/organizer" method="POST" class="needs-validation" novalidate>
+                        {% if error %}
+                        <div class="alert alert-danger d-flex align-items-center border-0 rounded-2 mb-4" 
+                            style="background-color: #3a1c24; color: #ff859d; font-size: 0.9rem;" role="alert">
+                            <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                            <div>
+                                {{ error }}
+                            </div>
+                        </div>
+                        {% endif %}
+                        <input type="hidden" name="csrf_token" value="{{csrf_token}}">
+                        <div class="mb-3">
+                            <label for="organization_name" class="form-label small fw-semibold">Nom de votre entreprise / Structure</label>
+                            <input type="text" class="form-control" id="organization_name" name="organization_name" value="{{  form_data.organization_name if form_data else ''}}" placeholder="Ex: lushi Event, Agence Horizon..." required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="contact_name" class="form-label small fw-semibold">Nom complet du responsable</label>
+                            <input type="text" class="form-control" id="contact_name" name="contact_name" value="{{  form_data.contact_name if form_data else ''}}" placeholder="Ex: emma tshibangu" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="phone" class="form-label small fw-semibold">Numéro de téléphone</label>
+                            <input type="tel" class="form-control" id="phone" name="phone" value="{{  form_data.phone if form_data else ''}}" placeholder="Ex: 0812345678" required>
+                            <div class="form-text text-muted-custom" style="font-size: 0.75rem;">Saisissez le numéro qui servira à vous connecter.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="email" class="form-label small fw-semibold">Adresse Email</label>
+                            <input type="email" class="form-control" id="email" name="email" value="{{  form_data.email if form_data else ''}}" placeholder="Ex: contact@organisation.com" required>
+                        </div>
+
+                        <div class="mb-4">
+                            <label for="password" class="form-label small fw-semibold">Mot de passe</label>
+                            <div class="input-group">
+                                <input type="password" class="form-control border-end-0" id="password" name="password"  placeholder="Écrivez votre mot de passe" required>
+                                <span class="input-group-text" style="cursor: pointer; border-left: none !important;" id="togglePassword">
+                                    <i class="bi bi-eye text-muted-custom"></i>
+                                </span>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-yellow w-100 rounded-2 shadow-sm mb-3">
+                            Valider l'inscription
+                        </button>
+                    </form>
+
+                    <div class="d-flex justify-content-between mt-3 small">
+                        <a href="/auth/login" class="custom-link">
+                            <i class="bi bi-arrow-left"></i> Retour à la connexion
+                        </a>
+                        <a href="/user/register/form" class="custom-link">
+                            Compte Participant ?
+                        </a>
                     </div>
 
-                    <div class="mb-3">
-                        <label for="email" class="form-label small text-secondary">Adresse Email Professionnelle</label>
-                        <input type="email" class="form-control" name="email" required placeholder="nom@entreprise.com">
-                    </div>
-
-                    <div class="mb-3">
-                        <label for="phone" class="form-label small text-secondary">Numéro de Téléphone</label>
-                        <input type="tel" class="form-control" name="phone" required placeholder="Ex: +33 6 12 34 56 78">
-                    </div>
-
-                    <div class="mb-4">
-                        <label for="password" class="form-label small text-secondary">Mot de passe</label>
-                        <input type="password" class="form-control" name="password" minlength="8" required placeholder="••••••••">
-                    </div>
-
-                    <button type="submit" class="btn btn-warning btn-lg w-100 fw-bold text-dark mb-3" style="border-radius: 8px;">
-                        Créer mon compte
-                    </button>
-
-                    <div class="text-center">
-                        <a href="/organizer/sign-in" class="text-secondary small text-decoration-none">Déjà inscrit ? Connectez-vous</a>
-                    </div>
-                </form>
-            </div>
-
+                </div> </div>
         </div>
     </div>
-</div>
+
+    <script>
+        const togglePassword = document.querySelector('#togglePassword');
+        const password = document.querySelector('#password');
+
+        togglePassword.addEventListener('click', function () {
+            const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
+            password.setAttribute('type', type);
+            this.querySelector('i').classList.toggle('bi-eye');
+            this.querySelector('i').classList.toggle('bi-eye-slash');
+        });
+    </script>
 </body>
 </html>

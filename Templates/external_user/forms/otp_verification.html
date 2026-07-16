@@ -25,8 +25,7 @@
                 <div class="p-4 auth-card shadow">
                     <h5 class="mb-1 fw-bold text-center">Vérification du code</h5>
                     <p class="text-center small mb-4">
-                        Entrez le code secret envoyé par sms au <br>
-                        <strong class="text-warning font-monospace">{{ reset_phone }}</strong>
+                        Entrez le code secret envoyé par email a l'adresse mail<br>
                     </p>
                     
                     <!-- Ajout d'un ID pour le cibler en JS et suppression de l'action directe -->
@@ -87,7 +86,7 @@
 
             if (response.ok && data.status === "SUCCESS") {
                 // 🟢 SUCCÈS : On redirige vers la page finale en transmettant le token de sécurité
-                window.location.href = `/auth/reset-password-form?token=${data.reset_token}`;
+                window.location.href = `/user/reset_password?token=${data.reset_token}`;
             } else {
                 // ❌ ERREUR (Code faux, expiré, bloqué, etc.)
                 alertText.textContent = data.detail;
