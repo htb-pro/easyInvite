@@ -30,24 +30,28 @@
                 <h1 class="display-5 fw-bold text-warning">{{ event.name }}</h1>
                 <div class="d-flex flex-column gap-3 mb-4 text-secondary">
                     <span class="text-white"><i class="bi bi-calendar-event"></i> {{ event.date.strftime("%d-%m-%Y %H:%M") }}</span> 
-                    <span class="text-white">Organisateur : {{ event.organizer}}</span> 
-                    <span class="text-white"><i class="bi bi-geo-alt"></i> ville : {{ event.location}}</span> 
-                    <span class="text-white">Adresse : {{ event.address }}</span> 
+                    <span class="text-white"><i class="bi bi-person-badge"></i> Organisateur : {{ event.organizer}}</span> 
+                    <span class="text-white"><i class="bi bi-geo-alt"></i> ville : {{ event.city}}</span> 
+                    <span class="text-white"><i class="bi bi-pin-map"></i> Adresse : {{ event.address }}</span> 
                     <div class="event-meta mt-3 fw-bold text-white small">
                         <h5><i class="bi bi-tag-fill me-1"></i>billet</h5>
-                        {% for ticket in event.ticket_prices %}
-                        {% if ticket.price%}
-                        <span >{{ticket.ticket_type}} : {{ ticket.price|int}} {{ticket.device}}</span><br>
-                        {%else%} 
-                        <span class="fw-bold text-success">
-                                <i class="bi bi-ticket-perforated"></i> 
-                                {{ ticket.ticket_type.capitalize() }} : Gratuit
-                        </span><br>
-                        {%endif%}
-                        {% endfor %}
+                        {% if event.ticket_prices %}
+                            {% for ticket in event.ticket_prices %}
+                            {% if ticket.price%}
+                            <span >{{ticket.ticket_type}} : {{ ticket.price|int}} {{ticket.device}}</span><br>
+                            {%else%} 
+                            <span class="fw-bold text-success">
+                                    <i class="bi bi-ticket-perforated"></i> 
+                                    {{ ticket.ticket_type.capitalize() }} : Gratuit
+                            </span><br>
+                            {%endif%}
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-success small mb-1"><i class="bi bi-ticket-perforated"></i>  Gratuit</p>
+                        {% endif %}
                     </div>
                 </div>
-                {% if event.description %}
+                {% if event.description and event.description != 'None' and event.description.strip() %}
                 <div class="text-secondary">
                     <hr>
                     <h5>À propos de cet événement</h5>
@@ -61,9 +65,15 @@
             <div class="card p-4 shadow-sm mt-lg-n5 sticky-top" style="top: 20px;">
                 <h4 class="fw-bold mb-3 text-white">Prêt à participer ?</h4>
                 <div class="d-grid gap-2">
+                    {% if event.ticket_prices%}
                     <a href="/payments/{{event.id}}" class="btn btn-warning btn-lg shadow-sm">
                         <i class="bi bi-ticket-perforated"></i> Acheter un billet
                     </a>
+                    {% else %}
+                    <button class="btn btn-secondary" disabled>
+                        <p class="text-muted small mb-1"><i class="bi bi-ticket-perforated"></i> Entrée gratuite</p>
+                    </button>
+                    {% endif %}
                 </div>
                 <ul class="list-unstyled mt-4 text-white">
                     <li><i class="bi bi-check-circle text-success"></i> Paiement sécurisé</li>

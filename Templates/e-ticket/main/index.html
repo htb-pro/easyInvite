@@ -484,7 +484,7 @@ input::placeholder {
                     <div class="modal-body p-0 bg-black overflow-hidden" style="border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
                         <div class="ratio ratio-16x9">
                             <video id="payerVideo" controls poster="/static/images/thumbnail-paiement.jpg">
-                                <source src="/static/videos/demo_easyticket.mp4" type="video/mp4">
+                                <source src="https://res.cloudinary.com/dggxtgzrm/video/upload/v1784331804/lv_0_20260718013043_ggihhs.mp4" type="video/mp4">
                                 Votre navigateur ne prend pas en charge les vidéos HTML5.
                             </video>
                         </div>
@@ -505,7 +505,7 @@ input::placeholder {
                     <div class="modal-body p-0 bg-black overflow-hidden" style="border-bottom-left-radius: 16px; border-bottom-right-radius: 16px;">
                         <div class="ratio ratio-16x9">
                             <video id="compteVideo" controls poster="/static/images/thumbnail-compte.jpg">
-                                <source src="/static/videos/demo_creation_compte.mp4" type="video/mp4">
+                                <source src="https://res.cloudinary.com/dggxtgzrm/video/upload/v1784331810/lv_0_20260718012401_os77vo.mp4" type="video/mp4">
                                 Votre navigateur ne prend pas en charge les vidéos HTML5.
                             </video>
                         </div>
@@ -574,14 +574,18 @@ input::placeholder {
                                 {% else %}
                                     <p class="text-secondary">{% if event.description %}{{ event.description[:100] }}...{% endif %}</p>
                                     <p class="text-secondary small mb-1"><i class="bi bi-calendar-event"></i> Date : {{ event.date.strftime("%d-%m-%Y") }} à {{ event.date.strftime("%H:%M") }}</p>
-                                    <p class="text-secondary small"><i class="bi bi-geo-alt"></i> {{ event.location }}</p>
-                                    
+                                    <p class="text-secondary small"><i class="bi bi-geo-alt"></i> {{ event.city }}</p>
+                                    {% if event.ticket_prices %}
+                                        <p class="text-secondary small mb-1"><i class="bi bi-ticket-perforated"></i> Tarifs :</p>
                                     {% for ticket in event.ticket_prices %}
                                         <span class="{% if ticket.price and ticket.price > 0 %}text-warning{% else %}text-success{% endif %}">
                                             <i class="bi bi-ticket-perforated me-1"></i>
                                             {{ ticket.ticket_type.capitalize() }} : {% if ticket.price and ticket.price > 0 %}{{ ticket.price|int }} {{ ticket.device }}{% else %}Gratuit{% endif %}
                                         </span><br>
                                     {% endfor %}
+                                    {% else %}
+                                        <p class="text-success small mb-1"><i class="bi bi-ticket-perforated"></i>  Entrée gratuite</p>
+                                    {% endif %}
                                 {% endif %}
                             </div>
                             

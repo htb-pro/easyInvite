@@ -101,6 +101,7 @@ class Event(Base): #event table
     photo_public_id=Column(String(255),nullable=True)
     language = Column(String(50),default="fr")#langue par defaut de l'evenement
     total_capacity = Column(Integer)#capacité totale de place de l'evenement
+    city = Column(String(100),nullable=True) #la ville de l'evenement
     sold_seats = Column(Integer,default=0)#nombre de places vendues
     is_featured = Column(Boolean, default=False, nullable=True)#LE CHAMP CLÉ : False par défaut, l'admin le passe à True pour le mettre À la Une
     is_deleted =Column(Boolean, default=False, nullable=True)

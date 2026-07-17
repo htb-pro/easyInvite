@@ -309,7 +309,12 @@
                 <label class="form-label">Numéro de téléphone du couple</label>
                 <div class="input-group">
                     <div class="input-icon"><i class="bi bi-whatsapp"></i></div>
-                    <input type="tel" class="form-control" name="couple_phone_number" placeholder="Ex : 24399xxxxxxx" value="{{data.fields.couple_phone_number if data.fields.couple_phone_number  else event.couple_phone_number}} " required>
+                    <input type="tel" class="form-control {{ 'is-invalid' if data.errors.couple_phone_number else '' }}" minlength="9" maxlength="15" name="couple_phone_number" placeholder="Ex : 24399xxxxxxx" value="{{data.fields.couple_phone_number if data.fields.couple_phone_number  else event.couple_phone_number}} " required>
+                    {% if data.errors.couple_phone_number%}
+                    <div class="invalid-feedback">
+                        <i class="bi bi-exclamation-circle"></i> {{data.errors.couple_phone_number}}
+                    </div>
+                    {% endif %}
                 </div>
             </div>
 
@@ -359,6 +364,36 @@
                         <div class="input-icon"><i class="bi bi-hash"></i></div>
                         <input type="number" class="form-control" name="total_place" value="{{data.fields.total_place if data.fields.total_place  else event.total_capacity}}">
                     </div>
+                </div>
+            </div>
+
+            <div class="mb-3 col-12">
+                <label class="form-label">Ville</label>
+                <div class="input-group">
+                    <div class="input-icon"><i class="bi bi-geo-alt"></i></div>
+                    <select class="form-control" id="city" name="city" style="appearance:none; -webkit-appearance:none; cursor:pointer;" required>
+                        <option value="" disabled>Choisir la ville</option>
+                        <option value="kinshasa" {%if data.fields.city == "kinshasa" or (not data.fields.city and event.city == "kinshasa")%}selected{%endif%}>Kinshasa</option>
+                        <option value="lubumbashi" {%if data.fields.city == "lubumbashi" or (not data.fields.city and event.city == "lubumbashi")%}selected{%endif%}>Lubumbashi</option>
+                        <option value="mbuji_mayi" {%if data.fields.city == "mbuji_mayi" or (not data.fields.city and event.city == "mbuji_mayi")%}selected{%endif%}>Mbuji-Mayi</option>
+                        <option value="kananga" {%if data.fields.city == "kananga" or (not data.fields.city and event.city == "kananga")%}selected{%endif%}>Kananga</option>
+                        <option value="kisangani" {%if data.fields.city == "kisangani" or (not data.fields.city and event.city == "kisangani")%}selected{%endif%}>Kisangani</option>
+                        <option value="goma" {%if data.fields.city == "goma" or (not data.fields.city and event.city == "goma")%}selected{%endif%}>Goma</option>
+                        <option value="bukavu" {%if data.fields.city == "bukavu" or (not data.fields.city and event.city == "bukavu")%}selected{%endif%}>Bukavu</option>
+                        <option value="likasi" {%if data.fields.city == "likasi" or (not data.fields.city and event.city == "likasi")%}selected{%endif%}>Likasi</option>
+                        <option value="kolwezi" {%if data.fields.city == "kolwezi" or (not data.fields.city and event.city == "kolwezi")%}selected{%endif%}>Kolwezi</option>
+                        <option value="kikwit" {%if data.fields.city == "kikwit" or (not data.fields.city and event.city == "kikwit")%}selected{%endif%}>Kikwit</option>
+                        <option value="matadi" {%if data.fields.city == "matadi" or (not data.fields.city and event.city == "matadi")%}selected{%endif%}>Matadi</option>
+                        <option value="mbandaka" {%if data.fields.city == "mbandaka" or (not data.fields.city and event.city == "mbandaka")%}selected{%endif%}>Mbandaka</option>
+                        <option value="boma" {%if data.fields.city == "boma" or (not data.fields.city and event.city == "boma")%}selected{%endif%}>Boma</option>
+                        <option value="uvira" {%if data.fields.city == "uvira" or (not data.fields.city and event.city == "uvira")%}selected{%endif%}>Uvira</option>
+                        <option value="isiro" {%if data.fields.city == "isiro" or (not data.fields.city and event.city == "isiro")%}selected{%endif%}>Isiro</option>
+                        <option value="bandundu" {%if data.fields.city == "bandundu" or (not data.fields.city and event.city == "bandundu")%}selected{%endif%}>Bandundu</option>
+                        <option value="kindu" {%if data.fields.city == "kindu" or (not data.fields.city and event.city == "kindu")%}selected{%endif%}>Kindu</option>
+                        <option value="mbanza_ngungu" {%if data.fields.city == "mbanza_ngungu" or (not data.fields.city and event.city == "mbanza_ngungu")%}selected{%endif%}>Mbanza-Ngungu</option>
+                        <option value="zongo" {%if data.fields.city == "zongo" or (not data.fields.city and event.city == "zongo")%}selected{%endif%}>Zongo</option>
+                        <option value="kalemie" {%if data.fields.city == "kalemie" or (not data.fields.city and event.city == "kalemie")%}selected{%endif%}>Kalemie</option>
+                    </select>
                 </div>
             </div>
 

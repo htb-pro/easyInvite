@@ -171,6 +171,7 @@ async def creatEvent(
     greetings: str = Form(None), #message de bienvenu
     total_place: int = Form(None), #espace d'accueil ou le nombre de place prevu
     is_featured: bool = Form(None), #l'event est a la une?
+    city: str = Form(None), #la ville
     Db: AsyncSession = Depends(connecting),
     csrf_token: str = Form(...),
     _ = Depends(verify_csrf)
@@ -208,6 +209,7 @@ async def creatEvent(
             "event_description": eventDescription.strip() if eventDescription else "",
             "is_gift_active": bool(is_gift_active), 
             "is_featured": bool(is_featured), 
+            "city": city if city else ""
         },
         "system": {
             "csrf_token": csrf_token,
@@ -272,8 +274,12 @@ async def creatEvent(
         request.session['form_data'] = form_data
         return RedirectResponse("/event_form", status_code=303)
 
-    if len(couple_name) and len(couple_name) > max_length["couple_name"]:
+    if couple_name and len(couple_name) > max_length["couple_name"]:
         request.session['event_error'] = f"Le nom du couple est trop long ({max_length['couple_name']} caractères max)."
+        request.session['form_data'] = form_data
+        return RedirectResponse("/event_form", status_code=303)
+    if couple_phone_number and len(couple_phone_number) > max_length["couple_phone_number"]:
+        request.session['event_error'] = f"Le numéro de téléphone  est trop long ({max_length['couple_phone_number']} caractères max)."
         request.session['form_data'] = form_data
         return RedirectResponse("/event_form", status_code=303)
 
@@ -316,7 +322,8 @@ async def creatEvent(
             organizer=organizer,
             greeting_message=greetings,
             total_capacity=total_place,
-            is_featured=is_featured
+            is_featured=is_featured,
+            city=city if city else None
         )
         Db.add(newEvent)
         await Db.commit()
@@ -349,6 +356,7 @@ async def editEvent(request:Request,event_id : str,user=Depends(permission_requi
             'event_location' : "",
             'event_organizer' : "",
             'couple_name' : "",
+            'couple_phone_number' : "",
             },
             "fields":{},
             "system":{}
@@ -386,6 +394,7 @@ async def editEvent(
     organizer: str = Form(None),
     greetings: str = Form(None),
     total_place: int = Form(None),
+    city: str = Form(...),
     is_featured: bool = Form(None),
     db: AsyncSession = Depends(connecting),
     user = Depends(permission_required("edit_event")),
@@ -430,6 +439,8 @@ async def editEvent(
             "event_location": f"Le nom de la localisation est trop long ({max_length['event_location']} caractères max)." if len(location) > max_length["event_location"] else None,
             "event_organizer": f"Le nom de l'organisateur est trop long ({max_length['event_organizer']} caractères max)." if organizer and len(organizer) > max_length["event_organizer"] else None,
             "couple_name": f"Le nom du couple est trop long ({max_length['couple_name']} caractères max)." if coupleName and len(coupleName) > max_length["couple_name"] else None,
+            "couple_phone_number": f"Le numéro de téléphone  est trop long ({max_length['couple_phone_number']} caractères max)." if couple_phone_number and len(couple_phone_number) > max_length["couple_phone_number"] else None,
+
         },
         "fields": {
             "event_name": eventName,
@@ -446,7 +457,8 @@ async def editEvent(
             "organizer": organizer,
             "greetings": greetings,
             "total_place": total_place,
-            "is_featured": bool(is_featured)
+            "is_featured": bool(is_featured),
+            "city": city 
         }
     }
 
@@ -507,7 +519,8 @@ async def editEvent(
     editedEventData.greeting_message = greetings
     editedEventData.total_capacity = total_place
     editedEventData.is_featured = is_featured
-    
+    editedEventData.city = city if city else None
+
     # Gestion propre de la relation de groupe
     if user_role != "admin" and groups:
         editedEventData.groups = [groups]
