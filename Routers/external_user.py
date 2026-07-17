@@ -73,7 +73,8 @@ async def search_event(request:Request,event_name:str,page:int = 1,db:AsyncSessi
 async def get_list_of_events(request: Request,  page: int = 1, db: AsyncSession = Depends(connecting)):
     #------------
     user_name = None
-    current_user_id = request.cookies.get("session_user_id")
+    current_user_id = request.session.get("user_id")
+    print("🚀 [DEBUG] ID utilisateur actuel depuis le cookie :", current_user_id)
     if current_user_id:
         user = (await db.execute(select(ExternalUser).where(ExternalUser.id == current_user_id))).scalars().first()
         if user:
