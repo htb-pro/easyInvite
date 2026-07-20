@@ -79,3 +79,17 @@ async def verify_csrf(request: Request):
         
     # Si tout est OK, on laisse passer la requête
     return True
+
+#verification de la session qui force le user a se reconnecter en fin d'avoir la session s'il n'est pas connecter
+async def check_current_user_session(request: Request):
+    user_id = request.session.get("user_id")
+    if not user_id:
+        # En production, on stocke un message flash pour expliquer le problème
+        request.session['invalid_user'] = "Votre session a expiré. Veuillez vous reconnecter."
+        
+        # On le redirige proprement vers le formulaire de login
+        return RedirectResponse(
+            url="/auth/login", 
+            status_code=status.HTTP_303_SEE_OTHER
+        )
+    return user_id

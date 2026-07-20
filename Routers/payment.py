@@ -72,6 +72,7 @@ async def get_paiement_data(
     request: Request, 
     event_id: str, 
     buyer_name: str = Form(...), 
+    bobby_pot:str = Form(None),
     buyer_phone: str = Form(...),  
     ticket_type: str = Form(...), 
     quantity: int = Form(...),
@@ -80,10 +81,11 @@ async def get_paiement_data(
     db: AsyncSession = Depends(connecting)
 ):
     converted_transaction_id = transaction_id.lower().strip()
-    
+    if bobby_pot:
+        return RedirectResponse(f"/payments/{event_id}", status_code=303) #si le champ de verification bobby_pop est rempli on fait croire au robot que le compte est creer
+
     # Nettoyage et uniformisation immédiate du numéro de téléphone
     clean_phone = format_to_drc_phone(buyer_phone)
-    print(f"-------------------------Numéro de téléphone nettoyé : {clean_phone}")
     if not clean_phone:
         request.session['invalid_number'] = "Format du numéro de téléphone invalide"
         return RedirectResponse(f"/payments/{event_id}", status_code=303)

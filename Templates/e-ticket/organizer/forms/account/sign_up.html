@@ -111,6 +111,9 @@
                         </div>
                         {% endif %}
                         <input type="hidden" name="csrf_token" value="{{csrf_token}}">
+                        <div class="mb-3" style="position: absolute; left: -9999px; top: -9999px;" aria-hidden="true">
+                            <input type="text" name="bobby_pot" id="bot" autocomplete="off" tabindex="-1">
+                        </div>
                         <div class="mb-3">
                             <label for="organization_name" class="form-label small fw-semibold">Nom de votre entreprise / Structure</label>
                             <input type="text" class="form-control" id="organization_name" name="organization_name" value="{{  form_data.organization_name if form_data else ''}}" placeholder="Ex: lushi Event, Agence Horizon..." required>

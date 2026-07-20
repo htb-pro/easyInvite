@@ -156,7 +156,7 @@
                         }
 
                         // Envoi à la route unique configurée en arrière-plan
-                        const response = await fetch("/auth/forgot_password", {
+                        const response = await fetch("/auth/send_otp", {
                             method: "POST",
                             body: formData
                         });
@@ -181,7 +181,7 @@
 
                         // 💡 Redirection vers l'écran où il va taper le code à 6 chiffres reçu par SMS
                         setTimeout(() => {
-                            window.location.href = "/user/otp/form"; 
+                            window.location.href = "/auth/verify-otp"; 
                         }, 2000);
 
                     } catch (error) {

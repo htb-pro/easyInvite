@@ -10,7 +10,7 @@ from db_setting import connecting
 from models import Organizer,Event
 from Routers.loging import hash_password,verify_password
 from Routers.guest import format_to_drc_phone
-from config import verify_csrf,set_secure_cookie
+from config import verify_csrf,set_secure_cookie,check_current_user_session
 import secrets
 from datetime import datetime
 
@@ -19,7 +19,8 @@ templates = Jinja2Templates(directory = "Templates")
 @Root.get("/organizer/account", name="organizer_dashboard", response_class=HTMLResponse)
 async def organisar_dashboard(
     request: Request,
-    db: AsyncSession = Depends(connecting)
+    db: AsyncSession = Depends(connecting),
+    verify_current_user_id :str = Depends(check_current_user_session)
 ):
     # 💡 CORRECTIF MAJEUR : Récupération depuis la session (aligné avec le reste de l'auth)
     current_organizer_id = request.session.get("user_id")
@@ -115,6 +116,7 @@ async def get_register_page(
 async def register_organizer(
     request: Request,
     csrf_token: str = Form(...),
+    bobby_pot: str = Form(None),
     organization_name: str = Form(...),
     contact_name: str = Form(...),
     phone: str = Form(...),
@@ -136,7 +138,9 @@ async def register_organizer(
         "phone": phone.strip(),
         "email": email.strip().lower()
     }
-
+    if bobby_pot:
+        request.session['success_message'] = "Votre compte a été créé avec succès." #si le champ de verification bobby_pop est rempli on fait croire au robot que le compte est creer
+        return RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
     # 1. Validation basique des données
     if not phone_clean or not email_clean or not password or len(password) < 8:
         request.session["form_data"] = form_data

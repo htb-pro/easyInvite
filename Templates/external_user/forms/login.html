@@ -75,21 +75,26 @@
                                 {{ invalid_user }}
                             </div>
                             {% endif %}
+                        
+                        <div class="mb-3" style="position: absolute; left: -9999px; top: -9999px;" aria-hidden="true">
+                            <input type="text" name="bobby_pot" id="bot" autocomplete="off" tabindex="-1">
+                        </div>
+
                         <div class="mb-3">
                             <label for="phone" class="form-label text-white-50">Numéro de téléphone</label>
-                            <input type="tel" name="username" id="phone" class="form-control bg-dark text-light border-secondary" placeholder="Ex: 0991635198" value="{{username}}" required>
+                            <input type="tel" name="username" id="phone" minlength="9" maxlength="15" class="form-control bg-dark text-light border-secondary" placeholder="Ex: 0991635198" value="{{username}}" required>
                             
                             <div class="form-text" style="font-size: 0.75rem;"><p>Saisissez le numéro utilisé lors de l'achat.</p></div>
                         
                         </div>
                         <div class="mb-3">
                            <label for="password" class="form-label text-white-50">Mot de passe</label>
-                            <input type="password" name="password" id="password" class="form-control bg-dark text-light border-secondary" value="{{password}}"  placeholder="Écrivez votre mot de passe"  required>
+                            <input type="password" name="password" id="password" minlength="8" class="form-control bg-dark text-light border-secondary" value="{{password}}"  placeholder="Écrivez votre mot de passe"  required>
                                 <div class="d-flex flex-column align-items-start justify-content-center align-items-center mt-2">
                                 <a href="#" class="custom-link" data-bs-toggle="modal" data-bs-target="#registerChoiceModal">
                                     Créer un compte ?
                                 </a>
-                                <a href="/auth/reset-password/user_id" class="btn-link">Mot de passe oublié ?</a>
+                                <a href="/auth/send_otp" class="btn-link">Mot de passe oublié ?</a>
                             </div>
                         </div>
                             

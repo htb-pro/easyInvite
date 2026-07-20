@@ -1,4 +1,5 @@
 from datetime import datetime, time
+from typing import Optional
 import re,resend
 from fastapi import APIRouter, Request, Form,Query,Depends,Cookie,HTTPException,status,responses,BackgroundTasks
 from fastapi.responses import HTMLResponse, RedirectResponse,Response ,StreamingResponse,JSONResponse
@@ -7,10 +8,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates  
 from requests import request
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, func, asc, desc,delete
+from sqlalchemy import select, func, asc, desc,delete,or_
 from sqlalchemy.orm import selectinload
 from db_setting import connecting
-from config import secret, algo,REDIS_SETTINGS,set_secure_cookie,verify_csrf,resend_api_key
+from config import secret, algo,REDIS_SETTINGS,set_secure_cookie,verify_csrf,resend_api_key,check_current_user_session
 import jwt,random,io,secrets,urllib
 from models import Organizer, Ticket_price, User, Order, Event,ExternalUser,OTP,Ticket
 from app.security.permissions import permission_required
@@ -235,7 +236,8 @@ def get_initials(name: str) -> str:
 @Root.get("/my_account")
 async def mon_compte_participant(
     request: Request, 
-    db: AsyncSession = Depends(connecting)
+    db: AsyncSession = Depends(connecting),
+    verify_current_user_id :str = Depends(check_current_user_session)
 ):
     # 1. 🛡️ SÉCURITÉ : Récupération de l'ID via la session CHIFFRÉE et non le cookie brut
     user_id = request.session.get("user_id")
@@ -328,7 +330,8 @@ async def mon_compte_participant(
 @Root.get("/my_ticket")
 async def user_tickets(
     request: Request, 
-    db: AsyncSession = Depends(connecting)
+    db: AsyncSession = Depends(connecting),
+    verify_current_user_id :str = Depends(check_current_user_session)
 ):
     # 1. Vérification de l'authentification via le cookie
     user_id = request.cookies.get("session_user_id")
@@ -379,7 +382,8 @@ async def user_tickets(
 @Root.get("/user/list_events")
 async def user_list_events_json(
     request: Request, 
-    db: AsyncSession = Depends(connecting)
+    db: AsyncSession = Depends(connecting),
+    verify_current_user_id :str = Depends(check_current_user_session)
 ):
     # 1. Vérification de l'authentification (Sécurité pour bloquer les robots anonymes)
     user_id = request.cookies.get("session_user_id")
@@ -468,7 +472,8 @@ async def user_list_events_json(
 @Root.get("/user/profile")
 async def user_profil(
     request: Request, 
-    db: AsyncSession = Depends(connecting)
+    db: AsyncSession = Depends(connecting),
+    verify_current_user_id :str = Depends(check_current_user_session)
 ):
     # 1. Vérification de l'authentification via le cookie
     user_id = request.cookies.get("session_user_id")
@@ -515,7 +520,8 @@ async def update_profile(
     user_name: str = Form(...),
     user_phone: str = Form(...),
     password: str = Form(...),
-    db: AsyncSession = Depends(connecting)
+    db: AsyncSession = Depends(connecting),
+    verify_current_user_id :str = Depends(check_current_user_session)
 ):
     # 1. Sécurité d'authentification : Vérification de la session active
     user_id = request.session.get("user_id")
@@ -606,7 +612,8 @@ async def update_profile(
 @Root.get("/user/historique")
 async def user_historique(
     request: Request, 
-    db: AsyncSession = Depends(connecting)
+    db: AsyncSession = Depends(connecting),
+    verify_current_user_id :str = Depends(check_current_user_session)
 ):
     # 1. Sécurité de session
     user_id = request.cookies.get("session_user_id")
@@ -656,61 +663,7 @@ async def user_historique(
             detail="Impossible de charger votre historique pour le moment."
         )
 
-@Root.get("/user/register/form")#formulaire d'inscription pour un nouvel utilisateur
-async def register_form(request: Request):
-    invalid_username = request.session.pop('invalid_username', None)
-    invalid_phone = request.session.pop('invalid_phone', None)
-    invalid_password = request.session.pop('invalid_password', None)
-    return templates.TemplateResponse("external_user/forms/register.html", {"request": request, "invalid_username": invalid_username, "invalid_phone": invalid_phone, "invalid_password": invalid_password})
-
-@Root.post("/user/register")#route pour enregistrer un nouvel utilisateur
-async def register_user(request: Request, username: str = Form(...), phone: str = Form(...),email: str = Form(...), password: str = Form(...), db: AsyncSession = Depends(connecting)):
-    # 1. Nettoyage strict des inputs (Sécurité de base)
-    clean_username = username.strip()
-    clean_phone = format_to_drc_phone(phone.strip()) # formater le numero de telephone en format congolais
-    clean_email = email.strip()
-    clean_password = password.strip()
-
-    # 2. Vérification des contraintes (ex: longueur minimale)
-    if not clean_username or len(clean_username) < 2:
-        request.session['invalid_username'] = "Veiller entrer un nom valid"
-        return RedirectResponse(url="/user/register/form", status_code=status.HTTP_303_SEE_OTHER)
-
-    if not clean_phone or len(clean_phone) < 10:
-        request.session['invalid_phone'] = "Veiller entrer un numéro de téléphone valide a 10 chiffres"
-        return RedirectResponse(url="/user/register/form", status_code=status.HTTP_303_SEE_OTHER)
-
-    if not clean_password or len(clean_password) < 8:
-        request.session['invalid_password'] = "Veiller entrer un mot de passe fort sécurisé (au moins 8 caractères)"
-        return RedirectResponse(url="/user/register/form", status_code=status.HTTP_303_SEE_OTHER)
-
-    # 3. Vérification si l'utilisateur existe déjà
-    existing_user = await db.execute(select(ExternalUser).where(ExternalUser.email == clean_email))
-    if existing_user.scalars().first():
-        request.session['invalid_email'] = "Cette adresse email est déjà utilisée."
-        return RedirectResponse(url="/user/register/form", status_code=status.HTTP_303_SEE_OTHER)
-    try:
-        hashed_password = hash_password(clean_password)  # hasher le mot de passe avant de le stocker
-        # 4. Création du nouvel utilisateur
-        new_user = ExternalUser(
-            name=clean_username,
-            phone_number=clean_phone,
-            email=clean_email,
-            password=hashed_password  # Assurez-vous de hasher le mot de passe avant de le stocker
-        )
-        db.add(new_user)
-        await db.commit()
-        await db.refresh(new_user)
-        print(f"Nouvel utilisateur créé avec succès : {new_user.name} ({new_user.password})")  # Affiche le nom et le mot de passe hashé dans la console pour vérification
-    except Exception as e:
-        await db.rollback()
-        print(f"Erreur lors de la création de l'utilisateur : {str(e)}")
-        raise HTTPException(status_code=500, detail="Erreur lors de la création du compte.")
-    # 5. Redirection vers la page de login avec un message de succès
-    request.session['success_message'] = "Votre compte a été créé avec succès."
-    return RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
-
-@Root.get("/auth/reset-password/user_id", response_class=HTMLResponse)
+@Root.get("/auth/send_otp", response_class=HTMLResponse) #renvoi de la page du form otp
 async def get_user_number(request: Request):
     csrf_token = secrets.token_urlsafe(32)
     response =templates.TemplateResponse("external_user/forms/user_id.html", {"request": request,'csrf_token':csrf_token})
@@ -750,46 +703,79 @@ def send_otp_email(email: str, otp_code: str):#la methode d'envoi de l'otp par e
     except Exception as email_error:
         print(f"🚨 [Background] Échec de l'envoi de l'e-mail Resend : {str(email_error)}")
 
-@Root.post("/auth/forgot_password")
+@Root.post("/auth/send_otp")
 async def forgot_password(
     request: Request,
-    background_tasks: BackgroundTasks, # Ajout des tâches d'arrière-plan de FastAPI
-    email_input: str = Form(...),
-    user_type: str = Form(...),
+    background_tasks: BackgroundTasks,
+    email_input: Optional[str] = Form(None),
+    user_type: Optional[str] = Form(None),
     db: AsyncSession = Depends(connecting),
     _ = Depends(verify_csrf)
-):
-    # Passage en minuscules pour éviter les problèmes de majuscules/minuscules
-    email_clean = email_input.strip().lower()   
+):   
     user_found = None
-    
+
+    # 1. On détermine l'email et le type (soit depuis le Form, soit depuis la Session)
+    if email_input and user_type:
+        email = email_input
+        request.session['reset_user_email'] = email
+        request.session['reset_user_type'] = user_type
+    else:
+        email = request.session.get('reset_user_email')
+        user_type = request.session.get('reset_user_type')
+
+    # 2. Vérification de sécurité STRICTE avant tout traitement
+    if not email or not user_type:
+        return JSONResponse(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            content={"status": "SESSION_EXPIRED", "detail": "Session expirée ou données manquantes. Veuillez recommencer."}
+        )
+
+# 3. Nettoyage sécurisé (on est SUR que email est une chaîne de caractères non vide)
+    email_clean = email.strip().lower()
     try:
-        # 1. Recherche de l'utilisateur selon son type
+        # 1. Vérification du Rate Limit (60 secondes)
+        last_send = request.session.get("last_otp_send")
+        now = datetime.utcnow() # Utiliser UTC partout
+        
+        if last_send:
+            last_send_dt = datetime.fromisoformat(last_send)
+            if now < last_send_dt + timedelta(seconds=60):
+                time_left = int(((last_send_dt + timedelta(seconds=60)) - now).total_seconds())
+                # Retour JSON cohérent avec un code HTTP 429 (Too Many Requests)
+                return JSONResponse(
+                    status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                    content={"detail": f"Veuillez patienter {time_left} secondes avant un nouveau renvoi."}
+                )
+
+        # 🛡️ SÉCURITÉ : On bloque la session MAINTENANT (même si l'e-mail n'existe pas)
+        request.session["last_otp_send"] = now.isoformat()
+
+        # 2. Recherche de l'utilisateur
         if user_type == "organizer":
             res = await db.execute(select(Organizer).where(Organizer.email == email_clean))
-            user_found = res.scalars().first()
         else:
             res = await db.execute(select(ExternalUser).where(ExternalUser.email == email_clean))
-            user_found = res.scalars().first()
+            
+        user_found = res.scalars().first()
 
-        # SÉCURITÉ : Même message exact pour l'anti-énumération
+        # Réponse neutre si l'utilisateur n'existe pas
         if not user_found:
             return JSONResponse(
                 status_code=status.HTTP_200_OK,
                 content={"message": SUCCESS_MESSAGE}
             )
 
-        # 2. Nettoyage initial : On supprime les anciens OTP de cet utilisateur
+        # 3. Nettoyage des anciens OTP
         if user_type == "organizer":
             await db.execute(delete(OTP).where(OTP.organizer_id == user_found.id))
         else:
             await db.execute(delete(OTP).where(OTP.ext_user_id == user_found.id))
             
-        # 3. Génération cryptographique de l'OTP
+        # 4. Génération de l'OTP
         otp_code = str(secrets.randbelow(900000) + 100000)
-        expiration_time = datetime.now() + timedelta(minutes=5)
+        expiration_time = datetime.utcnow() + timedelta(minutes=5) # Tout en UTC !
         
-        # 4. 💾 Insertion dans la base de données
+        # 5. Insertion en BDD
         nouvel_otp = OTP(
             code=otp_code,
             expires_at=expiration_time,
@@ -800,13 +786,12 @@ async def forgot_password(
         db.add(nouvel_otp)
         await db.commit()
         
-        # 5. Stockage des variables pivots dans la session (Uniquement pour l'utilisateur valide)
+        # 6. Variables de session & Envoi e-mail
         request.session['reset_user_email'] = str(email_clean)
         request.session['reset_user_type'] = str(user_type)
-        print(f"✅ OTP généré pour {email_clean} ({user_type}) : {otp_code} (expirera à {expiration_time})")
-        # 6. Envoi asynchrone via BackgroundTasks (L'utilisateur n'attend pas que l'API de Resend réponde !)
-        background_tasks.add_task(send_otp_email, user_found.email, otp_code)
         
+        background_tasks.add_task(send_otp_email, user_found.email, otp_code)
+
         return JSONResponse(
             status_code=status.HTTP_200_OK,
             content={"message": SUCCESS_MESSAGE}
@@ -820,7 +805,7 @@ async def forgot_password(
             content={"detail": "Une erreur interne est survenue."}
         )
 
-@Root.get("/user/otp/form")#la root pour le formulaire de verification de l'otp
+@Root.get("/auth/verify-otp")#la root pour le formulaire de verification de l'otp
 async def otp_form(request: Request):
     csrf_token = secrets.token_urlsafe(32)
     success_message = request.session.pop('success_message', None)
@@ -849,7 +834,7 @@ async def verify_otp(
     # 1. Vérification de la session navigateur
     email = request.session.get('reset_user_email')
     user_type = request.session.get('reset_user_type')
-
+   
     if not email or not user_type:
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST, 
@@ -1093,7 +1078,131 @@ async def reset_password_final(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
             content={"status": "SERVER_ERROR", "detail": "Erreur lors de la mise à jour du mot de passe."}
         )
+
+@Root.get("/user/register/form")
+async def register_form(request: Request):
+    error = request.session.pop('set_error', None)
+    session_form_data = request.session.pop('form_data', None)
     
+    if session_form_data is None:
+        form_data = {
+            "fields": {
+                "username": "",
+                "phone": "",
+                "email": "",
+                "password": ""
+            },
+            "errors": {
+                "username": "",
+                "phone": "",
+                "email": "",
+                "password": "",
+                "error": "" # On prépare la clé "error" que vous vouliez utiliser
+            }
+        }
+    else:
+        form_data = session_form_data
+        # Si la clé "error" n'est pas encore dans le dictionnaire, on la crée à vide
+        if "error" not in form_data["errors"]:
+            form_data["errors"]["error"] = ""
+
+    # CORRECTION ICI : On met le signe "=" pour stocker le message dans votre clé "error"
+    if error:
+        form_data["errors"]["error"] = error
+    csrf_token = secrets.token_urlsafe(32)
+    response =  templates.TemplateResponse("external_user/forms/register.html", {"request": request, "data": form_data,'csrf_token':csrf_token })
+    response.set_cookie(
+        key="fastapi-csrf-token",
+        value=csrf_token,
+        httponly=True,        # Protection contre le vol de jeton par JS (Garder obligatoire)
+        samesite="lax",       # Permet au cookie de transiter sur les navigations standards
+        secure=set_secure_cookie,         # TRÈS IMPORTANT en local (False permet au cookie de passer sans HTTPS)
+        path="/"
+        
+    )
+    return response
+
+@Root.post("/user/register")  # Route pour enregistrer un nouvel utilisateur
+async def register_user(
+    request: Request, 
+    csrf_token: str = Form(...), 
+    bobby_bot: str = Form(None), 
+    username: str = Form(...), 
+    phone: str = Form(...), 
+    email: str = Form(...), 
+    password: str = Form(...), 
+    _=Depends(verify_csrf),
+    db: AsyncSession = Depends(connecting)
+):
+    # 1. Nettoyage strict des inputs
+    clean_username = username.strip()
+    clean_phone = format_to_drc_phone(phone.strip())  # Formater le numéro
+    clean_email = email.strip()
+    clean_password = password.strip()
+    if bobby_bot:
+        request.session['success_message'] = "Votre compte a été créé avec succès."
+        return RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
+    # 2. Vérification en base de données (Uniquement si l'email ou le téléphone est fourni)
+    user_already_exists = False
+    if clean_email or clean_phone:
+        query = select(ExternalUser).where(
+            or_(
+                ExternalUser.email == clean_email,
+                ExternalUser.phone_number == clean_phone
+            )
+        )
+        # CORRECTION : On exécute la requête avec "await db.execute()"
+        result = await db.execute(query)
+        user_already_exists = result.scalars().first() is not None
+
+    # 3. Construction du bilan des données et des erreurs
+    form_data = {
+        # CORRECTION : Nettoyage des clés "phone" et "email" (sans espace)
+        "fields": {
+            "username": clean_username,
+            "phone": clean_phone,
+            "email": clean_email,
+            "password": clean_password
+        },
+        "errors": {
+            "username": "Veuillez entrer un nom valide" if not clean_username or len(clean_username) < 2 else "",
+            "phone": "Veuillez entrer un numéro de téléphone valide à 10 chiffres" if not clean_phone or len(clean_phone) < 10 else "",
+            "email": "Cette adresse mail ou numéro de téléphone est déjà utilisée" if user_already_exists else "",
+            "password": "Veuillez entrer un mot de passe sécurisé (au moins 8 caractères)" if not clean_password or len(clean_password) < 8 else ""
+        }
+    }
+    
+    # 4. Blocage et redirection si au moins une erreur contient un texte
+    # CORRECTION : "values()" avec un 's' pour vérifier s'il y a des messages d'erreurs
+    if any(form_data["errors"].values()):  
+        request.session["form_data"] = form_data
+        return RedirectResponse(url="/user/register/form", status_code=status.HTTP_303_SEE_OTHER)
+        
+    # 5. Insertion dans la base de données
+    try:
+        hashed_password = hash_password(clean_password)  # Hachage du mot de passe
+        
+        new_user = ExternalUser(
+            name=clean_username,
+            phone_number=clean_phone,
+            email=clean_email,
+            password=hashed_password
+        )
+        db.add(new_user)
+        await db.commit()
+        await db.refresh(new_user)
+        print(f"Nouvel utilisateur créé avec succès : {new_user.name}")
+        
+    except Exception as e:
+        await db.rollback()
+        print(f"Erreur lors de la création de l'utilisateur : {str(e)}")
+        raise HTTPException(status_code=500, detail="Erreur lors de la création du compte.")
+        
+    # 6. Redirection vers le login avec message de succès
+    request.session['success_message'] = "Votre compte a été créé avec succès."
+    return RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
+
+
 @Root.get("/auth/login")
 async def login_page(request: Request, db: AsyncSession = Depends(connecting)):
     # 1. Récupération du message d'erreur flash (ex: numéro invalide)
@@ -1154,6 +1263,7 @@ async def login_page(request: Request, db: AsyncSession = Depends(connecting)):
 @Root.post("/auth/login")
 async def login_unique(
     request: Request,
+    bobby_pot:str = Form(None),
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(connecting),
     _ = Depends(verify_csrf)
@@ -1164,7 +1274,11 @@ async def login_unique(
     
     error_message = "Numéro de téléphone ou mot de passe incorrect."
     DUMMY_HASH = "$2b$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7GP93BIp69Y179ywunpJF7K"  # Hash factice pour l'anti-timing attack
-
+    if bobby_pot:
+        request.session['invalid_user'] = error_message
+        request.session['sent_username'] = phone if 'phone' in locals() else ""
+        request.session['sent_password'] = password if 'password' in locals() else ""
+        return RedirectResponse("/auth/login", status_code=status.HTTP_303_SEE_OTHER)
     try:
         # 1. On cherche l'utilisateur dans les deux tables
         res_org = await db.execute(select(Organizer).where(Organizer.phone_number == phone))
@@ -1225,7 +1339,7 @@ async def login_unique(
         return RedirectResponse("/auth/login", status_code=status.HTTP_303_SEE_OTHER)
 
 @Root.get("/auth/choose-role")#page pour choisir le role de l'utilisateur si il est a la fois organisateur et participant
-async def choose_role_page(request: Request):
+async def choose_role_page(request: Request,verify_current_user_id :str = Depends(check_current_user_session)):
     # Sécurité : Si l'utilisateur tente de forcer l'URL sans être passé par l'étape du mot de passe
     if not request.session.get('pending_login'):
         return RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
@@ -1246,6 +1360,7 @@ async def process_role_choice(
     request: Request, 
     role: str = Form(...),
     csrf_token : str = Form(...),
+    verify_current_user_id :str = Depends(check_current_user_session),
     _ = Depends(verify_csrf) # Protection CSRF importante ici aussi !
 ):
     # Sécurité : Récupération des IDs stockés temporairement en session
