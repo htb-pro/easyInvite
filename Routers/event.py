@@ -25,7 +25,7 @@ Root = APIRouter(tags = ["easyInvite"],dependencies =[Depends(get_current_user_f
 templates = Jinja2Templates(directory="Templates")#ou sont stocker les templates
 Root.mount("/static",StaticFiles(directory="static"),name="static")#ou sont stocker les fichier static
 Pictures = "static/Pictures/{None}"
-os.makedirs("Pictures",exist_ok=True)
+#os.makedirs("Pictures",exist_ok=True)
 
 Cloud_name = os.getenv("CLOUD_NAME")
 Cloud_api_key = os.getenv("CLOUD_API_KEY")

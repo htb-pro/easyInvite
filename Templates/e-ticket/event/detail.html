@@ -2,89 +2,218 @@
 <html lang="fr">
 <head>
     <meta charset="UTF-8">
-    <title>{{ event.name }} - EasyInvite</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="/static/Css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <title>EasyTicket - {{ event.title }}</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    
     <style>
         body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #0B132B; /* Même bleu nuit profond */
-            color: #E2E8F0;
-            padding-top: 40px;
-            padding-bottom: 60px;
+            background-color: #0B132B;
         }
-        .event-header { height: 400px; background-size: cover; background-position: center; position: relative; }
-        .details-card { margin-top: -100px; z-index: 10; position: relative; }
-        .card { background-color: #141B2D; border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 24px; }
+        
+        /* Couleur principale EasyTicket (#f77f10) */
+        .btn-easyticket {
+            background-color: #ffc107 !important;
+            border-color: #ffc107 !important;
+            color: black !important;
+        }
+        
+        .btn-easyticket:hover {
+            background-color: #ffc107 !important;
+            border-color: #ffc107 !important;
+            color: #ffffff !important;
+        }
+
+        .btn-outline-easyticket {
+            color: #ffc107 !important;
+            border-color: #ffc107 !important;
+        }
+
+        .btn-outline-easyticket:hover {
+            background-color: #ffc107 !important;
+            color: #ffffff !important;
+        }
+
+        .bg-easyticket {
+            background-color: #ffc107!important;
+            color: rgb(131, 129, 129) !important;
+        }
+
+        .text-easyticket {
+            color: #ffc107 !important;
+        }
+
+        /* Card Candidates FX */
+        .candidate-card {
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            background-color: #2a3554;
+        }
+        
+        .candidate-card:active {
+            transform: scale(0.98);
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
     </style>
 </head>
-<body class="bg-light">
+<body>
 
-<div class="event-header" style="background-image: url('{{ event.photo_url }}');"></div>
+    <!-- Conteneur responsive : centré et limité à 800px max sur PC -->
+    <div class="container py-3" style="max-width: 800px;">
 
-<div class="container">
-    <div class="row">
-        <div class="col-lg-8">
-            <div class="card details-card p-4 shadow-sm border-0">
-                <h1 class="display-5 fw-bold text-warning">{{ event.name }}</h1>
-                <div class="d-flex flex-column gap-3 mb-4 text-secondary">
-                    <span class="text-white"><i class="bi bi-calendar-event"></i> {{ event.date.strftime("%d-%m-%Y %H:%M") }}</span> 
-                    <span class="text-white"><i class="bi bi-person-badge"></i> Organisateur : {{ event.organizer}}</span> 
-                    <span class="text-white"><i class="bi bi-geo-alt"></i> ville : {{ event.city}}</span> 
-                    <span class="text-white"><i class="bi bi-geo-alt"></i> Salle : {{ event.location}}</span> 
-                    <span class="text-white"><i class="bi bi-pin-map"></i> Adresse : {{ event.address }}</span> 
-                    <div class="event-meta mt-3 fw-bold text-white small">
-                        <h5><i class="bi bi-tag-fill me-1"></i>billet</h5>
-                        {% if event.ticket_prices %}
-                            {% for ticket in event.ticket_prices %}
-                            {% if ticket.price%}
-                            <span >{{ticket.ticket_type}} : {{ ticket.price|int}} {{ticket.device}}</span><br>
-                            {%else%} 
-                            <span class="fw-bold text-success">
-                                    <i class="bi bi-ticket-perforated"></i> 
-                                    {{ ticket.ticket_type.capitalize() }} : Gratuit
-                            </span><br>
-                            {%endif%}
-                            {% endfor %}
-                        {% else %}
-                            <p class="text-success small mb-1"><i class="bi bi-ticket-perforated"></i>  Gratuit</p>
-                        {% endif %}
-                    </div>
-                </div>
-                {% if event.description and event.description != 'None' and event.description.strip() %}
-                <div class="text-secondary">
-                    <hr>
-                    <h5>À propos de cet événement</h5>
-                    <p>{{ event.description }}</p>
-                </div>
+        <!-- 1. BANNIÈRE ET EN-TÊTE DE L'ÉVÉNEMENT -->
+        <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4" style="background-color: #2a3554;">
+            <img src="{{ event.photo_url or 'https://images.unsplash.com/photo-1511578314322-379afb476865?auto=format&fit=crop&w=800&q=80' }}" 
+                 class="card-img-top" 
+                 alt="{{ event.title }}" 
+                 style="height: 220px; object-fit: cover;">
+            
+            <div class="card-body p-3">
+                {% if candidates %}
+                <span class="badge bg-danger mb-2"><i class="bi bi-fire"></i> Concours en cours</span>
+                {% endif %}
+                <h4 class="fw-bold text-dark mb-1">{{ event.title }}</h4>
+                <p class="text-secondary small mb-3">
+                    <i class="bi bi-geo-alt-fill text-danger me-1"></i> {{ event.location }} <br>
+                    <i class="bi bi-calendar-event text-primary me-1"></i> {{ event.date }}
+                </p>
+
+                <!-- Raccourci vers la section de vote s'il y a des candidats -->
+                {% if candidates %}
+                <a href="#voting-section" class="btn btn-outline-easyticket btn-sm w-100 rounded-pill fw-bold">
+                    <i class="bi bi-trophy-fill text-easyticket me-1"></i> Aller directement aux votes 👇
+                </a>
                 {% endif %}
             </div>
         </div>
+        {%  if event.description != 'None' %}
+        <!-- 2. DESCRIPTION RAPIDE -->
+        <div class="bg-white p-3 rounded-4 shadow-sm mb-4">
+            <h6 class="fw-bold text-dark mb-2">À propos de l'événement</h6>
+            <p class="text-secondary small mb-0">
+                {{ event.description }}
+            </p>
+        </div>
+        {%endif%}
+        {% if candidates %}
+        <hr class="my-4 text-muted opacity-25">
 
-        <div class="col-lg-4">
-            <div class="card p-4 shadow-sm mt-lg-n5 sticky-top" style="top: 20px;">
-                <h4 class="fw-bold mb-3 text-white">Prêt à participer ?</h4>
-                <div class="d-grid gap-2">
-                    {% if event.ticket_prices%}
-                    <a href="/payments/{{event.id}}" class="btn btn-warning btn-lg shadow-sm">
-                        <i class="bi bi-ticket-perforated"></i> Acheter un billet
-                    </a>
+        <!-- 3. SECTION VOTES (Au milieu de la page) -->
+        <section id="voting-section" class="mb-4">
+            <div class="text-center mb-4">
+                <span class="badge bg-easyticket px-3 py-2 rounded-pill fw-bold mb-1">
+                    <i class="bi bi-star-fill me-1"></i> Phase de Vote
+                </span>
+                <h5 class="fw-bold text-light mb-0">Soutenez votre candidat préfère</h5>
+                <small class="text-secondary">1 vote par utilisateur</small>
+            </div>
+
+            <!-- Grille dynamique Jinja2 des candidats -->
+            <div class="row g-2">
+                {% for candidate in candidates %}
+                <div class="col-6 col-md-4">
+                    <div class="card border-0 shadow-sm rounded-4 overflow-hidden candidate-card h-100">
+                        <span class="badge bg-dark text-white position-absolute top-0 start-0 m-2 px-2 py-1 rounded-3 opacity-75 fw-bold">
+                            #{{ candidate.candidate_number }}
+                        </span>
+                        
+                        <img src="{{ candidate.photo_url or 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=400&q=80' }}" 
+                             class="card-img-top" 
+                             alt="{{ candidate.name }}"
+                             style="height: 180px; object-fit: cover;">
+                        
+                        <div class="card-body p-2 text-center d-flex flex-column justify-content-between">
+                            <div>
+                                <h6 class="fw-bold text-white mb-0 text-truncate">{{ candidate.name }}</h6>
+                                <div class="text-secondary">
+                                    <p>{{candidate.bio}}</p>
+                                </div>
+                                <div class="badge bg-light text-danger border rounded-pill px-2 py-1 my-2 small">
+                                    <i class="bi bi-heart-fill me-1"></i><span id="count-{{ candidate.id }}">{{ candidate.votes_count }}</span> voix
+                                </div>
+                            </div>
+                            
+                            <!-- Formulaire / Bouton de vote AJAX ou POST -->
+                                <button 
+                                    id="btn-vote-{{ candidate.id }}" 
+                                    class="btn btn-warning btn-vote w-100 fw-bold" 
+                                    onclick="voter('{{ event.id }}', '{{ candidate.id }}', this)">
+                                    <i class="bi bi-heart-fill me-1"></i> Voter
+                                </button>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="col-12 text-center py-3 text-muted">
+                    <p class="small mb-0">Aucun candidat enregistré pour le moment.</p>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+        {% endif %}
+
+        <hr class="my-4 text-muted opacity-25">
+
+        <!-- 4. SECTION BILLETTERIE (En bas de la page) -->
+        <section class=" p-3 rounded-4 shadow-sm mb-4" style="background-color: #2a3554;">
+            <h6 class="fw-bold text-white mb-3"><i class="bi bi-ticket-perforated-fill text-easyticket me-1"></i> Réserver vos places</h6>
+            
+            {% if event.ticket_prices %}
+                {% for ticket in event.ticket_prices %}
+                <div class="d-flex justify-content-between align-items-center {% if not loop.last %}border-bottom pb-2 mb-2{% endif %}">
+                    <div>
+                        <strong class="d-block text-white">{{ticket.ticket_type}}</strong>
+                        <small class="text-seconndary">{{ ticket.description }}</small>
+                    </div>
+                    <div class="text-end">
+                        <span class="fw-bold text-white d-block">{{ ticket.price }} {{ticket.device}}</span>
+                        <a href="/payments/{{event.id}}" class="btn btn-easyticket btn-sm  rounded-pill fw-bold mt-1">Acheter</a>
+                    </div>
+                </div>
+                {% endfor %}
                     {% else %}
                     <button class="btn btn-secondary" disabled>
-                        <p class="text-muted small mb-1"><i class="bi bi-ticket-perforated"></i> Entrée gratuite</p>
+                        <p class="text-warning small mb-1"><i class="bi bi-ticket-perforated"></i> Entrée gratuite</p>
                     </button>
-                    {% endif %}
+            {% endif %}
+        </section>
+
+    </div>
+    <!-- Modal Information Vote -->
+    <!-- Modal Information Vote - État par défaut : Déjà Voté -->
+<div class="modal fade" id="voteInfoModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content text-center p-4 border-0 shadow-lg" style="border-radius: 20px;">
+            <div class="modal-body p-2">
+                
+                <!-- Icône d'avertissement / Or -->
+                <div class="mb-3">
+                    <i id="voteModalIcon" class="bi bi-exclamation-circle-fill text-gold" style="font-size: 3rem;"></i>
                 </div>
-                <ul class="list-unstyled mt-4 text-white">
-                    <li><i class="bi bi-check-circle text-success"></i> Paiement sécurisé</li>
-                    <li><i class="bi bi-check-circle text-success"></i> Billets instantanés</li>
-                    <li><i class="bi bi-check-circle text-success"></i> Service client 24/7</li>
-                </ul>
+                
+                <!-- Titre -->
+                <h4 class="font-heading fw-bold mb-3" id="voteModalTitle">Attention</h4>
+                
+                <!-- Message -->
+                <p class="text-muted fs-6 mb-4" id="voteModalMessage">
+                    Vous avez déjà exprimé votre vote pour ce concours !
+                </p>
+                
+                <!-- Bouton doré -->
+                <button type="button" class="btn btn-warning w-100 rounded-pill py-2 fw-semibold" id="voteModalConfirmBtn" data-bs-dismiss="modal">
+                    D'accord, j'ai compris
+                </button>
             </div>
         </div>
     </div>
 </div>
-
+    <!-- Bootstrap JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/static/Js/vote.js" defer></script>
 </body>
 </html>

@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - Gestion des Utilisateurs | EasyInvite & EasyTicket</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --sidebar-width: 260px;
+            --primary-color: #4f46e5;
+            --bg-light: #f8fafc;
+        }
+        body {
+            background-color: var(--bg-light);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+        }
+        .sidebar {
+            width: var(--sidebar-width);
+            height: 100vh;
+            position: fixed;
+            top: 0;
+            left: 0;
+            background: #1e293b;
+            color: #fff;
+            z-index: 1000;
+        }
+        .main-content {
+            margin-left: var(--sidebar-width);
+            padding: 2rem;
+        }
+        .nav-link {
+            color: #94a3b8;
+            border-radius: 0.375rem;
+            margin-bottom: 0.25rem;
+        }
+        .nav-link:hover, .nav-link.active {
+            color: #fff;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+        .nav-link i {
+            margin-right: 0.75rem;
+        }
+        .avatar-initial {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: #e0e7ff;
+            color: var(--primary-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+        }
+        .card {
+            border: none;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+            border-radius: 0.75rem;
+        }
+        .table > :not(caption) > * > * {
+            padding: 1rem 0.75rem;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Sidebar Bar -->
+    <aside class="sidebar p-3 d-flex flex-column">
+        <div class="d-flex align-items-center mb-4 px-2">
+            <i class="bi bi-ticket-perforated-fill text-warning fs-3 me-2"></i>
+            <span class="fs-5 fw-bold text-white">Easy Management</span>
+        </div>
+        
+        <ul class="nav nav-pills flex-column mb-auto">
+            <li class="nav-item">
+                <a href="#" class="nav-link">
+                    <i class="bi bi-speedometer2"></i> Tableau de bord
+                </a>
+            </li>
+            <li>
+                <a href="#" class="nav-link active">
+                    <i class="bi bi-people"></i> Utilisateurs
+                </a>
+            </li>
+            <li>
+                <a href="#" class="nav-link">
+                    <i class="bi bi-envelope-paper"></i> EasyInvite
+                </a>
+            </li>
+            <li>
+                <a href="#" class="nav-link">
+                    <i class="bi bi-ticket-detailed"></i> EasyTicket
+                </a>
+            </li>
+            <li>
+                <a href="#" class="nav-link">
+                    <i class="bi bi-gear"></i> Paramètres
+                </a>
+            </li>
+        </ul>
+
+        <hr class="text-secondary">
+        <div class="dropdown px-2">
+            <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" id="dropdownUser" data-bs-toggle="dropdown">
+                <div class="avatar-initial me-2">A</div>
+                <strong>Admin</strong>
+            </a>
+            <ul class="dropdown-menu dropdown-menu-dark text-small shadow">
+                <li><a class="dropdown-item" href="#">Profil</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item text-danger" href="/auth/logout">Déconnexion</a></li>
+            </ul>
+        </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2 class="fw-bold mb-1">Gestion des Utilisateurs</h2>
+                <p class="text-muted mb-0">Gérez les accès pour EasyInvite et EasyTicket</p>
+            </div>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addUserModal">
+                <i class="bi bi-plus-lg me-1"></i> Nouvel Utilisateur
+            </button>
+        </div>
+
+        <!-- Filter & Search Bar -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <div class="input-group">
+                            <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                            <input type="text" class="form-control border-start-0 ps-0" placeholder="Rechercher un nom, email, téléphone...">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <select class="form-select">
+                            <option selected>Tous les services</option>
+                            <option value="easyinvite">EasyInvite</option>
+                            <option value="easyticket">EasyTicket</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select class="form-select">
+                            <option selected>Tous les rôles</option>
+                            <option value="admin">Admin</option>
+                            <option value="organizer">Organisateur</option>
+                            <option value="user">Utilisateur</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <button class="btn btn-outline-secondary w-100">Filtrer</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Users Table -->
+        <div class="card">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th class="ps-4">Utilisateur</th>
+                                <th>Services</th>
+                                <th>Rôle</th>
+                                <th>Statut</th>
+                                <th>Inscrit le</th>
+                                <th class="text-end pe-4">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Exemple Ligne 1 -->
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-initial me-3">JD</div>
+                                        <div>
+                                            <div class="fw-semibold">Jean Dupont</div>
+                                            <div class="text-muted small">jean.dupont@example.com</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-primary-subtle text-primary border border-primary-subtle">EasyInvite</span>
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle">EasyTicket</span>
+                                </td>
+                                <td><span class="badge bg-dark">Organisateur</span></td>
+                                <td><span class="badge bg-success">Actif</span></td>
+                                <td class="text-muted small">12/07/2026</td>
+                                <td class="text-end pe-4">
+                                    <button class="btn btn-sm btn-light text-primary me-1" title="Modifier"><i class="bi bi-pencil"></i></button>
+                                    <button class="btn btn-sm btn-light text-danger" title="Bannir / Supprimer"><i class="bi bi-trash"></i></button>
+                                </td>
+                            </tr>
+
+                            <!-- Exemple Ligne 2 -->
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-initial bg-warning-subtle text-warning me-3">MK</div>
+                                        <div>
+                                            <div class="fw-semibold">Marie Kabange</div>
+                                            <div class="text-muted small">+243 81 000 0000</div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-success-subtle text-success border border-success-subtle">EasyTicket</span>
+                                </td>
+                                <td><span class="badge bg-secondary">Acheteur</span></td>
+                                <td><span class="badge bg-success">Actif</span></td>
+                                <td class="text-muted small">20/07/2026</td>
+                                <td class="text-end pe-4">
+                                    <button class="btn btn-sm btn-light text-primary me-1" title="Modifier"><i class="bi bi-pencil"></i></button>
+                                    <button class="btn btn-sm btn-light text-danger" title="Bannir / Supprimer"><i class="bi bi-trash"></i></button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Pagination -->
+            <div class="card-footer bg-white d-flex justify-content-between align-items-center py-3">
+                <span class="text-muted small">Affichage de 1 à 2 sur 45 utilisateurs</span>
+                <ul class="pagination pagination-sm mb-0">
+                    <li class="page-item disabled"><a class="page-link" href="#">Précédent</a></li>
+                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
+                    <li class="page-item"><a class="page-link" href="#">2</a></li>
+                    <li class="page-item"><a class="page-link" href="#">3</a></li>
+                    <li class="page-item"><a class="page-link" href="#">Suivant</a></li>
+                </ul>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Ajouter Utilisateur -->
+    <div class="modal fade" id="addUserModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title fw-bold">Ajouter un utilisateur</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="/admin/users/create" method="POST">
+                    <div class="modal-body">
+                        <div class="mb-3">
+                            <label class="form-label">Nom complet</label>
+                            <input type="text" name="name" class="form-control" required placeholder="Ex: Sarah Mwamba">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email ou Numéro de téléphone</label>
+                            <input type="text" name="identity" class="form-control" required placeholder="Ex: email@example.com ou 081...">
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Rôle</label>
+                                <select name="role" class="form-select">
+                                    <option value="user">Utilisateur</option>
+                                    <option value="organizer">Organisateur</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Accès Service</label>
+                                <div class="form-check mt-1">
+                                    <input class="form-check-input" type="checkbox" name="services" value="easyinvite" id="chkInvite" checked>
+                                    <label class="form-check-label" for="chkInvite">EasyInvite</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="services" value="easyticket" id="chkTicket" checked>
+                                    <label class="form-check-label" for="chkTicket">EasyTicket</label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary">Créer le compte</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

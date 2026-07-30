@@ -71,7 +71,7 @@ def get_month(dt:datetime):
 
 @Root.get("/qr/{event_id}/{guest_id}")#pour l'image du qr_code sur l'invitation
 async def get_qr_img(event_id:str,guest_id:str):
-    qr_image = generateInviteQrCode(guest_id)
+    qr_image = generateInviteQrCode(event_id,guest_id)
     return StreamingResponse(qr_image,media_type = "image/png") 
 
 @Root.get('/invite/{event_id}/{guest_id}/create', response_class=HTMLResponse)
@@ -99,7 +99,7 @@ async def getGuestInvite(
     
     # 3. Génération du QR Code Base64 indispensable pour le template
     # (Met à jour le nom de ta fonction si nécessaire)
-    qr_code_url = generateInviteQrCode(guest_id)
+    qr_code_url = generateInviteQrCode(event_id,guest_id)
     
     # 4. Construction propre du lien Google Maps si l'adresse existe
     google_maps_url = None
@@ -418,7 +418,7 @@ async def get_guest_invite(event_id:str,guest_id :str,db:AsyncSession =Depends(c
     guest_id = guest_id
     phone = guest.telephone
     guest_phone = phone[:-4] +"xxxx"
-    buffer = generateInviteQrCode(guest_id)
+    buffer = generateInviteQrCode(event_id,guest_id)
     return StreamingResponse(buffer,media_type = "image/png",headers = {"content-Disposition":f"attachment;filename=event_{guest_name}-{guest_phone}.png"})
 @Root.get('/download/invite/{event_id}')#telecharger toutes les invitations(Qrcodes)
 async def getInviteFile(event_id:str,db:AsyncSession = Depends(connecting)):

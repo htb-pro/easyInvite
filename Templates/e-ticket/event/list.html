@@ -142,9 +142,17 @@
     <nav class="navbar navbar-expand-lg custom-nav sticky-top navbar-dark py-3">
         <div class="container">
             <a class="navbar-brand fw-bold text-white" href="/">
-                <i class="bi bi-ticket-perforated-fill text-warning me-2"></i>Easy<span class="text-warning">ticket</span>
+                <i class="bi bi-ticket-perforated-fill text-warning me-2"></i>Easy<span class="text-warning">Ticket</span>
             </a>
-            <a href="/auth/login" class="btn btn-outline-light btn-sm px-3 rounded-3">se connecter</a>
+            {% if user %}
+            <!-- Profil Utilisateur Connecté -->
+            <a href="/my_account" class="d-flex align-items-center text-decoration-none text-white me-2">
+                <i class="bi bi-person-circle me-2 fs-5"></i>
+                <span class="small fw-semibold">{{ user }}</span>
+            </a>
+            {% else %}
+            <a href="/auth/login?next=/event/list" class="btn btn-outline-light btn-sm px-3 rounded-3">Se connecter</a>
+            {%endif%}
         </div>
     </nav>
 
@@ -259,7 +267,7 @@
                         </div>
 
                         <div class="mt-4">
-                            <a href="/events/{{ event.id }}" class="btn btn-ticket w-100">Réserver ma place</a>
+                            <a href="/api/event/detail/{{ event.id }}" class="btn btn-ticket w-100">Réserver ma place</a>
                         </div>
                     </div>
                 </div>
@@ -291,7 +299,7 @@
             {% else %}
             <div class="col-12 text-center py-5">
                 <i class="bi bi-calendar-x text-muted" style="font-size: 3rem;"></i>
-                <h5 class="mt-3 text-muted">Aucun événement disponible pour le moment</h5>
+                <h5 class="mt-3 text-muted">Aucun événement disponible pour le moment </h5>
             </div>
             {% endif %}
         </div>

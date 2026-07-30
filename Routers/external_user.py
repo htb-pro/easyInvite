@@ -20,8 +20,9 @@ from utils.sms_setting.sms_utils import send_otp_sms
 from utils.redis_config import redis_conn
 from uuid import UUID
 from arq import create_pool
-from urllib.parse import quote
+from urllib.parse import quote,urlparse
 from Routers.loging import hash_password,verify_password
+from passlib.context import CryptContext
 
 
 templates = Jinja2Templates(directory="Templates")
@@ -101,7 +102,7 @@ async def get_list_of_events(request: Request,  page: int = 1, db: AsyncSession 
         event.is_past = event.date < maintenant
     
     copyright = datetime.now().year
-    # 4. Récupération événements et rendu du template    
+    # 4. Récupération événements et rendu du template  
     return templates.TemplateResponse("e-ticket/main/index.html", {
         'request': request,
         'total_pages': total_pages,
@@ -126,7 +127,13 @@ async def get_list_of_events(
     per_page = 10
     offset = (page - 1) * per_page
     now = datetime.now()
-    
+    user_id = request.session.get("user_id",None)
+    user = None
+    if user_id:
+        stmt = select(ExternalUser).where(ExternalUser.id == user_id)
+        rslt = await db.execute(stmt)
+        current_user = rslt.scalars().first()
+        user = current_user.name
     # Sécurité de base : uniquement les événements valides et non supprimés
     base_query = select(Event).where(Event.type == "other", Event.is_deleted == False)
     
@@ -144,7 +151,7 @@ async def get_list_of_events(
     if search:
         base_query = base_query.where(Event.name.ilike(f"%{search}%"))
     if city:
-        base_query = base_query.where(Event.location == city)
+        base_query = base_query.where(Event.city == city)
 
     # 3. Calcul du total d'événements correspondants pour la pagination
     count_query = select(func.count()).select_from(base_query.subquery())
@@ -171,7 +178,8 @@ async def get_list_of_events(
         'total_pages': total_pages,
         'search': search,
         'city': city,
-        'filter_date': filter_date
+        'filter_date': filter_date,
+        'user':user
     })
 
 @Root.get("/policy", response_class=HTMLResponse)#list des evenement
@@ -195,15 +203,50 @@ async def get_pricing_page(request: Request):
         'request': request,
     })
 
-@Root.get("/event/details/{event_id}")#la root pour voir les detail d'un event
-async def eventDetail(request:Request,event_id : str,access_token = Cookie(None),db:AsyncSession = Depends(connecting)):
-    csrf_token = secrets.token_urlsafe(32)
-    event = (await db.execute(select(Event).where(Event.id == event_id).options(selectinload(Event.ticket_prices)))).scalars().first()
-    if not event:
-        return RedirectResponse("/event/list")
-    event_img = event.photo_url if event.photo_url else None
-    return templates.TemplateResponse("e-ticket/event/detail.html",{'request':request,"event":event,'event_img':event_img})
+@Root.get("/api/event/detail/{event_id}")
+async def get_event_detail(
+    request: Request,
+    event_id: str,
+    db: AsyncSession = Depends(connecting)
+):
+    # 1. Requête pour récupérer l'événement avec ses candidats et ses billets
+    query = (
+        select(Event)
+        .where(Event.id == event_id)
+        .options(
+            selectinload(Event.candidates),
+            selectinload(Event.tickets),
+            selectinload(Event.ticket_prices)
+        )
+    )
+    
+    result = await db.execute(query)
+    event = result.scalar_one_or_none()
 
+    # 2. Si l'événement n'existe pas -> Erreur 404
+    if not event:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Événement introuvable"
+        )
+
+    # 3. Trier les candidats par nombre de voix décroissant (pour afficher les leaders en premier)
+    sorted_candidates = sorted(
+        event.candidates, 
+        key=lambda c: c.votes_count, 
+        reverse=True
+    )
+
+    # 4. Rendu du template Jinja2
+    return templates.TemplateResponse(
+        "e-ticket/event/detail.html",
+        {
+            "request": request,
+            "event": event,
+            "candidates": sorted_candidates,
+            "tickets": event.tickets
+        }
+    )
 @Root.get("/support_team_contact")# le lien qui ouvrire whatsapp pour laisser le user donner sa demande ou probleme
 async def send_whatsapp_redirect(request:Request):    
     support_contact = "+243897401210"
@@ -240,13 +283,8 @@ async def mon_compte_participant(
     verify_current_user_id :str = Depends(check_current_user_session)
 ):
     # 1. 🛡️ SÉCURITÉ : Récupération de l'ID via la session CHIFFRÉE et non le cookie brut
-    user_id = request.session.get("user_id")
-    
-    if not user_id:
-        # Si le participant n'est pas connecté, redirection flash vers la page de login
-        request.session['invalid_user'] = "Veuillez vous connecter pour accéder à vos billets."
-        return RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
-        
+    user_id = verify_current_user_id
+     
     try:
         # 2. Récupération de l'utilisateur
         user_res = await db.execute(select(ExternalUser).where(ExternalUser.id == user_id))
@@ -256,7 +294,6 @@ async def mon_compte_participant(
             # Sécurité si l'ID en session n'existe plus en BDD
             request.session.clear() # On vide la session obsolète
             return RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
-
         # 3. Requête ultra-optimisée avec jointures (Eager Loading)
         result = await db.execute(
             select(Order)
@@ -306,12 +343,12 @@ async def mon_compte_participant(
         total_usd = res.scalar() or 0.0
 
     except Exception as e:
-        print(f"🚨 [PROD ERROR] /my_account pour l'user {user_id}: {str(e)}")
+        #print(f"🚨 [PROD ERROR] /my_account pour l'user {user_id}: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Impossible de charger vos billets pour le moment."
         )
-
+        
     # 4. Envoi des données sécurisées au template HTML
     return templates.TemplateResponse(
         "external_user/my_account/user_account.html", 
@@ -335,11 +372,6 @@ async def user_tickets(
 ):
     # 1. Vérification de l'authentification via le cookie
     user_id = request.cookies.get("session_user_id")
-    if not user_id:
-        # Si le participant n'est pas connecté, redirection flash vers la page de login
-        request.session['invalid_number'] = "Veuillez vous connecter pour accéder à vos billets."
-        return RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
-        
     try:
         # 2. Récupération de l'utilisateur pour afficher ses infos (optionnel mais pro)
         user_res = await db.execute(select(ExternalUser).where(ExternalUser.id == user_id))
@@ -386,7 +418,7 @@ async def user_list_events_json(
     verify_current_user_id :str = Depends(check_current_user_session)
 ):
     # 1. Vérification de l'authentification (Sécurité pour bloquer les robots anonymes)
-    user_id = request.cookies.get("session_user_id")
+    user_id = verify_current_user_id
     if not user_id:
         # Si le participant n'est pas connecté, redirection flash vers la page de login
         request.session['invalid_number'] = "Veuillez vous connecter pour accéder à vos billets."
@@ -476,11 +508,7 @@ async def user_profil(
     verify_current_user_id :str = Depends(check_current_user_session)
 ):
     # 1. Vérification de l'authentification via le cookie
-    user_id = request.cookies.get("session_user_id")
-    if not user_id:
-        # Si le participant n'est pas connecté, redirection flash vers la page de login
-        request.session['invalid_number'] = "Veuillez vous connecter pour accéder à vos billets."
-        return RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
+    user_id = verify_current_user_id
     invalid_name = request.session.pop('invalid_name',None)
     try:
         # 2. Récupération de l'utilisateur pour afficher ses infos (optionnel mais pro)
@@ -524,13 +552,7 @@ async def update_profile(
     verify_current_user_id :str = Depends(check_current_user_session)
 ):
     # 1. Sécurité d'authentification : Vérification de la session active
-    user_id = request.session.get("user_id")
-    if not user_id:
-        return JSONResponse(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            content={"error": "Votre session a expiré. Veuillez vous reconnecter."}
-        )
-
+    user_id = verify_current_user_id
     # 2. Nettoyage et Normalisation des données entrantes
     clean_name = " ".join(user_name.strip().split())  # Supprime les espaces doubles internes
     clean_phone = user_phone.strip().replace(" ", "").replace("+", "") # Supprime les espaces et le +
@@ -616,11 +638,7 @@ async def user_historique(
     verify_current_user_id :str = Depends(check_current_user_session)
 ):
     # 1. Sécurité de session
-    user_id = request.cookies.get("session_user_id")
-    if not user_id:
-        request.session['invalid_number'] = "Veuillez vous connecter pour accéder à vos billets."
-        return RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
-        
+    user_id = verify_current_user_id    
     request.session.pop('invalid_name', None)
     
     try:
@@ -630,7 +648,7 @@ async def user_historique(
         
         if not current_user:
             response = RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
-            response.delete_cookie("session_user_id")
+            response.delete_cookie("user_id")
             return response
         
         # 3. Requête SQL
@@ -999,7 +1017,7 @@ async def reset_password_final(
     token_expires = request.session.get('reset_token_expires')
     email = request.session.get('reset_user_email')  # Sera bien présent maintenant !
     user_type = request.session.get('reset_user_type')
-    print(f"DEBUG: Session token: {session_token}, Token expires: {token_expires}, Email: {email}, User type: {user_type}")
+    #print(f"DEBUG: Session token: {session_token}, Token expires: {token_expires}, Email: {email}, User type: {user_type}")
     # 🛡️ BARRIÈRE 1 : Absence de session de réinitialisation
     if not session_token or not token_expires or not email or not user_type:
         return JSONResponse(
@@ -1096,6 +1114,7 @@ async def register_form(request: Request):
                 "username": "",
                 "phone": "",
                 "email": "",
+                "phone_existed": "",
                 "password": "",
                 "error": "" # On prépare la clé "error" que vous vouliez utiliser
             }
@@ -1144,20 +1163,36 @@ async def register_user(
         return RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
     # 2. Vérification en base de données (Uniquement si l'email ou le téléphone est fourni)
     user_already_exists = False
-    if clean_email or clean_phone:
-        query = select(ExternalUser).where(
-            or_(
-                ExternalUser.email == clean_email,
-                ExternalUser.phone_number == clean_phone
-            )
-        )
-        # CORRECTION : On exécute la requête avec "await db.execute()"
-        result = await db.execute(query)
-        user_already_exists = result.scalars().first() is not None
+    existing_user = None
 
-    # 3. Construction du bilan des données et des erreurs
+    if clean_email or clean_phone:
+        conditions = []
+        if clean_email:
+            conditions.append(ExternalUser.email == clean_email)
+        if clean_phone:
+            conditions.append(ExternalUser.phone_number == clean_phone)
+
+        query = select(ExternalUser).where(or_(*conditions))
+        result = await db.execute(query)
+        existing_user = result.scalars().first()
+
+    # Détermination ciblée des doublons
+    email_error = ""
+    phone_existed_error = ""
+
+    if existing_user:
+        if clean_email and existing_user.email == clean_email:
+            email_error = "Cette adresse e-mail est déjà utilisée."
+        elif clean_phone and existing_user.phone_number == clean_phone:
+            phone_existed_error = "Ce numéro de téléphone est déjà utilisé."
+
+    # Validation du format du téléphone (séparée du doublon)
+    phone_format_error = ""
+    if not clean_phone or len(clean_phone) < 10:
+        phone_format_error = "Veuillez entrer un numéro de téléphone valide à 10 chiffres"
+
+    # 3. Construction du dictionnaire d'erreurs
     form_data = {
-        # CORRECTION : Nettoyage des clés "phone" et "email" (sans espace)
         "fields": {
             "username": clean_username,
             "phone": clean_phone,
@@ -1166,8 +1201,9 @@ async def register_user(
         },
         "errors": {
             "username": "Veuillez entrer un nom valide" if not clean_username or len(clean_username) < 2 else "",
-            "phone": "Veuillez entrer un numéro de téléphone valide à 10 chiffres" if not clean_phone or len(clean_phone) < 10 else "",
-            "email": "Cette adresse mail ou numéro de téléphone est déjà utilisée" if user_already_exists else "",
+            "phone": phone_format_error, # Erreur de format uniquement
+            "phone_existed": phone_existed_error, # Erreur de doublon uniquement
+            "email": email_error,
             "password": "Veuillez entrer un mot de passe sécurisé (au moins 8 caractères)" if not clean_password or len(clean_password) < 8 else ""
         }
     }
@@ -1215,6 +1251,7 @@ async def login_page(request: Request, db: AsyncSession = Depends(connecting)):
     current_user_id = request.cookies.get("session_user_id",None)
     success_message = request.session.pop('success_message', None)
     success_update_message = request.session.pop('success_update_message', None)
+    
     if current_user_id:
         try:
             # On vérifie si cet ID existe vraiment en BDD
@@ -1259,27 +1296,48 @@ async def login_page(request: Request, db: AsyncSession = Depends(connecting)):
     )
     return response
 
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+DUMMY_HASH = pwd_context.hash("dummy_password_for_timing") # Hash factice pour l'anti-timing attack
+
+def get_safe_redirect_url(next_url: str | None, default_url: str = "/") -> str: #methode de protection de la redirection
+    if not next_url:
+        return default_url
+    
+    # 1. Vérifier si l'URL commence par un seul '/' et JAMAIS par '//' (ex: //hacker.com)
+    if not next_url.startswith("/") or next_url.startswith("//"):
+        return default_url
+    
+    # 2. Analyser l'URL pour s'assurer qu'il n'y a pas de nom de domaine (host/netloc)
+    parsed = urlparse(next_url)
+    if parsed.netloc or parsed.scheme:
+        return default_url
+        
+    return next_url
 
 @Root.post("/auth/login")
 async def login_unique(
     request: Request,
-    bobby_pot:str = Form(None),
+    bobby_pot: str = Form(None),
+    next: str = Form(None),
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: AsyncSession = Depends(connecting),
     _ = Depends(verify_csrf)
 ):
     user_name = form_data.username
-    password = form_data.password
+    # 🔒 Tronquer le mot de passe à 72 caractères pour éviter le crash de bcrypt
+    password = form_data.password if form_data.password else ""
     phone = format_to_drc_phone(user_name.strip())
     
     error_message = "Numéro de téléphone ou mot de passe incorrect."
-    DUMMY_HASH = "$2b$12$N9qo8uLOickgx2ZMRZoMyeIjZAgcfl7GP93BIp69Y179ywunpJF7K"  # Hash factice pour l'anti-timing attack
+    
+    # Honeypot : On ne stocke pas le mot de passe en session pour la sécurité
     if bobby_pot:
         request.session['invalid_user'] = error_message
-        request.session['sent_username'] = phone if 'phone' in locals() else ""
-        request.session['sent_password'] = password if 'password' in locals() else ""
+        request.session['sent_username'] = phone
         return RedirectResponse("/auth/login", status_code=status.HTTP_303_SEE_OTHER)
+
     try:
+        redirect_url = next or request.query_params.get("next") #on recupere l'addresse de redirection vers la page de vote si l'utilisateur ne s'etait pas connecter
         # 1. On cherche l'utilisateur dans les deux tables
         res_org = await db.execute(select(Organizer).where(Organizer.phone_number == phone))
         organizer = res_org.scalars().first()
@@ -1297,7 +1355,6 @@ async def login_unique(
 
         # 3. CAS DOUBLE RÔLE (Il est à la fois organisateur et participant)
         if organizer and participant:
-            # On vérifie le mot de passe sur l'un des comptes (ils doivent avoir le même s'ils partagent le numéro)
             if not verify_password(password, organizer.password):
                 request.session['invalid_user'] = error_message
                 return RedirectResponse("/auth/login", status_code=status.HTTP_303_SEE_OTHER)
@@ -1319,7 +1376,13 @@ async def login_unique(
             request.session['user_id'] = organizer.id
             request.session['user_type'] = "organizer"
             request.session.pop('invalid_user', None)
-            return RedirectResponse(url="/organizer/account", status_code=status.HTTP_303_SEE_OTHER)
+
+            if redirect_url and redirect_url.startswith("/"):
+                destination = get_safe_redirect_url(redirect_url,default_url="/")
+            else:
+                destination = "/organizer/account"  # Redirection par défaut vers le compte
+            
+            return RedirectResponse(url=destination, status_code=status.HTTP_303_SEE_OTHER)
 
         # 5. CAS UNIQUE : Uniquement Participant (ExternalUser)
         if participant:
@@ -1330,7 +1393,16 @@ async def login_unique(
             request.session['user_id'] = participant.id
             request.session['user_type'] = "external"
             request.session.pop('invalid_user', None)
-            return RedirectResponse(url="/my_account", status_code=status.HTTP_303_SEE_OTHER)
+
+            
+
+            # 4. Sécurité : Vérifier que l'URL 'next' est bien relative (évite les attaques de redirection externe)
+            if redirect_url and redirect_url.startswith("/"):
+                destination = get_safe_redirect_url(redirect_url,default_url="/")
+            else:
+                destination = "/my_account"  # Redirection par défaut vers le compte
+
+            return RedirectResponse(url=destination, status_code=status.HTTP_303_SEE_OTHER)
 
     except Exception as e:
         await db.rollback()
@@ -1393,10 +1465,13 @@ async def process_role_choice(
 async def logout(request: Request):
 
     # 1. Préparation de la redirection vers la page de login
-    response = RedirectResponse(url="/auth/login", status_code=status.HTTP_303_SEE_OTHER)
+    response = RedirectResponse(url="/e-ticket", status_code=status.HTTP_303_SEE_OTHER)
     
     # 2. Suppression du cookie d'authentification
-    response.delete_cookie(key="session_user_id")
+    response.delete_cookie(
+        key="session_user_id",
+        path="/"
+    )
     
     # 3. Optionnel : Nettoyage de la session Starlette si tu veux vider les messages flash en même temps
     request.session.clear()

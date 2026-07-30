@@ -1,6 +1,6 @@
 #importation-
 from fastapi import FastAPI,status,HTTPException,Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse,JSONResponse
 from fastapi.templating import Jinja2Templates
 from Routers.event import Root
 from ticket_app.rooting.rooting import Root as ticket_root
@@ -18,6 +18,7 @@ from Routers.event_dashboard import Root as event_dashboard_root
 from Routers.external_user import Root as external_user_root
 from Routers.easyevent import Root as easyevent_root
 from Routers.organizer import Root as organizer_root
+from Routers.vote import Root as vote_root
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from db_setting import init_db,AsyncSessionLocal
@@ -27,7 +28,7 @@ from app.init_admin import create_admin
 from fastapi_csrf_protect import CsrfProtect
 from pydantic import BaseModel
   # Tes configurations Redis
-
+from Routers.loging import LoginRequiredException
 
 templates = Jinja2Templates(directory = "Templates")
 #initialisation
@@ -74,6 +75,7 @@ Apk.include_router(event_dashboard_root)
 Apk.include_router(external_user_root)
 Apk.include_router(easyevent_root)
 Apk.include_router(organizer_root)
+Apk.include_router(vote_root)
 
 
 @Apk.exception_handler(HTTPException)
@@ -85,6 +87,30 @@ def auth_exception_handler(request,exc):
 @Apk.exception_handler(403)#methode pour l'exception 403
 async def forbidden_handler(request:Request,exc:HTTPException):
     return templates.TemplateResponse("Authentification/admin/admin_required_message.html",{'request':request,"message":exc.detail},status_code = 403)#le template qui sera renvoyer a chaque tantative d'un ayant pas droit a une vue ou donnees
+
+@Apk.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail}
+    )
+
+@Apk.exception_handler(LoginRequiredException)
+async def login_required_handler(request: Request, exc: LoginRequiredException):
+    accept_header = request.headers.get("accept", "")
+    
+    # Si c'est une requête AJAX / Fetch (ex: apiRequest)
+    if request.url.path.startswith("/api/") or "application/json" in accept_header:
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={"detail": "Non authentifié"}
+        )
+
+    # Si c'est une navigation HTML classique
+    return RedirectResponse(
+        url=f"/login?next={exc.next_url}",
+        status_code=status.HTTP_303_SEE_OTHER
+    )
 
 #configuration de csrf_token
 from config import csrf_key
@@ -112,5 +138,5 @@ def get_csrf_config():
 
 # import uvicorn
 # if __name__ == '__main__':
-#     uvicorn.run("rooting:Apk", host="0.0.0.0", port=8000, reload=True)#public acces
+#     uvicorn.run("rooting:Apk", host="0.0.0.0", port=8000, reload=True)#public acces  
     #uvicorn.run("rooting:Apk", host="127.0.0.1", port=8000, reload=True) #acces privee

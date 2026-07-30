@@ -65,6 +65,10 @@
         <!-- FORM -->
         <form method="post" action="/login">
 
+            <div class="mb-3" style="position: absolute; left: -9999px; top: -9999px;" aria-hidden="true">
+                <input type="text" name="bobby_pot" id="bot" autocomplete="off" tabindex="-1">
+            </div>
+            <input type="hidden" name="csrf_token" value="{{csrf_token}}">
             <div class="mb-3">
                 <label class="form-label">Email</label>
                 <input type="email"
@@ -107,6 +111,7 @@
         </a>
     </div>
 </div>
+<script src="/static/Js/easyinvite/user.js" defer></script>
 <script>
     setTimeout(() => {
         const alert = document.querySelector(".alert");

@@ -51,6 +51,13 @@ body::before {
     min-height: 100vh;
 }
 
+.app-wrapper::before {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(15, 23, 42, 0.65); /* Notre bleu nuit (#0F172A) à 65% d'opacité */
+    z-index: 1;
+}
 /* ==========================================================================
    HEADER / EN-TÊTE DE PAGE (Logo Gauche / Boutons Droite)
    ========================================================================== */
@@ -131,6 +138,13 @@ body::before {
     font-weight: 800;
     letter-spacing: -0.5px;
     margin-bottom: 8px;
+    background: linear-gradient(135deg, #ffffff 60%, #a1c4fd 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5)); /* Ombre portée sur le texte dégradé */
+}
+.lead{
+
     background: linear-gradient(135deg, #ffffff 60%, #a1c4fd 100%);
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -265,6 +279,8 @@ body::before {
     overflow: hidden;
 }
 
+
+
 /* Ajustement des textes internes de la carte */
 .event-card .card-title {
     color: #ffffff;
@@ -349,51 +365,130 @@ input::placeholder {
     background-size: cover;
     background-position: center;
 }
+   .brand-subtitle {
+    display: inline-block;
+    min-width: 280px;
+    min-height: 40px;
+    vertical-align: bottom;
+    }
+    #formCard
+    {
+        background-color: #0B1224;
+    }
+    input::placeholder
+    {
+        color: white !important;
+    }
     </style>
 </head>
 <body>
-
-    <div class="app-wrapper" id="dynamicHero">
-        <header class="app-header d-flex justify-content-between align-items-center">
-            <a href="/" class="brand-logo">
-                <i class="bi bi-ticket-perforated-fill me-2"></i></i> Easy<span>Ticket</span>
+   <header class="border-bottom py-3 sticky-top" id="mainHeader" style="background-color: #0F172A;">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            
+            <!-- Logo -->
+            <a href="#" class="brand-logo text-white text-decoration-none fs-4 fw-bold">
+                <i class="bi bi-ticket-perforated-fill me-2 text-warning"></i>Easy<span class="text-warning">Ticket</span>
             </a>
 
-            <div>
+            <!-- VERSION DESKTOP (d-none d-md-flex) -->
+            <div class="d-none d-md-flex align-items-center gap-4">
+                <nav class="d-flex gap-3 me-2">
+                    <a href="#events-section" class="text-white text-decoration-none">Événements</a>
+                    <a href="#footer" class="text-white text-decoration-none">Contact</a>
+                </nav>
+
                 {% if user %}
-                    <a class="navbar-brand fw-bold text-white d-flex align-items-center" href="/my_account"> 
-                        <i class="bi bi-person-circle me-2" style="font-size: 25px;"></i> {{ user }} 
+                    <!-- Profil Utilisateur Connecté -->
+                    <a href="/my_account" class="d-flex align-items-center text-decoration-none text-white me-2">
+                        <i class="bi bi-person-circle me-2 fs-5"></i>
+                        <span class="small fw-semibold">{{ user }}</span>
+                    </a>
+                    
+                    <!-- Bouton Déconnexion -->
+                    <a href="/user/auth/logout" class="btn btn-outline-warning btn-sm px-3 fw-semibold">
+                        <i class="bi bi-box-arrow-left me-1"></i> Se déconnecter
                     </a>
                 {% else %}
-                    <a href="/auth/login" class="btn btn-outline-danger text-light">
-                        <i class="bi bi-box-arrow-right"></i> Se connecter
+                    <!-- Bouton Connexion -->
+                    <a href="/auth/login" class="btn btn-outline-warning btn-sm px-3 fw-semibold">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> Se connecter
                     </a>
                 {% endif %}
             </div>
-        </header>
 
-        <main class="main-content">
-            <div class="search-card">
-                <h1 class="brand-title">E-ticket</h1>
-                <p class="brand-subtitle"></p>
+            <!-- BOUTON BURGER MOBILE -->
+            <button class="btn btn-outline-light d-block d-md-none" type="button" data-bs-toggle="collapse" data-bs-target="#mobileMenu" aria-controls="mobileMenu" aria-expanded="false" aria-label="Toggle navigation">
+                <i class="bi bi-list fs-4"></i>
+            </button>
+        </div>
 
-                <form action="/get/event_name" method="GET">
-                    <div class="search-group">
-                        <div class="search-icon">
-                            <i class="bi bi-search"></i>
-                        </div>
-                        <input type="text" 
-                               name="event_name" 
-                               class="search-input" 
-                               placeholder="Rechercher un événement..." 
-                               required 
-                               autocomplete="off">
+        <!-- MENU MOBILE (d-md-none) -->
+        <div class="collapse d-md-none mt-2" id="mobileMenu">
+            <div class="d-flex flex-column gap-3 py-3 border-top border-secondary">
+                <a href="#events-section" class="text-white text-decoration-none py-1">
+                    <i class="bi bi-calendar-event me-2"></i>Événements
+                </a>
+                <a href="#footer" class="text-white text-decoration-none py-1">
+                    <i class="bi bi-envelope me-2"></i>Contact
+                </a>
+                
+                <hr class="text-secondary my-1">
+
+                {% if user %}
+                    <!-- Profil Utilisateur Connecté Mobile -->
+                    <div class="d-flex align-items-center justify-content-between pt-2">
+                        <a href="/my_account" class="d-flex align-items-center text-decoration-none text-white">
+                            <i class="bi bi-person-circle me-2 fs-4 text-warning"></i>
+                            <span class="fw-semibold">{{ user }}</span>
+                        </a>
+                        <a href="/user/auth/logout" class="btn btn-outline-warning btn-sm px-3 fw-semibold">
+                            <i class="bi bi-box-arrow-left me-1"></i>
+                        </a>
                     </div>
+                {% else %}
+                    <!-- Bouton Connexion Mobile -->
+                    <a href="/auth/login" class="btn btn-warning btn-sm w-100 fw-semibold mt-2">
+                        <i class="bi bi-box-arrow-in-right me-1"></i> Se connecter
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</header>
 
-                    <button type="submit" class="btn-search">
-                        Rechercher
-                    </button>
-                </form>
+    <div class="app-wrapper bg-white" id="dynamicHero">
+        <main class="main-content">
+            <div class="search-card" style="position: relative;z-index: 100;">
+                <div class="hero-section text-center text-white">
+                        {% if user %}
+                            <h1 class="fw-bold">Ravi de vous revoir, {{ user }} !</h1>
+                            <p class="lead">Que souhaitez-vous réserver aujourd'hui ?</p>
+                        {% else %}
+                            <h1 class="fw-bold brand-title">Bienvenue sur EasyTicket</h1>
+                            <p class="lead">Réservez vos places pour les meilleurs événements.</p>
+                        {% endif %}
+                    
+                    <p class="brand-subtitle"></p>
+
+                    <form action="/get/event_name" method="GET">
+                        <div class="search-group">
+                            <div class="search-icon">
+                                <i class="bi bi-search"></i>
+                            </div>
+                            <input type="text" 
+                                name="event_name" 
+                                class="search-input" 
+                                placeholder="Rechercher un événement..." 
+                                required 
+                                autocomplete="off">
+                        </div>
+
+                        <button type="submit" class="btn-search">
+                            Rechercher
+                        </button>
+                    </form>
+                </div>
             </div>
         </main>
     </div>
@@ -543,7 +638,7 @@ input::placeholder {
                                             {{ ticket.ticket_type.capitalize() }} : {% if ticket.price and ticket.price > 0 %}{{ ticket.price|int }} {{ ticket.device }}{% else %}Gratuit{% endif %}
                                         </span>
                                     {% endfor %}
-                                    <a href="/event/details/{{ event.id }}" class="btn btn-warning btn-sm fw-bold px-3 py-1 text-dark mt-2" style="border-radius: 8px;">Voir detail</a>
+                                    <a href="/api/event/detail/{{event.id}}" class="btn btn-warning btn-sm fw-bold px-3 py-1 text-dark mt-2" style="border-radius: 8px;">Voir detail</a>
                                 {% endif %}
                             </div>
                         </div>
@@ -572,7 +667,9 @@ input::placeholder {
                                         <i class="bi bi-exclamation-triangle-fill"></i> Événement terminé. Les réservations sont clôturées.
                                     </div>
                                 {% else %}
-                                    <p class="text-secondary">{% if event.description %}{{ event.description[:100] }}...{% endif %}</p>
+                                    {% if event.description and event.description != 'None' %}
+                                        <p class="text-secondary">{{ event.description[:100] }}</p>
+                                    {% endif %}
                                     <p class="text-secondary small mb-1"><i class="bi bi-calendar-event"></i> Date : {{ event.date.strftime("%d-%m-%Y") }} à {{ event.date.strftime("%H:%M") }}</p>
                                     <p class="text-secondary small"><i class="bi bi-geo-alt"></i> {{ event.city }}</p>
                                     {% if event.ticket_prices %}
@@ -593,7 +690,7 @@ input::placeholder {
                                 {% if event.is_past %}
                                     <button type="button" class="btn btn-secondary w-100" style="border-radius: 8px;" disabled>Détails indisponibles</button>
                                 {% else %}
-                                    <a href="/event/details/{{ event.id }}" class="btn btn-outline-primary w-100" style="border-radius: 8px;">Voir les détails</a>
+                                    <a href="/api/event/detail/{{event.id}}" class="btn btn-outline-primary w-100" style="border-radius: 8px;"><i class="bi bi-ticket-perforated-fill me-2"></i> Participer à l'événement</a>
                                 {% endif %}
                             </div>
                         </div>
@@ -606,7 +703,7 @@ input::placeholder {
                     {% endfor %}
                 </div>
             </div>
-            {% endif %}
+            
             <div class="row">
                 <div class="col">
                     <nav class="mt-4">
@@ -630,68 +727,166 @@ input::placeholder {
                     </nav>
                 </div>
             </div>
-
+            {% endif %}
         </div>
     </section>
+                       
+    <section id="complain-section" class="py-4 mt-2" >
+    <div class="container py-5">
 
+        <div id="formCard" class="card shadow-lg border-0" style="position: relative;z-index: 1;">
+            <div class="card-header">
+                 <div class="text-center mb-4">
+                    <span class="badge bg-warning-subtle text-warning-emphasis px-3 py-2 mt-2 rounded-pill fw-bold mb-2">
+                        <i class="bi bi-shield-exclamation me-1"></i> Support Client
+                    </span>
+                    <h5 class="fw-bold text-white">Soumettre une nouvelle plainte</h5>
+                    <p class="text-secondary small">Décrivez votre situation, notre équipe EasyTicket vous répondra rapidement.</p>
+                </div>
+            </div>
+            <div class="card-body p-5">
 
-    <footer class="bg-dark text-secondary pt-5 pb-4 border-top border-secondary border-opacity-10" style="background-color: #0B1224 !important;">
-        <div class="container">
-            <div class="row g-4">
-                
-                <div class="col-12 col-md-4 text-center text-md-start">
-                    <h5 class="text-warning fw-bold mb-3">EasyTicket</h5>
-                    <p class="small" style="max-width: 300px;">La plateforme de billetterie  numérique de confiance en RDC. Sécurisé, rapide et adapté au Mobile Money.</p>
-                    <div class="d-flex justify-content-center justify-content-md-start gap-3 mt-3">
-                        <a href="#" class="text-secondary"><i class="bi bi-facebook fs-5"></i></a>
-                        <a href="#" class="text-secondary"><i class="bi bi-whatsapp fs-5"></i></a>
-                        <a href="#" class="text-secondary"><i class="bi bi-twitter-x fs-5"></i></a>
+                <h3 class="text-center text-light mb-4">
+                Signaler un problème
+                </h3>
+
+                <form id="complaintForm">
+
+                    <div class="mb-3">
+                        <label class="form-label text-light">Nom complet</label>
+                        <input type="text" class="form-control  text-white" style="background-color: #0B1224;" placeholder="ex : heritier tshim" required>
                     </div>
-                </div>
 
-                <div class="col-6 col-md-4 text-center text-md-start">
-                    <h6 class="text-white fw-bold mb-3">Navigation</h6>
-                    <ul class="list-unstyled small d-flex flex-column gap-2">
-                        <ul class="list-unstyled footer-links">
-                            <li><a href="/event/list"><i class="bi bi-chevron-right small me-1"></i> Tous les événements</a></li>
-                            <li><a href="/event/list?filter_date=today"><i class="bi bi-chevron-right small me-1"></i> Événements d'aujourd'hui</a></li>
-                            <li><a href="/event/list?filter_date=upcoming"><i class="bi bi-chevron-right small me-1"></i> Événements à venir</a></li>
-                            <li><a href="#"><i class="bi bi-chevron-right small me-1"></i> Vérifier un billet</a></li>
-                        </ul>
-                    </ul>
-                </div>
+                    <div class="mb-3">
+                        <label class="form-label text-light">Adresse e-mail</label>
+                        <input type="email" class="form-control text-white" style="background-color: #0B1224;" placeholder="ex : heritier@gmail.com" required>
+                    </div>
 
-                <div class="col-6 col-md-2">
-                    <h6 class="footer-heading">Organiser</h6>
-                    <ul class="list-unstyled footer-links">
-                        <li><a href="#"><i class="bi bi-chevron-right small me-1"></i> Espace Organisateur</a></li>
-                        <li><a href="/pricing"><i class="bi bi-chevron-right small me-1"></i> Tarifs & Commissions</a></li>
-                    </ul>
-                </div>
+                    <div class="mb-3">
+                        <label class="form-label text-light">Événement concerné</label>
 
-                <div class="col-12 col-md-4 text-center text-md-start">
-                     <h6 class="footer-heading">Besoin d'aide ?</h6>
-                    <ul class="list-unstyled small d-flex flex-column gap-2">
-                        <li><a href="/support_team_contact"><i class="bi bi-envelope me-2"></i> Support client</a></li>
-                        <li><a href="/support_team_contact"><i class="bi bi-question-circle me-2"></i> FAQ / Centre d'aide</a></li>
-                        <li><a href="/privacy" class="d-block text-secondary text-decoration-none">Politique de confidentialité</a></li>
-                        <li><a href="/policy" class="d-block text-secondary text-decoration-none mb-1">Conditions Générales (CGU)</a></li>
-                    </ul>
-                </div>
+                        <select class="form-select  text-white" style="background-color: #0B1224;">
+                        <option>Sélectionner...</option>
+                        {%if events%}
+                        {% for event in events%}
+                        <option value="{{event.name}}">{{event.name}}</option>
+                        {%endfor%}
+                        {%endif%}
+                        </select>
+
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label text-light">Votre message</label>
+                        <textarea class="form-control  text-white" rows="5" style="background-color: #0B1224;"></textarea>
+                    </div>
+
+                    <div class="d-grid">
+                        <button class="btn btn-warning">
+                        Envoyer la réclamation
+                        </button>
+                    </div>
+
+                </form>
 
             </div>
 
-            <div class="row mt-4 pt-3 border-top border-secondary border-opacity-10 text-center">
-                <div class="col-12">
+        </div>
+
+        <div id="successCard" style="display:none;position: relative; z-index: 1;" class="text-center py-5" >
+            <div class="display-1 text-success">
+                ✔
+            </div>
+            <h2 class="mt-3">
+                Réclamation envoyée !
+            </h2>
+            <p class="text-secondary">
+            Merci pour votre message.<br>
+            Notre équipe vous répondra très prochainement.
+            </p>
+            <a href="/e-ticket" class="btn btn-success" onclick="window.location.reload();">
+            Retour à l'accueil
+            </a>
+
+        </div>
+
+    </div>
+</section>
+
+    <footer class="bg-dark text-secondary pt-5 pb-4 border-top border-secondary border-opacity-10" id="footer" style="background-color: #0B1224 !important;">
+    <div class="container">
+        <div class="row g-4">
+            
+            <!-- 1. Présentation & Réseaux sociaux -->
+            <div class="col-12 col-md-3 text-center text-md-start">
+                <h5 class="text-warning fw-bold mb-3">EasyTicket</h5>
+                <p class="small">La plateforme de billetterie numérique de confiance en RDC. Sécurisée, rapide et adaptée au Mobile Money.</p>
+                <div class="d-flex justify-content-center justify-content-md-start gap-3 mt-3">
+                    <a href="#" class="text-secondary"><i class="bi bi-facebook fs-5"></i></a>
+                    <a href="#" class="text-secondary"><i class="bi bi-whatsapp fs-5"></i></a>
+                    <a href="#" class="text-secondary"><i class="bi bi-twitter-x fs-5"></i></a>
+                </div>
+            </div>
+
+            <!-- 2. Navigation -->
+            <div class="col-6 col-md-3 text-start">
+                <h6 class="text-white fw-bold mb-3">Navigation</h6>
+                <ul class="list-unstyled footer-links small d-flex flex-column gap-2">
+                    <li><a href="/event/list" class="text-secondary text-decoration-none"><i class="bi bi-chevron-right small me-1"></i> Tous les événements</a></li>
+                    <li><a href="/event/list?filter_date=today" class="text-secondary text-decoration-none"><i class="bi bi-chevron-right small me-1"></i> Événements d'aujourd'hui</a></li>
+                    <li><a href="/event/list?filter_date=upcoming" class="text-secondary text-decoration-none"><i class="bi bi-chevron-right small me-1"></i> Événements à venir</a></li>
+                    <li><a href="#" class="text-secondary text-decoration-none"><i class="bi bi-chevron-right small me-1"></i> Vérifier un billet</a></li>
+                </ul>
+            </div>
+
+            <!-- 3. Organiser & Aide -->
+            <div class="col-6 col-md-3 text-start">
+                <h6 class="text-white fw-bold mb-3">Organiser & Aide</h6>
+                <ul class="list-unstyled footer-links small d-flex flex-column gap-2">
+                    <li><a href="#" class="text-secondary text-decoration-none"><i class="bi bi-chevron-right small me-1"></i> Espace Organisateur</a></li>
+                    <li><a href="/pricing" class="text-secondary text-decoration-none"><i class="bi bi-chevron-right small me-1"></i> Tarifs & Commissions</a></li>
+                    <li><a href="/support_team_contact" class="text-secondary text-decoration-none"><i class="bi bi-question-circle me-1"></i> Centre d'aide / FAQ</a></li>
+                    <li><a href="/privacy" class="text-secondary text-decoration-none">Politique de confidentialité</a></li>
+                    <li><a href="/policy" class="text-secondary text-decoration-none">Conditions Générales (CGU)</a></li>
+                </ul>
+            </div>
+
+            <!-- 4. NOUVEAU DIV : Section Contact Direct -->
+            <div class="col-12 col-md-3 text-center text-md-start">
+                <h6 class="text-white fw-bold mb-3">Nous Contacter</h6>
+                <ul class="list-unstyled small d-flex flex-column gap-2">
+                    <li class="d-flex align-items-center justify-content-center justify-content-md-start text-secondary">
+                        <i class="bi bi-envelope-fill text-warning me-2"></i>
+                        <span>contact@easyevent-rdc.com</span>
+                    </li>
+                    <li class="d-flex align-items-center justify-content-center justify-content-md-start text-secondary">
+                        <i class="bi bi-telephone-fill text-warning me-2"></i>
+                        <span>+243 000 000 000</span>
+                    </li>
+                    <li class="d-flex align-items-center justify-content-center justify-content-md-start text-secondary">
+                        <i class="bi bi-geo-alt-fill text-warning me-2"></i>
+                        <span>RDC (Kinshasa / Lubumbashi)</span>
+                    </li>
+                    <li class="mt-2">
+                        <a href="/support_team_contact" class="btn btn-sm btn-outline-warning w-100 fw-semibold">
+                            <i class="bi bi-headset me-1"></i> Contacter le support
+                        </a>
+                    </li>
+                </ul>
+            </div>
+
+        </div>
+
+        <!-- Section Copyright & Branding -->
+        <div class="row mt-4 pt-3 border-top border-secondary border-opacity-10 text-center">
+            <div class="col-12 small text-secondary">
+                <p class="mb-1 fw-bold text-white-50">Propulsé par Novotech</p>
                 <p class="copyright-text mb-0">
-                    <p class="">Propulsé par Novotech</p>
-                    <p class=""><i class="bi bi-envelope"></i> contact@easyevent-rdc.com</p>
                     &copy; {{copyright}} EasyTicket - Plateforme de billetterie intelligente. Tous droits réservés.
                 </p>
-                </div>
             </div>
         </div>
-    </footer>
+    </div>
+</footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://unpkg.com/typed.js@3.0.0/dist/typed.umd.js"></script>
@@ -786,6 +981,19 @@ input::placeholder {
                 demoVideo.currentTime = 0; // Remet la vidéo au début
             });
         }
+    });
+    const form = document.getElementById("complaintForm");
+
+    form.addEventListener("submit", function(e){
+
+        e.preventDefault();
+
+        // ici tu peux faire ton fetch() vers FastAPI
+
+        document.getElementById("formCard").style.display = "none";
+
+        document.getElementById("successCard").style.display = "block";
+
     });
 </script>
 </body>

@@ -10,18 +10,24 @@ from models import ExternalUser
 
 load_dotenv()
 
-set_secure_cookie = True #la variable permettant l'usage du csrf_token Fasle en locale et True en ligne ou prod#
+set_secure_cookie =False #la variable permettant l'usage du csrf_token Fasle en locale et True en ligne ou prod#
 
 secret = os.getenv('SECRET')#le secret ou sinature du token
 algo = os.getenv('ALGO')#type d'algorithme
 africa_talking_key = os.getenv('africa_talking_key')#at key
 token_expire_minute = int(os.getenv('ACCESS_TOKEN_EXPIRE_MINUTE',60))#duree d'expiration du token
-
+#====================m-pesa
+mpesa_api_key = os.getenv('API_KEY')
+mpesa_shortcode = os.getenv('SHORTCODE')
+mpesa_public_key = os.getenv('M_PESA_PUBLIC_KEY')
 #====================whatsapp
 whatsap_phone_Number_ID = os.getenv('Phone_Number_ID')
 
 whatsapp_token = os.getenv('whatsapp_token')
-
+#=======================Cloudinary
+Cloud_name = os.getenv("CLOUD_NAME")
+Cloud_api_key = os.getenv("CLOUD_API_KEY")
+Cloud_api_secret = os.getenv("CLOUD_API_SECRET")
 #=======================
 account_sid = os.getenv('twilio_account_sid')
 auth_token = os.getenv('twilio_auth_token')
@@ -88,8 +94,7 @@ async def check_current_user_session(request: Request):
         request.session['invalid_user'] = "Votre session a expiré. Veuillez vous reconnecter."
         
         # On le redirige proprement vers le formulaire de login
-        return RedirectResponse(
-            url="/auth/login", 
-            status_code=status.HTTP_303_SEE_OTHER
+        raise  HTTPException(status_code =status.HTTP_401_UNAUTHORIZED,
+                             detail="Session expiré ou non autorisé veillez vous reconnecter"
         )
     return user_id

@@ -71,7 +71,8 @@ serializer = URLSafeTimedSerializer(csrf_key)
 async def get_paiement_data(
     request: Request, 
     event_id: str, 
-    buyer_name: str = Form(...), 
+    buyer_name: str = Form(...),
+    csrf_token :str = Form(...),
     bobby_pot:str = Form(None),
     buyer_phone: str = Form(...),  
     ticket_type: str = Form(...), 
@@ -80,6 +81,7 @@ async def get_paiement_data(
     _=Depends(verify_csrf),
     db: AsyncSession = Depends(connecting)
 ):
+    
     converted_transaction_id = transaction_id.lower().strip()
     if bobby_pot:
         return RedirectResponse(f"/payments/{event_id}", status_code=303) #si le champ de verification bobby_pop est rempli on fait croire au robot que le compte est creer
@@ -94,9 +96,9 @@ async def get_paiement_data(
         clean_phone = "243" + clean_phone[1:]
 
     # 🌟 AJOUT : Essayer de récupérer l'ID utilisateur si connecté
-    session_user_id = request.cookies.get("session_user_id")
+    session_user_id = request.session.get("user_id")#on recupere le user qui paie le billet (s'il est connect)
     order_id = None  # On initialise pour le récupérer plus tard
-
+    
     async with db.begin():
         # 1. On récupère et verrouille l'événement contre la concurrence
         event_result = await db.execute(
@@ -127,7 +129,6 @@ async def get_paiement_data(
         remaining_place = max(0, event.total_capacity - tickets_sold)
 
         if order: 
-            csrf_token = secrets.token_urlsafe(32)
             res = await db.execute(select(Ticket_price).where(Ticket_price.event_id == event_id))
             tickets = res.scalars().all()
             
@@ -156,7 +157,6 @@ async def get_paiement_data(
             
             res_tickets = await db.execute(select(Ticket_price).where(Ticket_price.event_id == event_id))
             tickets = res_tickets.scalars().all()
-            csrf_token = request.cookies.get("fastapi-csrf-token")
             return templates.TemplateResponse(
                 "order/forms/order_form.html",
                 {
@@ -228,3 +228,8 @@ async def check_order_status(request: Request, order_id: str, db: AsyncSession =
         "is_ready": is_ready,
         'tickets':tickets
     })
+
+@Root.post("/api/payments/mpesa/callback")
+async def mpesa_callback(request: Request):
+    pass
+    # Traitement du paiement M-Pesa

@@ -112,6 +112,8 @@ class Event(Base): #event table
     tickets = relationship("Ticket",back_populates ="events")
     ticket_prices= relationship("Ticket_price",back_populates ="events")
     organizers = relationship("Organizer", back_populates="events")
+    votes = relationship("Vote", back_populates="event", cascade="all, delete-orphan")
+    candidates = relationship("Candidate", back_populates="event", cascade="all, delete-orphan")
 
 class Guest(Base):
     __tablename__="guests"
@@ -136,6 +138,7 @@ class Guest(Base):
         UniqueConstraint('email', 'event_id', name='uix_email_event'),
         UniqueConstraint('telephone', 'event_id', name='uix_telephone_event'),
     )
+
 class PresenceConfirmation(Base):
     __tablename__ = "guestPresence"
     id  = Column(String,primary_key=True,unique=True,default=lambda:str(uuid4()))
@@ -176,7 +179,8 @@ class ExternalUser(Base):
 
     orders = relationship("Order", back_populates="external_user")
     ext_user = relationship("OTP", back_populates="current_otp",uselist=False)#external user
-
+    votes = relationship("Vote", back_populates="user")
+    
 class OTP(Base):
     __tablename__ = "otps"
     id = Column(String, primary_key=True,default = lambda : str(uuid4()))
@@ -275,4 +279,42 @@ class EventRequest(Base):
     # Étape 4 : Coordonnées du visiteur
     client_name = Column(String(150), nullable=False)
     client_phone = Column(String(30), nullable=False)
-    
+#---------------------------------------------vote de candidat------------------------
+# Modèle Candidat
+class Candidate(Base):
+    __tablename__ = "candidates"
+
+    id = Column(String, primary_key=True, index=True,default = lambda :str(uuid4()))
+    event_id = Column(String, ForeignKey("events.id",ondelete = "CASCADE")) # Lié à l'événement
+    name = Column(String, nullable=False)
+    candidate_number = Column(String, nullable=False,unique=True) # Ex: "CANDIDAT 01"
+    photo_url = Column(String)
+    photo_public_id=Column(String(255),nullable=True)
+    bio = Column(Text)
+    votes_count = Column(Integer, default=0) # Utile pour l'affichage rapide
+
+    # Permet de récupérer tous les votes reçus par ce candidat : candidate.votes
+    votes = relationship("Vote", back_populates="candidate", cascade="all, delete-orphan")
+    event = relationship("Event", back_populates="candidates")
+
+# Modèle Vote
+class Vote(Base):
+    __tablename__ = "votes"
+    id = Column(String, primary_key=True, index=True,default = lambda :str(uuid4()))
+    user_id = Column(String, ForeignKey("external_users.id",ondelete="SET NULL"),nullable=True)
+    candidate_id = Column(String, ForeignKey("candidates.id",ondelete="CASCADE"))
+    event_id = Column(String, ForeignKey("events.id", ondelete="CASCADE"), nullable=False)
+    number_of_votes = Column(Integer, default=1) # Permet d'acheter plusieurs votes d'un coup
+    transaction_ref = Column(String, nullable=True) # Référence M-Pesa si payant
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    # Permet de savoir pour quel candidat ce vote a été émis : vote.candidate
+    candidate = relationship("Candidate", back_populates="votes")
+    # Permet de connaître l'utilisateur qui a voté : vote.user
+    user = relationship("ExternalUser", back_populates="votes")
+    # Permet de connaître l'événement concerné : vote.event
+    event = relationship("Event", back_populates="votes")
+    # 🔒 RÈGLE : Un utilisateur ne peut voter qu'UNE SEULE FOIS par événement
+    __table_args__ = (
+        UniqueConstraint('user_id', 'event_id', name='unique_user_vote_per_event'),
+    )

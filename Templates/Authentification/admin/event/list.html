@@ -83,6 +83,9 @@
                     <a href="/delete_all_order/{{event.id}}"  class="btn btn-outline-danger text-dark" onclick="return confirm('Voulez-vous vraiment supprimer toutes les commandes de cet evenement')">
                         delete_all_order
                     </a>
+                    <a href="/events/{{event.id}}/candidates/add"  class="btn btn-outline-danger text-dark" >
+                        + candidate
+                    </a>
                     {% else %}
                     <a href="/delete_all_guests/{{event.id}}"  class="btn btn-outline-danger text-dark" onclick="return confirm('Voulez-vous vraiment supprimer toutes les commandes de cet evenement')">
                         delete_all_guests

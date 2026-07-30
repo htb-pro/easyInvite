@@ -46,7 +46,7 @@
                         </div>
                         <div class="mb-3">
                             <label for="username" class="form-label text-white-50">Nom</label>
-                            <input type="text" name="username" id="username" minlength="3" class="form-control bg-dark text-light border-secondary {{ 'is-invalid' if data.errors.username else '' }}" value="{{data.fields.username}}" placeholder="Ex: heritier tshim" required>
+                            <input type="text" name="username" id="username" minlength="3" class="form-control  text-light border-secondary {{ 'is-invalid' if data.errors.username else '' }}" value="{{data.fields.username}}" placeholder="Ex: heritier tshim" style="background-color: #1E293B;" required>
                             {%if data.errors.username%}
                             <div class="invalid-feedback">
                                 {{data.errors.username}}
@@ -55,17 +55,22 @@
                         </div>
                         <div class="mb-3">
                             <label for="phone" class="form-label text-white-50">Numéro de téléphone</label>
-                            <input type="tel" name="phone" id="phone" class="form-control bg-dark text-light border-secondary {{ 'is-invalid' if data.errors.phone else ''}}" value="{{data.fields.phone}}" placeholder="Ex: 0991635198" required>
+                            <input type="tel" name="phone" id="phone" class="form-control  text-light border-secondary {{ 'is-invalid' if data.errors.phone or  data.errors.phone_existed else ''}}" value="{{data.fields.phone}}" placeholder="Ex: 0991635198" style="background-color: #1E293B;" required>
                             <div class="form-text" style="font-size: 0.75rem;"><p>Saisissez le numéro utilisé lors ou pour de l'achat.</p></div>
-                            {%if data.errors.phone%}
+                            {%if data.errors.phone %}
                             <div class="invalid-feedback">
                                 {{data.errors.phone}}
+                            </div>
+                            {%endif%}
+                            {%if data.errors.phone_existed %}
+                            <div class="invalid-feedback">
+                                {{data.errors.phone_existed}}
                             </div>
                             {%endif%}
                         </div>
                         <div class="mb-3">
                             <label for="email" class="form-label text-white-50">Email</label>
-                            <input type="email" name="email" id="email" class="form-control bg-dark text-light border-secondary {{ 'is-invalid' if data.errors.email else '' }}" value="{{data.fields.email}}" placeholder="Ex: heritiertshim@gmail.com" required>
+                            <input type="email" name="email" id="email" class="form-control  text-light border-secondary {{ 'is-invalid' if data.errors.email else '' }}" value="{{data.fields.email}}" placeholder="Ex: heritiertshim@gmail.com" style="background-color: #1E293B;" required>
                             <div class="form-text" style="font-size: 0.75rem;"><p>Saisissez votre adresse email.</p></div>
                             {%if data.errors.email%}
                             <div class="invalid-feedback">
@@ -75,7 +80,7 @@
                         </div>
                         <div class="mb-3">
                             <label for="password" class="form-label text-white-50">Mot de passe</label>
-                            <input type="password" name="password" id="password" minlength="8" class="form-control bg-dark text-light border-secondary {{'is-invalid' if data.errors.password}}" value="{{data.fields.password}}"  required>
+                            <input type="password" name="password" id="password" minlength="8" class="form-control text-light border-secondary {{'is-invalid' if data.errors.password}}" value="{{data.fields.password}}"  style="background-color: #1E293B;" required>
                             <div class="form-text" style="font-size: 0.75rem;"><p>Saisissez un mot de passe fort sécurisé.</p></div>
                             {%if data.errors.password%}
                             <div class="invalid-feedback">

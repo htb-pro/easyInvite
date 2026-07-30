@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EasyTicket - {% if candidate %}Modifier{% else %}Ajouter{% endif %} un Candidat</title>
+    <!-- Bootstrap CSS & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .btn-easyticket {
+            background-color: #f77f10 !important;
+            border-color: #f77f10 !important;
+            color: #ffffff !important;
+        }
+        
+        .btn-easyticket:hover {
+            background-color: #e06f0a !important;
+            border-color: #e06f0a !important;
+            color: #ffffff !important;
+        }
+
+        .text-easyticket {
+            color: #f77f10 !important;
+        }
+
+        /* Aperçu de la photo de profil */
+        .preview-avatar {
+            width: 110px;
+            height: 110px;
+            object-fit: cover;
+            border: 3px solid #f77f10;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container py-4">
+        <div class="row justify-content-center">
+            <div class="col-12 col-md-8 col-lg-6">
+                
+                <!-- Card Principale -->
+                <div class="card border-0 shadow-sm rounded-4 p-4 bg-white">
+                    
+                    <!-- En-tête -->
+                    <div class="text-center mb-4">
+                        <span class="badge bg-light text-easyticket border px-3 py-2 rounded-pill fw-bold mb-2">
+                            <i class="bi bi-person-badge-fill me-1"></i> Gestion Concours
+                        </span>
+                        <h4 class="fw-bold text-dark mb-1">
+                            {% if candidate %}Modifier le candidat{% else %}Nouveau Candidat{% endif %}
+                        </h4>
+                        <p class="text-muted small">Événement : <strong>{{ event.title }}</strong></p>
+                    </div>
+
+                    <!-- 1. Formulaire : Ajout obligatoire de enctype="multipart/form-data" -->
+                    <form action="/events/{{event.id}}/candidates/add" method="POST" enctype="multipart/form-data">
+                        
+                        <!-- Aperçu dynamique de l'image -->
+                        <div class="text-center mb-3">
+                            <img id="avatarPreview" 
+                                 src="{{ candidate.photo_url if candidate and candidate.photo_url else 'https://via.placeholder.com/150?text=Photo' }}" 
+                                 class="rounded-circle preview-avatar shadow-sm mb-2" 
+                                 alt="Aperçu photo">
+                        </div>
+
+                        <!-- Nom complet -->
+                        <div class="mb-3">
+                            <label for="name" class="form-label fw-semibold text-dark small">Nom complet du candidat *</label>
+                            <input type="text" 
+                                   class="form-control rounded-3 {{ 'is-invalid' if data.errors.name }}" 
+                                   id="name" 
+                                   name="name" 
+                                   placeholder="Ex: Sarah Mwamba" 
+                                   value="{{ data.fields.name if data.fields.name else '' }}" 
+                                   required>
+                            {% if data.errors.name %}
+                            <div class="invalid-feedback">
+                                {{ data.errors.name }}
+                            </div>
+                            {% endif %}
+                        </div>
+                        
+                        <!-- Numéro du candidat -->
+                        <div class="mb-3">
+                            <label for="candidate_number" class="form-label fw-semibold text-dark small">Numéro ou Code *</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light text-muted border-end-0 rounded-start-3">#</span>
+                                <input type="text" 
+                                       class="form-control rounded-end-3 border-start-0 {{ 'is-invalid' if data.errors.candidate_number }}" 
+                                       id="candidate_number" 
+                                       name="candidate_number" 
+                                       placeholder="Ex: 01" 
+                                       value="{{ data.fields.candidate_number if data.fields.candidate_number else '' }}" 
+                                       required>
+                                {% if data.errors.candidate_number %}
+                                <div class="invalid-feedback">
+                                    {{ data.errors.candidate_number }}
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="form-text small">Ce numéro apparaîtra sur la carte de vote.</div>
+                        </div>
+
+                        <!-- 2. Champ de chargement de fichier au lieu de l'URL -->
+                        <div class="mb-3">
+                            <label for="photo" class="form-label fw-semibold text-dark small">Photo du candidat</label>
+                            <input type="file" 
+                                   class="form-control rounded-3 {{ 'is-invalid' if data.errors.photo }}" 
+                                   id="photo" 
+                                   name="photo" 
+                                   accept="image/*"
+                                   onchange="previewImage(event)">
+                            <div class="form-text small">Formats acceptés : JPG, PNG, WEBP.</div>
+                            {% if data.errors.photo %}
+                            <div class="invalid-feedback d-block">
+                                {{ data.errors.photo }}
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Biographie / Description -->
+                        <div class="mb-4">
+                            <label for="bio" class="form-label fw-semibold text-dark small">Biographie / Présentation</label>
+                            <textarea class="form-control rounded-3" 
+                                      id="bio" 
+                                      name="bio" 
+                                      rows="3" 
+                                      placeholder="Petite présentation, univers, ambition du candidat...">{{ data.fields.bio if data.fields.bio else '' }}</textarea>
+                        </div>
+
+                        <!-- Boutons d'action -->
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-easyticket fw-bold rounded-pill py-2 shadow-sm">
+                                <i class="bi bi-check-circle-fill me-1"></i> 
+                                {% if candidate %}Mettre à jour{% else %}Enregistrer le candidat{% endif %}
+                            </button>
+                            
+                            <a href="/events/{{ event.id }}" class="btn btn-light text-muted fw-semibold rounded-pill py-2 border">
+                                Annuler
+                            </a>
+                        </div>
+
+                    </form>
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. JavaScript mis à jour pour la lecture de fichier local (FileReader) -->
+    <script>
+        function previewImage(event) {
+            const input = event.target;
+            const preview = document.getElementById('avatarPreview');
+            
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    preview.src = e.target.result;
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -9,6 +9,10 @@
     <style>
         body { background-color: #0F172A; color: #ffffff; }
         .auth-card { background-color: #1E293B; border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 12px; }
+        .auth-card input
+        {
+            background-color: #1E293B;
+        }
         input::placeholder
         {
             color: #a0a0a0 !important;
@@ -63,7 +67,8 @@
                         </div>
                     </div>
                     {% endif %}
-                    <form action="/auth/login" method="POST">
+                    <form action="/auth/login{% if request.query_params.get('next') %}?next={{ request.query_params.get('next') }}{% endif %}" method="POST">
+
                          {%if success_update_message %}<!-- si le mot de passe a ete modifier avec success-->
                         <div class="alert alert-success" role="alert">
                             {{ success_update_message }}
@@ -75,21 +80,22 @@
                                 {{ invalid_user }}
                             </div>
                             {% endif %}
-                        
+                            <!-- Ou via un champ caché -->
+                        <input type="hidden" name="next" value="{{ request.query_params.get('next', '') }}">
                         <div class="mb-3" style="position: absolute; left: -9999px; top: -9999px;" aria-hidden="true">
                             <input type="text" name="bobby_pot" id="bot" autocomplete="off" tabindex="-1">
                         </div>
 
                         <div class="mb-3">
                             <label for="phone" class="form-label text-white-50">Numéro de téléphone</label>
-                            <input type="tel" name="username" id="phone" minlength="9" maxlength="15" class="form-control bg-dark text-light border-secondary" placeholder="Ex: 0991635198" value="{{username}}" required>
+                            <input type="tel" name="username" id="phone" minlength="9" maxlength="15" class="form-control  text-light border-secondary" style="background-color: #1E293B;" placeholder="Ex: 0991635198" value="{{username}}" required>
                             
                             <div class="form-text" style="font-size: 0.75rem;"><p>Saisissez le numéro utilisé lors de l'achat.</p></div>
                         
                         </div>
                         <div class="mb-3">
                            <label for="password" class="form-label text-white-50">Mot de passe</label>
-                            <input type="password" name="password" id="password" minlength="8" class="form-control bg-dark text-light border-secondary" value="{{password}}"  placeholder="Écrivez votre mot de passe"  required>
+                            <input type="password" name="password" id="password" minlength="8" class="form-control  text-light border-secondary" style="background-color: #1E293B;" value="{{password}}"  placeholder="Écrivez votre mot de passe"  required>
                                 <div class="d-flex flex-column align-items-start justify-content-center align-items-center mt-2">
                                 <a href="#" class="custom-link" data-bs-toggle="modal" data-bs-target="#registerChoiceModal">
                                     Créer un compte ?

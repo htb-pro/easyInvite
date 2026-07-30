@@ -4,15 +4,16 @@ import os,io
 from utils.cryptography.crypt_file import encrypt_token
 
 
-def generateInviteQrCode(guest_id):
-    secure_id = encrypt_token(guest_id) #on encrypte l'id de l'inviter
+def generateInviteQrCode(guest_id,event_id):
+    #secure_id = encrypt_token(guest_id) #on encrypte l'id de l'inviter
+    qr_data = f"https://app.easyevent-rdc.com/invite/{event_id}/{guest_id}/create"
     qr = QRCode(
         version=1,
         error_correction = qrcode.constants.ERROR_CORRECT_H,
         box_size=4,
         border=3
     )
-    qr.add_data(secure_id)
+    qr.add_data(qr_data)
     qr.make(fit=True)
     img = qr.make_image(fill_color="black",back_color="white")
     memory = io.BytesIO()
