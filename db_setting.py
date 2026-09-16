@@ -8,8 +8,8 @@ from config import bool_state
 Base = declarative_base() #-----------------la classe mere pour la creation de table
 
 load_dotenv()
-#DB_URL =os.getenv('db_url')
-DB_URL =os.getenv('db_url_local')
+DB_URL =os.getenv('db_url')
+#DB_URL =os.getenv('db_url_local')
 #DB_URL =os.getenv('external_db')
 engine = create_async_engine(
     DB_URL,
