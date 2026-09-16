@@ -346,9 +346,51 @@
 
         .gallery-item:hover img { transform: scale(1.05); }
 
+        /* GIFTS & CONTRIBUTIONS */
+        .gifts { background: white; }
+
+        .gift-box {
+            background: var(--ivory);
+            border: 1px solid #ded7c9;
+            padding: 45px 30px;
+            height: 100%;
+            transition: 0.3s ease;
+        }
+
+        .gift-box:hover {
+            border-color: var(--gold);
+            transform: translateY(-3px);
+        }
+
+        .gift-icon {
+            font-size: 36px;
+            color: var(--gold);
+            margin-bottom: 15px;
+        }
+
+        .gift-title {
+            font-size: 28px;
+            margin-bottom: 15px;
+        }
+
+        .gift-text {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.7;
+        }
+
+        .payment-info {
+            background: white;
+            border: 1px dashed var(--gold);
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 12px;
+            letter-spacing: 0.5px;
+        }
+
         /* DRESS CODE */
         .dress-code {
-            background: white;
+            background: var(--ivory);
             text-align: center;
         }
 
@@ -357,6 +399,7 @@
             margin: auto;
             padding: 60px 30px;
             border: 1px solid #ded7c9;
+            background: white;
         }
 
         .dress-icon {
@@ -485,12 +528,10 @@
 
 <!-- HERO -->
 <section class="hero">
-    <!-- 1. En-tête tout en haut -->
     <div class="hero-header" data-aos="fade-down">
         <div class="hero-label">Invitation de mariage</div>
     </div>
 
-    <!-- 2. Informations ancrées sous le niveau du visage -->
     <div class="hero-footer-content" data-aos="fade-up" data-aos-duration="1000">
         <h1 class="couple-names">
             {% if guest and guest.event and guest.event.couple_name %}
@@ -572,7 +613,6 @@
         </div>
 
         <div class="row g-4">
-            <!-- DATE -->
             <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
                 <div class="detail-card">
                     <div class="detail-icon"><i class="bi bi-calendar-heart"></i></div>
@@ -587,7 +627,6 @@
                 </div>
             </div>
 
-            <!-- LIEU -->
             <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
                 <div class="detail-card">
                     <div class="detail-icon"><i class="bi bi-geo-alt"></i></div>
@@ -600,7 +639,6 @@
                 </div>
             </div>
 
-            <!-- HEURE -->
             <div class="col-md-4" data-aos="fade-up" data-aos-delay="300">
                 <div class="detail-card">
                     <div class="detail-icon"><i class="bi bi-clock"></i></div>
@@ -656,6 +694,52 @@
             <div class="col-md-6 gallery-item" data-aos="zoom-in" data-aos-delay="200">
                 <img src="{{ guest.event.photo_url if guest and guest.event and guest.event.photo_url else 'photo.jpg' }}" class="gallery-img" alt="Photo du couple">
             </div>
+        </div>
+    </div>
+</section>
+
+<!-- NOUVELLE SECTION : CADEAUX & CONTRIBUTIONS -->
+<section class="section gifts">
+    <div class="container">
+        <div class="text-center mb-5" data-aos="fade-up">
+            <div class="section-label">Attentions</div>
+            <h2 class="section-title mt-3">Liste de mariage & Cadeaux</h2>
+            <div class="gold-line"></div>
+        </div>
+
+        <div class="row g-4 justify-content-center">
+            {% if guest.event.guest_present%}
+            <!-- Option 1 : Contribution Financière -->
+            <div class="col-md-5" data-aos="fade-up" data-aos-delay="100">
+                <div class="gift-box text-center">
+                    <div class="gift-icon"><i class="bi bi-wallet2"></i></div>
+                    <h3 class="gift-title">Contribution financière</h3>
+                    <p class="gift-text">
+                         Votre présence à nos côtés est notre plus beau cadeau. Si vous souhaitez toutefois contribuer à nos futurs projets ou à notre voyage de noces, une enveloppe ou une contribution en cash sera vivement appréciée. <!--une enveloppe financière ou un transfert Mobile Money sera vivement apprécié. -->
+                    </p>
+                    <!-- <div class="payment-info">
+                        <strong>M-Pesa / Orange Money / Airtel Money :</strong><br>
+                        <span class="gold-light fw-bold">+243 897 401 210</span>
+                        <br><small class="text-muted">(Nom : EasyInvite / Mariage)</small>
+                    </div> -->
+                </div>
+            </div>
+            {%else%}
+            <!-- Option 2 : Cadeaux en nature-->
+            <div class="col-md-5" data-aos="fade-up" data-aos-delay="200">
+                <div class="gift-box text-center">
+                    <div class="gift-icon"><i class="bi bi-gift"></i></div>
+                    <h3 class="gift-title">Cadeaux en nature</h3>
+                    <p class="gift-text">
+                        Pour ceux qui préfèrent nous offrir un souvenir matériel, une urne et une table dédiée aux cadeaux seront dressées à la salle de réception lors de la soirée.
+                    </p>
+                    <div class="payment-info">
+                        <strong>Une urne sera disponible</strong><br>
+                        <small class="text-muted">Directement à la salle lors de la soirée de réception</small>
+                    </div>
+                </div>
+            </div> 
+            {% endif %}
         </div>
     </div>
 </section>
