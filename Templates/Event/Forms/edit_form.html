@@ -215,6 +215,7 @@
                             <option value="meeting" {% if data.fields.event_type == 'meeting' or (not data.fields.event_type and event.type == 'meeting') %}selected{% endif %}>
                                 Reunion (meeting)
                             </option>
+                             <option value="ecclésiastique" {%if data.fields.event_type == "ecclésiastique" or (not data.fields.event_type and event.type == 'ecclésiastique') %}selected{%endif%}>Programme ecclésiastique</option>
                             <option value="other" {% if data.fields.event_type == 'other' or (not data.fields.event_type and event.type == 'other') %}selected{% endif %}>
                                 Autres (other)
                             </option>
@@ -424,7 +425,7 @@
                 </label>
                 
                 <label class="check-container col-6">
-                    <input type="checkbox" name="is_active" {% if data.fields.is_gift_active  or (data.fields.is_gift_active is not defined and event.guest_present)%}checked{%endif%}>
+                    <input type="checkbox" name="is_gift_active" {% if data.fields.is_gift_active  or (data.fields.is_gift_active is not defined and event.guest_present)%}checked{%endif%}>
                     <span>Cadeau en espèce (Cash gift)</span>
                 </label>
             </div>

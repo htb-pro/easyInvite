@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ajouter un Élément au Programme</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        body {
+            background-color: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px 10px;
+        }
+        .form-card {
+            max-width: 550px;
+            width: 100%;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+        }
+    </style>
+</head>
+<body>
+
+        
+<div class="card form-card bg-white p-4">
+    <!-- En-tête -->
+    <div class="d-flex align-items-center mb-4">
+        <div class="bg-primary text-white p-3 rounded-3 me-3">
+            <i class="fa-solid fa-clock-rotate-left fs-4"></i>
+        </div>
+        <div>
+            <h4 class="fw-bold mb-0">Ajouter au Programme</h4>
+            <p class="text-muted small mb-0">Définissez une séquence ou une activité de l'événement</p>
+        </div>
+    </div>
+
+    <!-- Formulaire -->
+    <form action="/programs/create" method="POST" id="programForm">
+        
+        {% if message %}
+        <div class="alert alert-danger" role="alert">
+                {{ message }}
+        </div>
+        {% endif %}
+        
+        {% if event_error %}
+        <div class="alert alert-danger" role="alert">
+                {{ event_error }}
+        </div>
+        {% endif %}
+        {% if success%}
+        <!-- Conteneur pour positionner le Toast en bas à droite -->
+        <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 11;">
+            <div id="successToast" class="toast align-items-center text-bg-success border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                <div class="toast-body d-flex align-items-center">
+                    <i class="fa-solid fa-circle-check fs-5 me-2"></i>
+                    <span>{{success}}</span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <div class="mb-3">
+            <label for="event_id" class="form-label fw-semibold">Événement <span class="text-danger">*</span></label>
+            <div class="input-group">
+                <span class="input-group-text bg-light"><i class="fa-solid fa-calendar-days text-muted"></i></span>
+                <select class="form-select" id="event_id" name="event_id" required>
+                    <option value="" disabled {% if not data.fields.event_id %}selected{% endif %}>-- Choisir un événement --</option>
+                {% for event in events %}
+                    <option value="{{ event.id }}" {% if data.fields.event_id|string == event.id|string or event.id == event_id %}selected{% endif %}>
+                        {{ event.name }}
+                    </option>
+                {% endfor %}
+                    </select>
+            </div>
+        </div>
+
+        <!-- Titre (title) -->
+        <div class="mb-3">
+            <label for="title" class="form-label fw-semibold">Titre de l'activité <span class="text-danger">*</span></label>
+            <div class="input-group">
+                <span class="input-group-text bg-light"><i class="fa-solid fa-heading text-muted"></i></span>
+                <input type="text" class="form-control {{ 'is-invalid' if data.errors.title else '' }}" id="title" name="title" value="{{ data.fields.title }}" placeholder="Ex: Prédication / Mot de bienvenue" required>
+            </div>
+            {% if data.errors.title %}
+                <div class="invalid-feedback">
+                    {{ data.errors.title }}
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Heure / Plage horaire (time) -->
+        <div class="mb-3">
+            <label for="time" class="form-label fw-semibold">Heure / Horaire <span class="text-danger">*</span></label>
+            <div class="input-group">
+                <span class="input-group-text bg-light"><i class="fa-regular fa-clock text-muted"></i></span>
+                <input type="text" class="form-control {{ 'is-invalid' if data.errors.time else '' }}" id="time" name="time" value="{{ data.fields.time }}" placeholder="Ex: 16h30 ou 16h30 - 17h15" required>
+            </div>
+            {% if data.errors.time %}
+                <div class="invalid-feedback">
+                    {{ data.errors.time }}
+                </div>
+            {% endif %}
+            <div class="form-text">Vous pouvez saisir une heure précise ou une tranche horaire.</div>
+        </div>
+
+        <!-- dates d'événement (Début et Fin) -->
+        <div class="row g-3 mb-3">
+            <!-- Date & Heure de Début -->
+            <div class="col-md-6">
+                <label for="start_date" class="form-label fw-semibold">
+                    Date et heure de début <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="fa-solid fa-calendar-day text-muted"></i></span>
+                    <input 
+                        type="datetime-local" 
+                        class="form-control {{ 'is-invalid' if data.errors.start_date  else '' }}" 
+                        id="start_date" 
+                        name="start_date" 
+                        value="{{ data.fields.start_date or '' }}"
+                        required
+                    >
+                    {% if data.errors.start_date %}   
+                    <div class="invalid-feedback">
+                        {{ data.errors.start_date }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Date & Heure de Fin -->
+            <div class="col-md-6">
+                <label for="end_date" class="form-label fw-semibold">
+                    Date et heure de fin <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="fa-solid fa-calendar-check text-muted"></i></span>
+                    <input 
+                        type="datetime-local" 
+                        class="form-control {{ 'is-invalid' if data.errors.end_date else '' }}  " 
+                        id="end_date" 
+                        name="end_date" 
+                        value="{{ data.fields.end_date or '' }}"
+                        required
+                    >
+                    {% if data.errors.end_date %}   
+                    <div class="invalid-feedback">
+                        {{ data.errors.end_date }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+<!-- Script de Cohérence des Dates (Empêche d'avoir une date de fin antérieure au début) -->
+        <!-- Description (description) -->
+        <div class="mb-4">
+            <label for="description" class="form-label fw-semibold">Description <span class="text-muted">(optionnel)</span></label>
+            <div class="input-group">
+                <span class="input-group-text bg-light"><i class="fa-solid fa-align-left text-muted"></i></span>
+                <textarea class="form-control" id="description" name="description" rows="3" placeholder="Présentation détaillée, nom de l'orateur ou détails du déroulé..."></textarea>
+            </div>
+        </div>
+
+        <!-- Boutons d'action -->
+        <div class="d-flex justify-content-end gap-2">
+            <a href="/programs/list/{{data.fields.event_id}}" class="btn btn-outline-primary text-secondary  ">
+                ← Retour à la liste
+            </a>
+            <button type="reset" class="btn btn-outline-secondary px-4">Réinitialiser</button>
+            <button type="submit" class="btn btn-primary px-4 fw-bold">
+                <i class="fa-solid fa-plus me-2"></i>Enregistrer
+            </button>
+        </div>
+
+    </form>
+</div>
+
+
+<!-- Script JS pour déclencher le Toast (à exécuter au chargement si besoin) -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const toastEl = document.getElementById('successToast');
+        const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+        toast.show();
+
+
+        const startDateInput = document.getElementById("start_date");
+        const endDateInput = document.getElementById("end_date");
+
+        startDateInput.addEventListener("change", function () {
+            // Ajuste automatiquement la date minimale de fin selon le début
+            endDateInput.min = startDateInput.value;
+            if (endDateInput.value && endDateInput.value < startDateInput.value) {
+                endDateInput.value = startDateInput.value;
+            }
+        });
+    });
+</script>
+</body>
+</html>

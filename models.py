@@ -107,6 +107,7 @@ class Event(Base): #event table
     is_deleted =Column(Boolean, default=False, nullable=True)
 
     guests = relationship("Guest",back_populates="event",cascade="all,delete")
+    programs = relationship("Program",back_populates="event",cascade="all,delete")
     groups = relationship("Group",back_populates ="events")
     orders = relationship("Order",back_populates ="events")
     tickets = relationship("Ticket",back_populates ="events")
@@ -114,6 +115,19 @@ class Event(Base): #event table
     organizers = relationship("Organizer", back_populates="events")
     votes = relationship("Vote", back_populates="event", cascade="all, delete-orphan")
     candidates = relationship("Candidate", back_populates="event", cascade="all, delete-orphan")
+
+class Program(Base):
+    __tablename__ = "programs"
+
+    id  = Column(String,primary_key=True,unique=True,default=lambda:str(uuid4()))
+    title = Column(String(250), nullable=False)        # ex: "Louange & Adoration"
+    time = Column(String(50), nullable=False)          # ex: "16h00 - 17h00" ou "16h00"
+    description = Column(Text, nullable=True)          # ex: "Concert d'ouverture dirigé par la chorale"
+    event_id  = Column(String,ForeignKey('events.id'),nullable=False)
+    start_date = Column(DateTime)
+    end_date = Column(DateTime)
+    # Si le programme est lié à un événement précis :
+    event = relationship("Event",back_populates="programs")
 
 class Guest(Base):
     __tablename__="guests"

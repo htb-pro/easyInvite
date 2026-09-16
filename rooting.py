@@ -29,6 +29,9 @@ from fastapi_csrf_protect import CsrfProtect
 from pydantic import BaseModel
   # Tes configurations Redis
 from Routers.loging import LoginRequiredException
+from slowapi.errors import RateLimitExceeded
+from slowapi import _rate_limit_exceeded_handler,Limiter
+from slowapi.util import get_ipaddr
 
 templates = Jinja2Templates(directory = "Templates")
 #initialisation
@@ -37,6 +40,13 @@ Apk = FastAPI()
 # 1. On crée une variable globale (vide au départ)
 
 
+# 🔗 Le rate limiting qui est une technique de securite determinant le nombre de requette par seconde
+
+
+# Utilisera l'IP réelle du client transmis par Nginx/Cloudflare
+limiter = Limiter(key_func=get_ipaddr)
+Apk.state.limiter = limiter
+Apk.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 @Apk.on_event("startup")
 async def on_startup():
@@ -115,13 +125,11 @@ async def login_required_handler(request: Request, exc: LoginRequiredException):
 #configuration de csrf_token
 from config import csrf_key
 
-app = FastAPI()
-
 # Configuration
 class CsrfSettings(BaseModel):
     secret_key: str = csrf_key
     csrf_cookie_key: str = "fastapi-csrf-token"
-    csrf_cookie_secure: bool = False
+    csrf_cookie_secure: bool = True
     csrf_cookie_samesite: str = "lax"
     
     # C'est la configuration clé pour les formulaires HTML classiques

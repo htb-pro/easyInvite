@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Candidats / Invités — EasyInvite</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-dark: #0f172a;
+            --accent-gold: #c5a059;
+            --accent-gold-hover: #b08d46;
+        }
+
+        body {
+            background-color: #f8fafc;
+            color: #334155;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .navbar-custom {
+            background-color: var(--primary-dark);
+            border-bottom: 2px solid var(--accent-gold);
+        }
+
+        .btn-gold {
+            background-color: var(--accent-gold);
+            color: #ffffff;
+            font-weight: 500;
+        }
+
+        .btn-gold:hover {
+            background-color: var(--accent-gold-hover);
+            color: #ffffff;
+        }
+
+        .text-gold {
+            color: var(--accent-gold) !important;
+        }
+
+        .page-header {
+            background-color: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+
+        .card-custom {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        .table thead {
+            background-color: var(--primary-dark);
+            color: #ffffff;
+        }
+
+        .table th {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+            padding: 1rem;
+        }
+
+        .table td {
+            padding: 1rem;
+            vertical-align: middle;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+        }
+
+        .search-box input {
+            padding-left: 38px;
+            border-radius: 8px;
+        }
+
+        .avatar-initial {
+            width: 38px;
+            height: 38px;
+            background-color: #e2e8f0;
+            color: var(--primary-dark);
+            font-weight: 600;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+        }
+
+        /* Style spécifique au Modal Détails */
+        .modal-header-custom {
+            background-color: var(--primary-dark);
+            color: #ffffff;
+            border-bottom: 3px solid var(--accent-gold);
+        }
+
+        .avatar-large {
+            width: 70px;
+            height: 70px;
+            background-color: rgba(197, 160, 89, 0.15);
+            color: var(--accent-gold);
+            font-size: 1.8rem;
+            font-weight: 700;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--accent-gold);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Barre de Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold text-gold" href="#">
+                <i class="bi bi-envelope-open-heart me-2"></i>EasyInvite
+            </a>
+            <div class="d-flex align-items-center">
+                <span class="text-light me-3 d-none d-sm-inline">Administration</span>
+                <div class="avatar-initial bg-warning text-dark">
+                    <i class="bi bi-person"></i>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- En-tête -->
+    <div class="page-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-7">
+                    <h2 class="fw-bold mb-1" style="color: var(--primary-dark);">Liste des Candidats & Invités</h2>
+                    <p class="text-muted mb-0">Consultez et gérez les inscriptions, statuts RSVP et accès des participants.</p>
+                </div>
+                <div class="col-md-5 text-md-end mt-3 mt-md-0">
+                    <a class="btn btn-gold px-4 shadow-sm" href="/events/{{event.id}}/candidates/add">
+                        <i class="bi bi-person-plus me-2"></i>Ajouter un candidat
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast de Notification de Succès -->
+    {% if success %}
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1055;">
+        <div id="successToast" class="toast align-items-center text-bg-success border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body d-flex align-items-center">
+                    <i class="bi bi-check-circle-fill fs-5 me-2"></i>
+                    <span>{{ success }}</span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Fermer"></button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Contenu Principal -->
+    <div class="container mb-5">
+        
+        <!-- Barre de Filtre et Recherche -->
+        <div class="card card-custom p-3 mb-4">
+            <div class="row g-3">
+                <div class="col-md-5">
+                    <div class="search-box">
+                        <i class="bi bi-search"></i>
+                        <input type="text" id="searchInput" class="form-control" placeholder="Rechercher par nom, numéro, description...">
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <select class="form-select" id="filterStatus">
+                        <option value="">Tous les statuts</option>
+                        <option value="confirmé">Confirmé</option>
+                        <option value="en attente">En attente</option>
+                        <option value="décliné">Décliné</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select class="form-select" id="filterPass">
+                        <option value="">Tous les types de pass</option>
+                        <option value="pass vip">Pass VIP</option>
+                        <option value="pass standard">Pass Standard</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tableau des Candidats -->
+        <div class="card card-custom">
+            <div class="table-responsive">
+                {% if candidates %}
+                <table class="table table-hover mb-0" id="candidatesTable">
+                    <thead>
+                        <tr>
+                            <th>Candidat</th>
+                            <th>Numéro</th>
+                            <th>Description</th>
+                            <th>Événement</th>
+                            <th>Votes</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for candidate in candidates %}
+                        <tr data-status="confirmé" data-pass="pass vip">
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    <div class="fw-bold text-dark">{{ candidate.name }}</div>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="small">#{{ candidate.candidate_number }}</div>
+                            </td>
+                            <td>{{ candidate.bio }}</td>
+                            <td>{{ candidate.event.name }}</td>
+                            <td><span class="badge bg-light text-dark border">{{ candidate.votes_count }}</span></td>
+                            <td class="text-end">
+                                <div class="d-flex justify-content-end gap-1">
+                                    <!-- Bouton Détails déclenchant la Modal -->
+                                    <button class="btn btn-sm btn-outline-secondary btn-view-candidate" 
+                                            title="Voir détails"
+                                            data-name="{{ candidate.name }}"
+                                            data-number="{{ candidate.candidate_number }}"
+                                            data-bio="{{ candidate.bio }}"
+                                            data-event="{{ candidate.event.name }}"
+                                            data-votes="{{ candidate.votes_count }}">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+
+                                    <a href="/events/{{ event.id }}/candidates/{{ candidate.id }}/edit" class="btn btn-sm btn-outline-primary" title="Modifier">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                
+                                    <form action="/candidate/{{ event.id }}/{{ candidate.id }}/delete" method="POST" class="d-inline">
+                                        <button class="btn btn-sm btn-outline-danger" title="Supprimer" onclick="return confirm('Êtes-vous sûr de vouloir supprimer ce candidat ?');">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="text-center p-5">
+                    <i class="bi bi-exclamation-circle display-4 text-muted mb-3"></i>
+                    <h5 class="text-muted">Aucun candidat trouvé</h5>
+                    <p class="text-muted">Essayez d'ajuster vos filtres ou votre recherche pour trouver des candidats.</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Pagination -->
+            <div class="card-footer bg-white border-top-0 d-flex align-items-center justify-content-between py-3">
+                <span class="text-muted small" id="rowCount">Affichage des candidats</span>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item disabled"><a class="page-link" href="#">Précédent</a></li>
+                        <li class="page-item active"><a class="page-link bg-dark border-dark" href="#">1</a></li>
+                        <li class="page-item"><a class="page-link text-dark" href="#">Suivant</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL DÉTAILS DU CANDIDAT -->
+    <div class="modal fade" id="candidateDetailModal" tabindex="-1" aria-labelledby="candidateDetailModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+                <div class="modal-header modal-header-custom">
+                    <h5 class="modal-title fw-bold" id="candidateDetailModalLabel">
+                        <i class="bi bi-person-badge me-2 text-gold"></i>Détails du Candidat
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="text-center mb-4">
+                        <div class="avatar-large mx-auto mb-2" id="modalAvatar">#</div>
+                        <h4 class="fw-bold mb-0 text-dark" id="modalCandidateName">-</h4>
+                        <span class="badge bg-dark text-gold mt-1 px-3 py-1" id="modalCandidateNumber">#00</span>
+                    </div>
+
+                    <div class="bg-light p-3 rounded-3 mb-3 border">
+                        <div class="row g-2 text-center">
+                            <div class="col-6 border-end">
+                                <span class="text-muted small d-block">Événement</span>
+                                <strong class="text-dark" id="modalCandidateEvent">-</strong>
+                            </div>
+                            <div class="col-6">
+                                <span class="text-muted small d-block">Total Votes</span>
+                                <strong class="text-gold fs-5" id="modalCandidateVotes">0</strong>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="fw-bold text-muted small text-uppercase mb-1">Biographie / Description</label>
+                        <p class="text-secondary p-3 bg-light rounded border" id="modalCandidateBio" style="white-space: pre-line;">
+                            Aucune description disponible.
+                        </p>
+                    </div>
+                </div>
+                <div class="modal-footer bg-light border-0">
+                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Fermer</button>
+                </div>
+            </div>
+        </div>
+    </div> 
+
+    <!-- JavaScript Bootstrap & Scripts personnalisés -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // --- GESTION DU MODAL DÉTAILS ---
+            const detailButtons = document.querySelectorAll('.btn-view-candidate');
+            const candidateModal = new bootstrap.Modal(document.getElementById('candidateDetailModal'));
+
+            detailButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    // Extraction des données du bouton cliqué
+                    const name = this.getAttribute('data-name');
+                    const number = this.getAttribute('data-number');
+                    const bio = this.getAttribute('data-bio');
+                    const event = this.getAttribute('data-event');
+                    const votes = this.getAttribute('data-votes');
+
+                    // Mise à jour du contenu du modal
+                    document.getElementById('modalCandidateName').textContent = name || 'N/A';
+                    document.getElementById('modalCandidateNumber').textContent = '#' + (number || '0');
+                    document.getElementById('modalCandidateEvent').textContent = event || 'N/A';
+                    document.getElementById('modalCandidateVotes').textContent = votes || '0';
+                    document.getElementById('modalCandidateBio').textContent = bio || 'Aucune biographie fournie.';
+                    document.getElementById('modalAvatar').textContent = name ? name.charAt(0).toUpperCase() : '#';
+
+                    // Ouverture du Modal
+                    candidateModal.show();
+                });
+            });
+
+            // --- RECHERCHE ET FILTRES ---
+            const searchInput = document.getElementById('searchInput');
+            const filterStatus = document.getElementById('filterStatus');
+            const filterPass = document.getElementById('filterPass');
+            const tableRows = document.querySelectorAll('#candidatesTable tbody tr');
+
+            function applyFilters() {
+                const searchVal = searchInput.value.toLowerCase().trim();
+                const statusVal = filterStatus.value.toLowerCase().trim();
+                const passVal = filterPass.value.toLowerCase().trim();
+
+                tableRows.forEach(row => {
+                    const textContent = row.textContent.toLowerCase();
+                    const rowStatus = row.getAttribute('data-status') || '';
+                    const rowPass = row.getAttribute('data-pass') || '';
+
+                    const matchesSearch = textContent.includes(searchVal);
+                    const matchesStatus = statusVal === '' || rowStatus === statusVal;
+                    const matchesPass = passVal === '' || rowPass === passVal;
+
+                    if (matchesSearch && matchesStatus && matchesPass) {
+                        row.style.display = '';
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+            }
+
+            searchInput.addEventListener('input', applyFilters);
+            filterStatus.addEventListener('change', applyFilters);
+            filterPass.addEventListener('change', applyFilters);
+        });
+    </script>
+</body>
+</html>

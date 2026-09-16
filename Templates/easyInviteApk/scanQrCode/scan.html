@@ -72,6 +72,93 @@ body {
     border: none;
     border-radius: 10px;
 }
+
+/*=============================================Modal style*/
+/* Bouton "Voir le détail" */
+    .btn-view-result {
+        width: 100%;
+        padding: 14px;
+        border-radius: 12px;
+        border: none;
+        font-weight: 700;
+        font-size: 1rem;
+        letter-spacing: 0.5px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+        
+        /* État Désactivé par défaut */
+        background-color: #334155; 
+        color: #94a3b8;
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+
+    /* État Activé (quand le scan a réussi) */
+    .btn-view-result.active {
+        background-color: #16a34a; /* Vert vif */
+        color: #ffffff;
+        opacity: 1;
+        cursor: pointer;
+        box-shadow: 0 4px 14px rgba(22, 163, 74, 0.4);
+        animation: pulse 1.5s infinite; /* Petit effet d'appel à l'action */
+    }
+
+    @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.02); }
+        100% { transform: scale(1); }
+    }
+    /* 1. CLASSE POUR MASQUER LE MODAL (Indispensable !) */
+.hidden {
+    display: none !important;
+}
+
+/* 2. OVERLAY : Couvre tout l'écran en arrière-plan */
+.modal-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100vw !important;
+    height: 100vh !important;
+    background-color: rgba(15, 23, 42, 0.85); /* Arrière-plan sombre semi-transparent */
+    backdrop-filter: blur(5px); /* Effet flouté */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999999 !important; /* Passe au-dessus de la caméra */
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+/* 3. CARTE DU MODAL (Boîte de dialogue) */
+.modal-card {
+    background: #1e293b;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 360px;
+    padding: 20px;
+    position: relative;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #ffffff;
+    text-align: center;
+}
+
+/* 4. BOUTON DE FERMETURE (X) */
+.modal-close {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    background: #334155;
+    border: none;
+    color: #ffffff;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    font-size: 18px;
+    line-height: 1;
+    cursor: pointer;
+}
 </style>
 </head>
 <body>
@@ -143,6 +230,62 @@ body {
     </div>
 </div>
 
+<!-- BANNIÈRE DE CONTRÔLE SOUS LA CAMÉRA -->
+<div class="action-container" style="margin-top: 15px;">
+    <!-- Bouton désactivé au début, activé dès qu'un QR code est scanné -->
+    <button id="show-result-btn" class="btn-view-result" disabled>
+        <span id="btn-text">SCANNEZ UN QR CODE</span>
+    </button>
+</div>
+
+<!-- MODAL DE RÉSULTAT (Masqué par défaut) -->
+<div id="scan-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+        <button id="close-modal-btn" class="modal-close">&times;</button>
+
+        <!-- En-tête -->
+        <div class="modal-header">
+            <div id="modal-status-icon" class="status-icon me-2">📩</div>
+            <h3 id="modal-status-title" class="status-title " style="text-align: center;">Invitation Valide</h3>
+            
+        </div>
+
+        <!-- Corps du Modal -->
+        <div class="modal-body">
+            <div class="info-row">
+                <span class="info-label">Nom de l'invité :</span>
+                <span id="modal-guest-name" class="info-value"><b>-</b></span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Telephone : </span>
+                <span id="modal-guest-phone" class="info-value code"><b>-</b></span>
+            </div>
+            
+            <div class="info-row">
+                <span class="info-label">Jeton :</span>
+                <span id="modal-guest-token" class="info-value code"><b>-</b></span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Table :</span>
+                <span id="modal-guest-table" class="info-value code"><b>-</b></span>
+            </div>
+            <div class="info-row">
+                <span class="info-label">Type :</span>
+                <span id="modal-guest-type" class="info-value code"><b>-</b></span>
+            </div>
+            
+            <p id="modal-message" class="modal-message">-</p>
+        </div>
+
+        <!-- Actions -->
+        <div class="modal-actions">
+            <!-- Bouton pour scanner l'invité suivant -->
+            <button id="scan-next-btn" class="btn btn-primary">Fermer et scanner le suivant</button>
+            
+            
+        </div>
+    </div>
+</div>
 <script src="https://unpkg.com/aos@2.3.4/dist/aos.js"></script>
 <script>
     AOS.init({

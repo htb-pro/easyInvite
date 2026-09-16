@@ -158,16 +158,19 @@
                         
                         <td>
                             <div class="d-flex gap-1 align-items-center justify-content-start">
+                                <a href="/invitation/download-pdf/{{ guest.id }}" class="btn btn-outline-light">PDF</a>
                                 {% if current_user_role == "admin" or current_user_role == "manager" %}                       
-                                    <form action="/share_invite/{{ guest.event_id }}/{{ guest.id }}" method="post" class="m-0">
-                                        <button class="btn btn-sm btn-outline-success"><i class="bi bi-whatsapp"></i></button>
-                                    </form>
+                                    
+                                    <a href="/wa_me/share_invite/{{event.id}}/{{guest.id}}"  class="btn btn-outline-success  ">                                        <button class="btn btn-sm btn-outline-success"><i class="bi bi-whatsapp"></i></button>
+                                    <i class="bi bi-whatsapp"></i>
+                                    </a>
                                 {% endif %}
 
                                 {% if current_user_role == "admin" or current_user_role == "manager" %}                       
-                                    <a href="/sms_sharing_invite/{{ event.id }}/{{ guest.id }}" class="btn btn-sm btn-outline-light text-dark border-secondary">
+                                    <!-- <a href="/sms_sharing_invite/{{ event.id }}/{{ guest.id }}" class="btn btn-sm btn-outline-light text-dark border-secondary">
                                         <i class="bi bi-chat-left-text"></i>
-                                    </a>
+                                    </a> -->
+                                     
                                 {% endif %}
 
                                 <a href="/guest/{{ guest.id }}/{{ event_id }}/detail" class="btn btn-sm btn-outline-light text-dark border-secondary">👁</a>
@@ -219,10 +222,13 @@
 
                         <div class="btn-group btn-group-sm">
                             <small class="d-flex justify-content-center ">
-                                
+                                <a href="/invitation/download-pdf/{{ guest.id }}" class="btn btn-outline-light">PDF</a>
                                 <a href="/guest/{{guest.id}}/{{event_id}}/detail"  class="btn btn-outline-light ">👁</a>
                                 {%if current_user_role == "admin" or current_user_role == "manager" %}                     
-                                <a href="/share_invite/{{event.id}}/{{guest.id}}"  class="btn btn-outline-success ">
+                                <!-- <form action="/share_invite/{{ guest.event_id }}/{{ guest.id }}" method="post" class="m-0">
+                                        <button class="btn btn-sm btn-outline-success"><i class="bi bi-whatsapp"></i></button>
+                                </form> -->
+                                <a href="/wa_me/share_invite/{{event.id}}/{{guest.id}}"  class="btn btn-outline-success  ">
                                     <i class="bi bi-whatsapp"></i>
                                 </a>
                                 <a href="/sms_sharing_invite/{{event.id}}/{{guest.id}}"  class="btn btn-outline-light  ">

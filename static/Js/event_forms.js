@@ -6,6 +6,7 @@ document.addEventListener("DOMContentLoaded", function() {
 
     // Récupération des conteneurs de champs
     const couple_field = document.querySelector(".couple_name");
+    const couple_label = document.querySelector(".couple_name .form-label");
     const couple_input_field = document.querySelector(".couple_name input");
     
     // Ciblage précis du label associé au numéro de téléphone
@@ -21,8 +22,11 @@ document.addEventListener("DOMContentLoaded", function() {
 
     const organizer = document.querySelector(".organizer");
     const organizer_input_field = document.querySelector(".organizer input");
+    const organizer_label = document.querySelector(".organizer .form-label");
     const greetings = document.querySelector(".greetings");
+    const greetings_label = document.querySelector(".greetings .form-label");
     const description = document.querySelector(".description");
+    const description_label = document.querySelector(".description .form-label");
     const place_field = document.querySelector(".total_place");
 
     function toggleCoupleField() {
@@ -63,6 +67,19 @@ document.addEventListener("DOMContentLoaded", function() {
             if (couple_field) couple_field.style.display = "none";
             if (description) description.style.display = "none";
             if (couple_number_label) couple_number_label.textContent = "Numéro de l'organisateur";
+        } 
+        else if (val === "ecclésiastique") {
+            if (couple_field) couple_label.textContent ="Theme de l'événement / Event theme"
+            if (present_field) present_field.style.display = "none";
+            if(organizer) organizer_label.textContent ="Nom de l'église / Nom de l'organisateur"
+            if (organizer_input_field) organizer_input_field.required = true;
+            if (couple_number_label) couple_number_label.textContent = "Numéro de l'organisateur";
+            if (place_field) {
+                const pInput = place_field.querySelector("input");
+                if (pInput) pInput.required = true;
+            }
+            if(greetings) greetings_label.textContent = "Message d'invitation / Welcome message";
+            if(description) description_label.textContent = "Texte biblique";
         } 
         else if (val === "other") {
             if (couple_field) couple_field.style.display = "none";

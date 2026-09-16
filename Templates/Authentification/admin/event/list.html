@@ -43,6 +43,7 @@
                     <th>Invités</th>
                     <th>Status</th>
                     <th>Groupe</th>
+                    <th>Programme</th>
                     <th>Action</th>
                     </tr>
                 </thead>
@@ -69,6 +70,10 @@
                     </span>
                     </td>
                     <td>{{event.groups.name}}</td>
+                    <td >
+                        <a href="/programs/list/{{event.id}}" class="btn btn-sm btn-outline-dark">Voir les programmes</a>
+                        <a href="/candidates/list/{{event.id}}" class="btn btn-sm btn-outline-dark">Voir les candidats</a>
+                    </td>
                     <td>
                     <a href="/see_event/{{event.id}}" class="btn btn-sm btn-outline-primary">
                     <i class="bi bi-eye"></i>
@@ -76,9 +81,17 @@
                     <a href="/edit_event/{{event.id}}" class="btn btn-sm btn-outline-warning">
                     <i class="bi bi-pencil"></i>
                     </a>
+
+                    <a href="/qr-whatsapp-ui" class="btn btn-sm btn-outline-dark">
+                    <i class="bi bi-qr-code"></i>
+                    </a>
+
+                    <a href="/event/{{event.id}}/program"  class="btn btn-outline-success text-dark">
+                        Set program
+                    </a>
                     {% if event.type == "other"%}
                     <a href="/ticket/{{event.id}}"  class="btn btn-outline-success text-dark">
-                        Set ticket
+                        <i class="bi bi-ticket-perforated-fill"></i>
                     </a>
                     <a href="/delete_all_order/{{event.id}}"  class="btn btn-outline-danger text-dark" onclick="return confirm('Voulez-vous vraiment supprimer toutes les commandes de cet evenement')">
                         delete_all_order
@@ -86,7 +99,7 @@
                     <a href="/events/{{event.id}}/candidates/add"  class="btn btn-outline-danger text-dark" >
                         + candidate
                     </a>
-                    {% else %}
+                    {%else%}
                     <a href="/delete_all_guests/{{event.id}}"  class="btn btn-outline-danger text-dark" onclick="return confirm('Voulez-vous vraiment supprimer toutes les commandes de cet evenement')">
                         delete_all_guests
                     </a>

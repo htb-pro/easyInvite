@@ -1,5 +1,7 @@
 #APIRouter permet juste l'organisation du code au lieu d' avoir tout les routes dans un fichier main oon cree les root separement
-from fastapi import Request,Form,Depends,HTTPException,APIRouter,UploadFile,File,Cookie
+from asyncio.log import logger
+
+from fastapi import Request,Form,Depends,HTTPException,APIRouter,UploadFile,File,Cookie,status
 from fastapi.responses import RedirectResponse,StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -26,6 +28,12 @@ templates = Jinja2Templates(directory="Templates")#ou sont stocker les templates
 Root.mount("/static",StaticFiles(directory="static"),name="static")#ou sont stocker les fichier static
 Pictures = "static/Pictures/{None}"
 #os.makedirs("Pictures",exist_ok=True)
+
+from slowapi import Limiter
+from slowapi.util import get_remote_address
+
+# Initialisation du Rate Limiter pour les formulaires (ex: max 20 créations/min par IP)
+limiter = Limiter(key_func=get_remote_address)
 
 Cloud_name = os.getenv("CLOUD_NAME")
 Cloud_api_key = os.getenv("CLOUD_API_KEY")
@@ -677,4 +685,352 @@ async def getPresenceList(request:Request,event_id:str,db:AsyncSession = Depends
             "Content-Disposition": f"attachment; filename*='UTF-8''{safe_filename}"
          }
      )
+
+#==========================================================routes de programme
+
+@Root.get("/event/{event_id}/program")
+async def get_program_view(
+    request: Request,
+    event_id: str,
+    db: AsyncSession = Depends(connecting),
+):
+    # 2. Récupération de tous les événements si nécessaire pour une liste déroulante
+    result = await db.execute(select(Event).order_by(Event.id.desc()))
+    events = result.scalars().all()
+
+    # 3. Récupération des données en session
+    success_message = request.session.pop("success_message", None)
+    event_error = request.session.pop("event_error", None)
+    form_data_session = request.session.pop("form_data", None)
+
+    # 4. Structure par défaut des données de formulaire
+    if form_data_session is None:
+        form_data = {
+            "errors": {
+                "title": "",
+                "time": "",
+                "description": "",
+                "start_date": "",
+                "end_date": "",
+            },
+            "fields": {
+                "title": "",
+                "time": "",
+                "event_id": event_id,  # On peut pré-remplir l'event_id
+                "description": "",
+                "start_date": "",
+                "end_date": "",
+            },
+        }
+    else:
+        form_data = form_data_session
+
+    # 5. Gestion CSRF
+    csrf_token = secrets.token_urlsafe(32)
+
+    # 6. Rendu Jinja2 avec 'event' inclus dans le contexte
+    response = templates.TemplateResponse(
+        "Authentification/admin/event/forms/program_form/program_form.html",
+        {
+            "request": request,
+            "event_id": event_id,  # <-- Ajouté pour exploiter l'événement dans le template
+            "events": events,
+            "success": success_message,
+            "event_error": event_error,
+            "csrf_token": csrf_token,
+            "data": form_data,
+        },
+    )
+
+    # 7. Définition du cookie CSRF (httponly doit être True pour la sécurité)
+    response.set_cookie(
+        key="fastapi-csrf-token",
+        value=csrf_token,
+        httponly=True,
+        samesite="lax",
+        secure=False,  # Passez à True en production (HTTPS)
+        path="/",
+    )
+
+    return response
+
+@Root.post("/programs/create")
+@limiter.limit("20/minute")
+async def create_program(
+    request: Request,
+    event_id: str = Form(...),              
+    title: str = Form(...),
+    time: str = Form(...),
+    start_date: str = Form(...),  # Récupéré au format ISO (ex: "2026-08-15T10:00")
+    end_date: str = Form(...),
+    description: str = Form(None),
+    csrf_token: str = Form(...),
+    db: AsyncSession = Depends(connecting),
+    _=Depends(verify_csrf)
+):
+    # 1. Nettoyage & Normalisation des données
+    clean_title = title.strip()             # 👈 Conservation de la casse d'origine
+    clean_time = time.strip()
+    clean_description = description.strip() if description and description.strip() else None
+    form_data={
+        "errors": {
+            "title": " le titre est obligatoire et doit contenir entre 2 et 250 caractères." if len(clean_title) < 2 or len(clean_title) > 250 else "",
+            "time": " l'heure est obligatoire et contenir entre 50 caractères.." if len(clean_time) < 1 or len(clean_time) > 50 else "",
+            "start_date": "La date de début doit etre antérieure à la date de fin." if start_date and end_date and start_date > end_date else "",
+            "end_date": "La date de fin est obligatoire." if not end_date else "",
+            "description": ""
+        },
+        "fields": {
+            "title": title,
+            "time": time,
+            "event_id": event_id,
+            "start_date": start_date,
+            "end_date": end_date,
+            "description": description
+        },
+    }
+
+    if any(form_data["errors"].values()):
+        request.session['form_data'] = form_data
+        return RedirectResponse(f"/event/{event_id}/program", status_code=303)
+    if (start_date and datetime.fromisoformat(start_date) < datetime.now()) or (end_date and datetime.fromisoformat(end_date) < datetime.now()) :
+        request.session['form_data'] = form_data
+        request.session['event_error'] = "Les dates doivent être supérieures à la date actuelle."
+        return RedirectResponse(f"/event/{event_id}/program", status_code=303)
+    try:
+        dt_start = datetime.fromisoformat(start_date)
+        dt_end = datetime.fromisoformat(end_date)
+    except ValueError:
+        # Gérer le cas où la date transmise est invalide
+        return templates.TemplateResponse(
+            "Authentification/admin/event/forms/event_form.html",
+            {
+                "request": request,
+                "message": "Le format des dates est invalide.",
+                "csrf_token": csrf_token
+            },
+            status_code=status.HTTP_400_BAD_REQUEST
+        )
+    # 3. Vérification de l'existence de l'événement en BDD
+    event_check = await db.execute(select(Event).where(Event.id == event_id))
+    event = event_check.scalars().first()
+
+    if not event:
+        events_res = await db.execute(select(Event).order_by(Event.id.desc()))
+        return templates.TemplateResponse(
+            "Authentification/admin/event/forms/program_form.html",
+            {
+                "request": request,
+                "events": events_res.scalars().all(),
+                "message": "L'événement sélectionné n'existe pas.",
+                "csrf_token": csrf_token
+            },
+            status_code=status.HTTP_400_BAD_REQUEST
+        )
+
+    # 4. Création et enregistrement du Program
+    new_program = Program(
+        event_id=event_id,
+        title=clean_title,
+        time=clean_time,
+        start_date=dt_start,
+        end_date=dt_end,
+        description=clean_description
+    )
+
+    try:
+        db.add(new_program)
+        await db.commit()
+    except Exception as e:
+            await db.rollback()
+            print(f"🚨 [PROD DB ERROR] : {str(e)}")
+            raise HTTPException(status_code=500, detail="Erreur lors de la modification de l'événement")
+
+    # 5. Redirection avec message Flash dans la session
+    request.session["success_message"] = "Programme créé avec succès !"
+    
+    return RedirectResponse(
+        url=f"/event/{event_id}/program", 
+        status_code=status.HTTP_303_SEE_OTHER
+    )
+
+@Root.get("/programs/list/{event_id}")
+async def list_programs(
+    request: Request,
+    event_id: str,
+    success: Optional[str] = None,
+    db: AsyncSession = Depends(connecting)
+):
+    
+    # 1. Récupération de l'événement
+    event_res = await db.execute(select(Event).where(Event.id == event_id))
+    event = event_res.scalars().first()
+
+    if not event:
+        raise HTTPException(status_code=404, detail="Événement introuvable")
+
+    # 2. Récupération des programmes associés à l'événement
+    programs_res = await db.execute(select(Program).where(Program.event_id == event_id).options(selectinload(Program.event)))
+    programs = programs_res.scalars().all()
+    # 3. Rendu du template avec les programmes et l'événement
+    return templates.TemplateResponse(
+        "Authentification/admin/event/program/list_programs.html",
+        {
+            "request": request,
+            "event": event,
+            "programs": programs,
+            "success": success,
+        }
+    )
+
+
+    # Affichage du formulaire de modification
+@Root.get("/program/{program_id}/edit")
+async def edit_program_form(
+    request: Request,
+    program_id: str,
+    db: AsyncSession = Depends(connecting)
+):
+    # Récupérer le programme avec ses informations
+    prog_query = await db.execute(select(Program).where(Program.id == program_id))
+    program = prog_query.scalar_one_or_none()
+
+    if not program:
+        raise HTTPException(status_code=404, detail="Programme non trouvé")
+
+    # Récupérer la liste des événements pour le sélecteur
+    events_query = await db.execute(select(Event))
+    events = events_query.scalars().all()
+    return templates.TemplateResponse(
+        "Authentification/admin/event/forms/program_form/edit_program.html",
+        {
+            "request": request,
+            "program": program,
+            "events": events,
+    
+            "data": {"fields": {}, "errors": {}}
+        }
+    )
+
+
+# Traitement de la soumission du formulaire HTML
+@Root.post("/program/{program_id}/update")
+async def update_program_form(
+    request: Request,
+    program_id: str,
+    event_id: str = Form(...),
+    title: str = Form(...),
+    time: str = Form(...),
+    start_date: str = Form(...),
+    end_date: str = Form(...),
+    description: Optional[str] = Form(None),
+    db: AsyncSession = Depends(connecting)
+):
+    prog_query = await db.execute(select(Program).where(Program.id == program_id))
+    program = prog_query.scalar_one_or_none()
+
+    events_query = await db.execute(select(Event))
+    events = events_query.scalars().all()
+
+    # Conversion et validation des dates
+    try:
+        parsed_start = datetime.fromisoformat(start_date)
+        parsed_end = datetime.fromisoformat(end_date)
+    except ValueError:
+        return templates.TemplateResponse(
+            "Authentification/admin/event/forms/program_form/edit_program.html",
+            {
+                "request": request,
+                "program": program,
+                "events": events,
+                "message": "Format de date invalide.",
+                "data": {"fields": request._form, "errors": {}}
+            },
+            status_code=status.HTTP_400_BAD_REQUEST
+        )
+
+    if parsed_end < parsed_start:
+        return templates.TemplateResponse(
+            "edit_program.html",
+            {
+                "request": request,
+                "program": program,
+                "events": events,
+                "data": {
+                    "fields": request._form,
+                    "errors": {"end_date": "La date de fin doit être postérieure au début."}
+                }
+            },
+            status_code=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Application des modifications
+    program.event_id = event_id
+    program.title = title
+    program.time = time
+    program.start_date = parsed_start
+    program.end_date = parsed_end
+    program.description = description
+
+    try:
+        await db.commit()
+        await db.refresh(program)
+    except Exception:
+        await db.rollback()
+        return templates.TemplateResponse(
+            "edit_program.html",
+            {
+                "request": request,
+                "program": program,
+                "events": events,
+                "message": "Une erreur serveur est survenue lors de la mise à jour."
+            },
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+
+    # Redirection Post-Redirect-Get vers la liste des programmes
+    return RedirectResponse(
+        url=f"/programs/list/{program.event_id}?success=Programme+mis+%C3%A0+jour+avec+succ%C3%A8s",
+        status_code=status.HTTP_303_SEE_OTHER
+    )
+
+@Root.post("/program/{program_id}/delete", response_class=RedirectResponse)
+async def delete_program(
+    program_id: str,
+    db: AsyncSession = Depends(connecting)
+):
+    try:
+        # 1. Recherche du programme en base de données
+        query = await db.execute(select(Program).where(Program.id == program_id))
+        program = query.scalar_one_or_none()
+
+        # 2. Gestion si le programme n'existe pas
+        if not program:
+            logger.warning(f"Tentative de suppression d'un programme inexistant ID: {program_id}")
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Programme non trouvé"
+            )
+
+        event_id = program.event_id  # Conserve l'ID de l'événement pour la redirection
+
+        # 3. Suppression
+        await db.delete(program)
+        await db.commit()
+
+        logger.info(f"Programme ID {program_id} supprimé avec succès.")
+
+        # 4. Redirection vers la liste des programmes avec message de succès
+        redirect_url = f"/programs/list/{event_id}?success=Programme+supprimé+avec+succès"
+        return RedirectResponse(url=redirect_url, status_code=status.HTTP_303_SEE_OTHER)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        logger.error(f"Erreur lors de la suppression du programme {program_id}: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Une erreur interne est survenue lors de la suppression."
+        )
 

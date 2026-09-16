@@ -6,11 +6,12 @@ from arq.connections import RedisSettings
 from contextlib import asynccontextmanager
 from arq import create_pool
 from sqlalchemy.future import select
-from models import ExternalUser
+from urllib.parse import urlparse
 
 load_dotenv()
 
 set_secure_cookie =True #la variable permettant l'usage du csrf_token Fasle en locale et True en ligne ou prod#
+bool_state = True
 
 secret = os.getenv('SECRET')#le secret ou sinature du token
 algo = os.getenv('ALGO')#type d'algorithme
@@ -22,7 +23,7 @@ mpesa_shortcode = os.getenv('SHORTCODE')
 mpesa_public_key = os.getenv('M_PESA_PUBLIC_KEY')
 #====================whatsapp
 whatsap_phone_Number_ID = os.getenv('Phone_Number_ID')
-
+template_name = os.getenv('template_name')
 whatsapp_token = os.getenv('whatsapp_token')
 #=======================Cloudinary
 Cloud_name = os.getenv("CLOUD_NAME")
@@ -98,3 +99,19 @@ async def check_current_user_session(request: Request):
                              detail="Session expiré ou non autorisé veillez vous reconnecter"
         )
     return user_id
+
+def get_safe_redirect_url(next_url: str | None, default_url: str = "/") -> str: #methode de protection de la redirection
+    if not next_url:
+        return default_url
+    
+    # 1. Vérifier si l'URL commence par un seul '/' et JAMAIS par '//' (ex: //hacker.com)
+    if not next_url.startswith("/") or next_url.startswith("//"):
+        return default_url
+    
+    # 2. Analyser l'URL pour s'assurer qu'il n'y a pas de nom de domaine (host/netloc)
+    parsed = urlparse(next_url)
+    if parsed.netloc or parsed.scheme:
+        return default_url
+        
+    return next_url
+

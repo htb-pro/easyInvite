@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Invitation Officielle - Événement</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- QRCode JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <style>
+        :root {
+            --primary-gold: #c59b27;
+            --primary-gold-light: #f7e8b5;
+            --dark-navy: #0d1321;
+            --soft-navy: #1d263b;
+            --text-muted-custom: #8d99ae;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #080c14;
+            color: #f8fafc;
+            min-height: 100vh;
+            padding-bottom: 50px;
+        }
+
+        .font-cinzel {
+            font-family: 'Cinzel', serif;
+        }
+
+        /* Hero Banner */
+        .hero-banner {
+            background: linear-gradient(180deg, rgba(13, 19, 33, 0.4) 0%, #080c14 100%), 
+                        url('{{guest.event.photo_url if guest.event.photo_url else "https://images.unsplash.com/photo-1519741497674-611481863552?auto=format&fit=crop&w=1200&q=80" }}') center/cover no-repeat;
+            padding: 60px 20px 40px;
+            text-align: center;
+            border-bottom: 1px solid rgba(197, 155, 39, 0.2);
+        }
+
+        .church-badge {
+            display: inline-block;
+            border: 1px solid var(--primary-gold);
+            color: var(--primary-gold);
+            padding: 6px 18px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            background: rgba(13, 19, 33, 0.8);
+            backdrop-filter: blur(5px);
+        }
+
+        /* Cards Design */
+        .glass-card {
+            background: rgba(29, 38, 59, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.5);
+        }
+
+        .gold-border {
+            border-top: 4px solid var(--primary-gold);
+        }
+
+        /* Pass Digital */
+        .pass-container {
+            background: #ffffff;
+            color: #0f172a;
+            border-radius: 16px;
+            overflow: hidden;
+        }
+
+        .pass-header {
+            background: var(--dark-navy);
+            color: #ffffff;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .qr-wrapper {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 12px;
+            display: inline-block;
+            border: 2px dashed #cbd5e1;
+        }
+
+        /* Timeline / Programme */
+        .timeline-item {
+            border-left: 2px solid var(--primary-gold);
+            padding-left: 20px;
+            position: relative;
+            margin-bottom: 25px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            width: 12px;
+            height: 12px;
+            background: var(--primary-gold);
+            border-radius: 50%;
+            position: absolute;
+            left: -7px;
+            top: 4px;
+        }
+
+        /* Buttons */
+        .btn-gold {
+            background: linear-gradient(135deg, #d4af37 0%, #aa7c11 100%);
+            color: #000;
+            font-weight: 700;
+            border: none;
+            border-radius: 12px;
+            padding: 12px 24px;
+            transition: all 0.3s ease;
+        }
+
+        .btn-gold:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(197, 155, 39, 0.4);
+            color: #000;
+        }
+
+        .btn-outline-custom {
+            border: 1px solid rgba(255,255,255,0.2);
+            color: #fff;
+            border-radius: 12px;
+            padding: 12px 24px;
+        }
+
+        .btn-outline-custom:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+<!-- HERO HEADER -->
+<header class="hero-banner">
+    <div class="container">
+        <span class="church-badge mb-3"><i class="fa-solid fa-church me-2"></i>{{guest.event.organizer if guest.event.organizer else "Communauté Chrétienne"}}</span>
+        <h1 class="font-cinzel display-5 text-warning fw-bold my-3">{{guest.event.name if guest.event.name else "GRANDE CONVENTION ANNUELLE"}}</h1>
+        <p class="text-light lead fs-6 max-w-600 mx-auto opacity-75">
+            {{ "« " + guest.event.description + " »" if guest.event.description else "" }}
+            <!--« Car là où deux ou trois sont assemblés en mon nom, je suis au milieu d'eux. » — Matthieu 18:20-->
+        </p>
+    </div>
+</header>
+
+<main class="container my-4" style="max-width: 800px;">
+
+    <!-- SECTION 1 : MESSAGE D'INVITATION -->
+    <section class="glass-card p-4 p-md-5 mb-4 gold-border">
+        <div class="d-flex align-items-center mb-3">
+            <i class="fa-solid fa-envelope-open-text text-warning fs-3 me-3"></i>
+            <h3 class="font-cinzel m-0 fs-4 text-warning">Message d'Invitation</h3>
+        </div>
+        <p class="text-light lh-lg">
+           Trés cher(e) bien-aimé(e) <strong>{{ guest.name if guest.name else "" }}</strong>,
+        </p>
+        <p class="text-light-50 lh-lg" style="color: #cbd5e1;">
+            C'est avec une grande joie et un profond honneur que le Conseil Pastoral vous invite à prendre part à notre grande célébration de grâce. Ce moment sera marqué par des temps forts d'adoration, d'enseignement inspirant et de communion fraternelle.
+        </p>
+        <p class="text-light-50 lh-lg mb-0" style="color: #cbd5e1;">
+            Votre présence est précieuse pour nous et contribuera à la bénédiction de cet événement.
+        </p>
+    </section>
+
+    <!-- SECTION 2 : CARTE DU BILLET / PASS DIGITAL -->
+    <section class="glass-card p-4 mb-4">
+        <div class="text-center mb-4">
+            <h4 class="font-cinzel text-warning mb-1">VOTRE PASS D'ACCÈS PERSONNEL</h4>
+            <p class="small text-muted-custom">Présentez ce QR Code à l'équipe d'accueil dès votre arrivée</p>
+        </div>
+
+        <div class="pass-container shadow-lg">
+            <div class="pass-header">
+                <small class="text-uppercase tracking-wider text-warning fw-bold">Invitation Privilège</small>
+                <h5 class="m-0 text-white font-cinzel mt-1">{{ guest.name }}</h5>
+            </div>
+            
+            <div class="p-4 text-center">
+                <!-- Zone QR Code -->
+                <div class="qr-wrapper mb-3">
+                    <img src="/qr/{{ guest.event_id }}/{{ guest.id }}" alt="QR Code d'accès" class="img-fluid" style="width: 170px; height: 170px;">
+                </div>
+                
+                <p class="mb-1 text-muted small">Code de Vérification :</p>
+                <span class="badge bg-dark text-warning fs-6 px-3 py-2 font-monospace">{{ guest.get_pass }}</span>
+
+                <hr class="my-3">
+
+                <!-- Détails d'Accès -->
+                <div class="row g-2 text-start small">
+                    <div class="col-6">
+                        <span class="text-muted d-block"><i class="fa-solid fa-chair text-warning me-1"></i> Zone / Place :</span>
+                        <strong class="text-dark">{{ guest.place or "" }}</strong>
+                    </div>
+                    <div class="col-6">
+                        <span class="text-muted d-block"><i class="fa-solid fa-user-tag text-warning me-1"></i> Catégorie :</span>
+                        <strong class="text-dark">Invité </strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SECTION 3 : DÉTAILS PRATIQUES & PROGRAMME -->
+    <div class="row g-4 mb-4">
+        <!-- Infos Pratiques -->
+        <div class="col-md-6">
+            <div class="glass-card p-4 h-100">
+                <h5 class="font-cinzel text-warning mb-3"><i class="fa-solid fa-circle-info me-2"></i>Informations</h5>
+                
+                <div class="mb-3">
+                    <small class="text-muted-custom d-block">Date & Heure :</small>
+                    <span class="fw-semibold text-white"><i class="fa-regular fa-calendar me-2 text-warning"></i>{{ event_day +", " + guest.event.date.strftime("%d-%m-%Y, %H:%M")}}</span>
+                </div>
+
+                <div class="mb-3">
+                    <small class="text-muted-custom d-block">Lieu de Célébration :</small>
+                    <span class="fw-semibold text-white"><i class="fa-solid fa-location-dot me-2 text-warning"></i>{{guest.event.location}}, {{guest.event.address or ""}}, {{guest.event.city}}</span>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Programme déroulé -->
+         {%if guest.event.programs%}
+        <div class="col-md-6">
+            <div class="glass-card p-4 h-100">
+                <h5 class="font-cinzel text-warning mb-3"><i class="fa-solid fa-clock me-2"></i>Programme</h5>
+                
+                {% for program in guest.event.programs%}
+                <div class="timeline-item">
+                    <strong class="text-white d-block">{{ program.time }} - {{ program.title }}</strong>
+                    <small class="text-muted-custom">{{ program.description  }}</small>
+                </div>
+
+                {% endfor %}
+                
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- SECTION 4 : CONFIRMATION DE PRÉSENCE (RSVP) -->
+    <section class="glass-card p-4 text-center mb-4">
+        <h5 class="font-cinzel text-warning mb-2">CONFIRMEZ-VOUS VOTRE PRÉSENCE ?</h5>
+        <p class="small text-muted-custom mb-4">Aidez-nous à mieux préparer votre accueil en indiquant votre disponibilité.</p>
+
+        <div class="d-flex justify-content-center gap-3 flex-wrap">
+            <button class="btn btn-gold" onclick="repondreRSVP('present')">
+                <i class="fa-solid fa-circle-check me-2"></i>Oui, je serai présent(e)
+            </button>
+            <button class="btn btn-outline-custom" onclick="repondreRSVP('absent')">
+                <i class="fa-solid fa-circle-xmark me-2"></i>Malheureusement non
+            </button>
+        </div>
+        <p id="rsvpStatus" class="mt-3 text-warning fw-bold d-none"></p>
+    </section>
+
+    <!-- SECTION 5 : BOUTONS D'ACTION FAST -->
+    <!-- <div class="d-grid gap-2 col-md-8 mx-auto">
+        <button class="btn btn-outline-custom py-2" onclick="ajouterAgenda()">
+            <i class="fa-regular fa-calendar-plus me-2 text-warning"></i>Ajouter à mon agenda Google/Apple
+        </button>
+        <a href="https://maps.google.com" target="_blank" class="btn btn-outline-custom py-2">
+            <i class="fa-solid fa-map-location-dot me-2 text-warning"></i>Ouvrir l'itinéraire GPS
+        </a>
+    </div> -->
+
+</main>
+
+<!-- FOOTER -->
+<footer class="text-center text-muted-custom py-4 small">
+    <p class="m-0">© {{ copyright.strftime('%Y') }} EasyInvite. Tous droits réservés.</p>
+    <small>Pour toute question, contactez le secrétariat au {{guest.event.couple_phone_number }}</small>
+</footer>
+
+<!-- SCRIPT GENERATION QR CODE -->
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Lien dynamique qui pointe vers ton API FastAPI de scan
+        const inviteUrl = "https://app.easyevent-rdc.com/invite/{{ event_id }}/{{ guest.id }}/create";
+
+        new QRCode(document.getElementById("qrcode"), {
+            text: inviteUrl,
+            width: 170,
+            height: 170,
+            colorDark : "#0d1321",
+            colorLight : "#ffffff",
+            correctLevel : QRCode.CorrectLevel.H
+        });
+    });
+
+    function repondreRSVP(statut) {
+        const rsvpStatus = document.getElementById("rsvpStatus");
+        rsvpStatus.classList.remove("d-none");
+        if(statut === 'present') {
+            rsvpStatus.innerText = "✅ Merci ! Votre présence a bien été confirmée.";
+            rsvpStatus.className = "mt-3 text-success fw-bold";
+        } else {
+            rsvpStatus.innerText = "ℹ️ Merci d'avoir répondu. Nous espérons vous revoir très bientôt.";
+            rsvpStatus.className = "mt-3 text-secondary fw-bold";
+        }
+    }
+
+    function ajouterAgenda() {
+        alert("Événement ajouté avec succès à votre calendrier !");
+    }
+</script>
+
+</body>
+</html>

@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>{{ guest.event.couple_name if guest and guest.event else "King Kaditshi Alain & Queen Kishala Agy" }} — Invitation</title>
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Montserrat:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <!-- AOS CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --black: #111111;
+            --dark: #181818;
+            --ivory: #f8f4ec;
+            --white: #ffffff;
+            --gold: #c5a15b;
+            --gold-light: #dfc88f;
+            --text-muted: #77736c;
+        }
+
+        * {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            margin: 0;
+            background: var(--ivory);
+            color: var(--black);
+            font-family: "Montserrat", sans-serif;
+            overflow-x: hidden;
+        }
+
+        h1, h2, h3, h4, h5 {
+            font-family: "Cormorant Garamond", serif;
+        }
+
+        .gold { color: var(--gold); }
+        .section { padding: 100px 0; }
+
+        .section-label {
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            font-size: 11px;
+            color: var(--gold);
+            font-weight: 600;
+        }
+
+        .section-title {
+            font-size: clamp(38px, 6vw, 70px);
+            font-weight: 500;
+            line-height: 1.1;
+        }
+
+        .gold-line {
+            width: 70px;
+            height: 1px;
+            background: var(--gold);
+            margin: 25px auto 35px;
+        }
+
+        /* HERO RESTRUCTURÉ */
+        .hero {
+            min-height: 100vh;
+            min-height: 100svh;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0.1) 40%, rgba(0,0,0,0.8) 100%),
+                        url("{{ guest.event.photo_url if guest and guest.event and guest.event.photo_url else 'photo.jpg' }}") center center / cover no-repeat;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+            position: relative;
+            padding: 40px 20px 80px;
+            box-sizing: border-box;
+        }
+
+        .hero-header {
+            width: 100%;
+            text-align: center;
+            padding-top: 10px;
+        }
+
+        .hero-label {
+            text-transform: uppercase;
+            letter-spacing: 7px;
+            font-size: 11px;
+            color: var(--gold-light);
+            margin: 0;
+        }
+
+        .hero-footer-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            width: 100%;
+            max-width: 900px;
+            margin-top: auto;
+        }
+
+        .couple-names {
+            font-family: "Cormorant Garamond", serif;
+            font-size: clamp(24px, 4.5vw, 50px);
+            font-weight: 400;
+            line-height: 1.15;
+            margin: 0 0 10px;
+            text-transform: uppercase;
+            word-wrap: break-word;
+        }
+
+        .ampersand {
+            display: inline-block;
+            font-size: 0.8em;
+            color: var(--gold-light);
+            margin: 0 5px;
+            font-style: italic;
+            text-transform: none;
+        }
+
+        .hero-date {
+            margin-top: 10px;
+            font-size: 13px;
+            letter-spacing: 4px;
+            text-transform: uppercase;
+        }
+
+        .hero-location {
+            margin-top: 6px;
+            font-size: 12px;
+            letter-spacing: 2px;
+            opacity: 0.9;
+        }
+
+        .hero-button {
+            display: inline-block;
+            margin-top: 25px;
+            padding: 12px 28px;
+            border: 1px solid var(--gold);
+            color: white;
+            text-decoration: none;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-size: 11px;
+            transition: 0.3s;
+        }
+
+        .hero-button:hover {
+            background: var(--gold);
+            color: white;
+        }
+
+        .scroll-down {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 20px;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0) translateX(-50%); }
+            40% { transform: translateY(-10px) translateX(-50%); }
+            60% { transform: translateY(-5px) translateX(-50%); }
+        }
+
+        /* INTRO */
+        .intro {
+            background: var(--ivory);
+            text-align: center;
+        }
+
+        .intro-text {
+            max-width: 750px;
+            margin: auto;
+            font-family: "Cormorant Garamond", serif;
+            font-size: 27px;
+            line-height: 1.7;
+        }
+
+        .signature {
+            margin-top: 30px;
+            font-family: "Cormorant Garamond", serif;
+            font-size: 30px;
+            font-style: italic;
+        }
+
+        /* ACTION CARD (QR CODE) */
+        .action-section {
+            background: var(--ivory);
+            padding-bottom: 60px;
+        }
+
+        .action-card {
+            max-width: 450px;
+            margin: 0 auto;
+            background: white;
+            border: 1px solid #ded7c9;
+            padding: 35px 25px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+
+        .qr-wrapper img {
+            width: 150px;
+            height: 150px;
+            border: 1px solid #eee;
+            padding: 8px;
+        }
+
+        .qr-help-text {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin: 15px 0 25px;
+            letter-spacing: 1px;
+        }
+
+        .btn-action-primary, .btn-action-secondary {
+            display: block;
+            width: 100%;
+            padding: 12px 20px;
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-decoration: none;
+            transition: 0.3s;
+            margin-bottom: 10px;
+        }
+
+        .btn-action-primary {
+            background: var(--gold);
+            color: white;
+            border: 1px solid var(--gold);
+        }
+
+        .btn-action-primary:hover {
+            background: #b08d4b;
+            color: white;
+        }
+
+        .btn-action-secondary {
+            background: transparent;
+            color: var(--black);
+            border: 1px solid #bbb;
+        }
+
+        .btn-action-secondary:hover {
+            background: var(--dark);
+            color: white;
+            border-color: var(--dark);
+        }
+
+        /* DETAILS */
+        .details { background: white; }
+
+        .detail-card {
+            height: 100%;
+            background: #fff;
+            border: 1px solid #ded7c9;
+            padding: 45px 25px;
+            text-align: center;
+            transition: .3s;
+        }
+
+        .detail-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--gold);
+        }
+
+        .detail-icon {
+            font-size: 30px;
+            color: var(--gold);
+            margin-bottom: 20px;
+        }
+
+        .detail-title {
+            font-size: 27px;
+            margin-bottom: 12px;
+        }
+
+        .detail-text {
+            color: var(--text-muted);
+            font-size: 13px;
+            line-height: 1.8;
+        }
+
+        /* PROGRAM */
+        .program {
+            background: var(--dark);
+            color: white;
+        }
+
+        .program .section-title { color: white; }
+
+        .timeline {
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .timeline-item {
+            display: flex;
+            align-items: center;
+            padding: 25px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .timeline-time {
+            width: 120px;
+            color: var(--gold-light);
+            font-size: 13px;
+            letter-spacing: 2px;
+            flex-shrink: 0;
+        }
+
+        .timeline-content h4 {
+            font-size: 28px;
+            margin: 0;
+        }
+
+        .timeline-content p {
+            margin: 5px 0 0;
+            color: #aaa;
+            font-size: 12px;
+        }
+
+        /* GALLERY */
+        .gallery { background: var(--ivory); }
+
+        .gallery-img {
+            width: 100%;
+            height: 400px;
+            object-fit: cover;
+            transition: .5s;
+        }
+
+        .gallery-item { overflow: hidden; }
+
+        .gallery-item:hover img { transform: scale(1.05); }
+
+        /* DRESS CODE */
+        .dress-code {
+            background: white;
+            text-align: center;
+        }
+
+        .dress-box {
+            max-width: 650px;
+            margin: auto;
+            padding: 60px 30px;
+            border: 1px solid #ded7c9;
+        }
+
+        .dress-icon {
+            font-size: 45px;
+            color: var(--gold);
+        }
+
+        .dress-title {
+            font-size: 42px;
+            margin: 20px 0;
+        }
+
+        .dress-description {
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        /* RSVP */
+        .rsvp {
+            background: var(--ivory);
+            text-align: center;
+        }
+
+        .rsvp-container {
+            max-width: 550px;
+            margin: auto;
+        }
+
+        .btn-rsvp {
+            padding: 16px 24px;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            font-weight: 500;
+            border-radius: 0;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            border: 1px solid transparent;
+        }
+
+        .btn-yes {
+            background-color: var(--gold);
+            color: white;
+            border-color: var(--gold);
+        }
+
+        .btn-yes:hover {
+            background-color: #b08d4b;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .btn-neuter {
+            background-color: transparent;
+            color: var(--black);
+            border-color: #bbb;
+        }
+
+        .btn-neuter:hover {
+            background-color: var(--dark);
+            color: white;
+            border-color: var(--dark);
+            transform: translateY(-2px);
+        }
+
+        .btn-no {
+            background-color: transparent;
+            color: #a94442;
+            border-color: #d9534f;
+        }
+
+        .btn-no:hover {
+            background-color: #d9534f;
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        /* FOOTER */
+        footer {
+            background: var(--black);
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+        }
+
+        .footer-names {
+            font-family: "Cormorant Garamond", serif;
+            font-size: 45px;
+        }
+
+        .footer-text {
+            color: #888;
+            font-size: 11px;
+            letter-spacing: 2px;
+        }
+
+        .footer-brand {
+            margin-top: 30px;
+            color: var(--gold);
+            font-size: 10px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+        }
+
+        @media(max-width: 768px) {
+            .section { padding: 60px 20px; }
+            .hero { min-height: 100svh; }
+            .couple-names { font-size: 28px; }
+            .timeline-item {
+                display: block;
+                text-align: center;
+            }
+            .timeline-time {
+                width: auto;
+                margin-bottom: 8px;
+            }
+            .gallery-img { height: 280px; }
+        }
+    </style>
+</head>
+
+<body>
+
+<!-- HERO -->
+<section class="hero">
+    <!-- 1. En-tête tout en haut -->
+    <div class="hero-header" data-aos="fade-down">
+        <div class="hero-label">Invitation de mariage</div>
+    </div>
+
+    <!-- 2. Informations ancrées sous le niveau du visage -->
+    <div class="hero-footer-content" data-aos="fade-up" data-aos-duration="1000">
+        <h1 class="couple-names">
+            {% if guest and guest.event and guest.event.couple_name %}
+                {{ guest.event.couple_name }}
+            {% else %}
+                King Kaditshi Alain
+                <span class="ampersand">&</span>
+                Queen Kishala Agy
+            {% endif %}
+        </h1>
+
+        <div class="hero-date">
+            {% if guest and guest.event and guest.event.date %}
+                {{ guest.event.date.strftime("%d · %m · %Y") }}
+            {% else %}
+                09 · 10 · 2026
+            {% endif %}
+        </div>
+
+        <div class="hero-location">
+            {{ guest.event.location if guest and guest.event and guest.event.location else "Jardin du bonheur" }}{% if guest and guest.event and guest.event.city %}, {{ guest.event.city }}{% else %}, Lubumbashi{% endif %}
+        </div>
+
+        <a href="#invitation" class="hero-button">Découvrir l'invitation</a>
+    </div>
+
+    <div class="scroll-down">
+        <i class="bi bi-chevron-down"></i>
+    </div>
+</section>
+
+<!-- INTRODUCTION -->
+<section id="invitation" class="section intro">
+    <div class="container" data-aos="fade-up" data-aos-duration="1000">
+        <div class="section-label">Notre histoire</div>
+        <h2 class="section-title mt-3">Deux vies, un même chemin</h2>
+        <div class="gold-line"></div>
+
+        <p class="intro-text">
+            {% if guest and guest.event and guest.event.description and guest.event.description != "None" %}
+                {{ guest.event.description }}
+            {% else %}
+                Trés cher(e) {{ guest.name }}, c'est avec beaucoup de joie, nous vous invitons à partager avec nous cette journée exceptionnelle et à célébrer notre union entourés de ceux qui nous sont chers.
+            {% endif %}
+        </p>
+
+        <div class="signature">
+            {{ guest.event.couple_name if guest and guest.event and guest.event.couple_name else "King Kaditshi Alain & Queen Kishala Agy" }}
+        </div>
+    </div>
+</section>
+
+<!-- QR CODE & ACTIONS -->
+<section class="action-section">
+    <div class="container" data-aos="fade-up">
+        <div class="action-card">
+            <div class="qr-wrapper">
+                <img src="/qr/{{ guest.event_id }}/{{ guest.id }}" alt="QR Code d'accès" class="qr-code">
+            </div>
+            <p class="qr-help-text">Présentez ce QR Code à l'entrée</p>
+
+            <div class="d-grid gap-2">
+                <a href="#rsvp" class="btn-action-primary">Confirmer ma présence</a>
+                <a href="/invitation/download-pdf/{{ guest.id }}" class="btn-action-secondary" download>
+                    <i class="bi bi-download me-2"></i> Télécharger (PDF)
+                </a>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- DETAILS -->
+<section class="section details">
+    <div class="container">
+        <div class="text-center mb-5" data-aos="fade-up">
+            <div class="section-label">Le grand jour</div>
+            <h2 class="section-title mt-3">Informations</h2>
+            <div class="gold-line"></div>
+        </div>
+
+        <div class="row g-4">
+            <!-- DATE -->
+            <div class="col-md-4" data-aos="fade-up" data-aos-delay="100">
+                <div class="detail-card">
+                    <div class="detail-icon"><i class="bi bi-calendar-heart"></i></div>
+                    <h3 class="detail-title">La date</h3>
+                    <p class="detail-text">
+                        {% if guest and guest.event and guest.event.date %}
+                            {{ guest.event.date.strftime("%d %B %Y") }}
+                        {% else %}
+                            09 Octobre 2026
+                        {% endif %}
+                    </p>
+                </div>
+            </div>
+
+            <!-- LIEU -->
+            <div class="col-md-4" data-aos="fade-up" data-aos-delay="200">
+                <div class="detail-card">
+                    <div class="detail-icon"><i class="bi bi-geo-alt"></i></div>
+                    <h3 class="detail-title">Le lieu</h3>
+                    <p class="detail-text">
+                        {{ guest.event.location if guest and guest.event and guest.event.location else "Jardin du bonheur" }}<br>
+                        {{ guest.event.address if guest and guest.event and guest.event.address else "" }}
+                        {{ guest.event.city if guest and guest.event and guest.event.city else "Lubumbashi" }}
+                    </p>
+                </div>
+            </div>
+
+            <!-- HEURE -->
+            <div class="col-md-4" data-aos="fade-up" data-aos-delay="300">
+                <div class="detail-card">
+                    <div class="detail-icon"><i class="bi bi-clock"></i></div>
+                    <h3 class="detail-title">L'heure</h3>
+                    <p class="detail-text">
+                        Accueil : {% if guest and guest.event and guest.event.date %}{{ guest.event.date.strftime("%Hh%M") }}{% else %}15h00{% endif %}<br>
+                        Soirée dansante
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- PROGRAMME -->
+{% if guest and guest.event and guest.event.programs %}
+<section class="section program">
+    <div class="container">
+        <div class="text-center" data-aos="fade-up">
+            <div class="section-label">Programme</div>
+            <h2 class="section-title mt-3">Le déroulement</h2>
+            <div class="gold-line"></div>
+        </div>
+
+        <div class="timeline">
+            {% for item in guest.event.programs %}
+            <div class="timeline-item" data-aos="fade-up" data-aos-delay="{{ loop.index * 100 }}">
+                <div class="timeline-time">{{ item.time }}</div>
+                <div class="timeline-content">
+                    <h4>{{ item.title }}</h4>
+                    <p>{{ item.description }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- GALERIE -->
+<section class="section gallery">
+    <div class="container">
+        <div class="text-center mb-5" data-aos="fade-up">
+            <div class="section-label">Souvenirs</div>
+            <h2 class="section-title mt-3">Quelques moments</h2>
+            <div class="gold-line"></div>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-md-6 gallery-item" data-aos="zoom-in" data-aos-delay="100">
+                <img src="{{ guest.event.photo_url if guest and guest.event and guest.event.photo_url else 'photo.jpg' }}" class="gallery-img" alt="Photo du couple">
+            </div>
+            <div class="col-md-6 gallery-item" data-aos="zoom-in" data-aos-delay="200">
+                <img src="{{ guest.event.photo_url if guest and guest.event and guest.event.photo_url else 'photo.jpg' }}" class="gallery-img" alt="Photo du couple">
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- DRESS CODE -->
+<section class="section dress-code">
+    <div class="container" data-aos="fade-up">
+        <div class="dress-box">
+            <div class="dress-icon"><i class="bi bi-stars"></i></div>
+            <div class="section-label mt-3">Dress Code</div>
+            <h2 class="dress-title">Élégance & Raffinement</h2>
+            <p class="dress-description">
+                Nous vous invitons à privilégier une tenue élégante et raffinée pour cette occasion.
+            </p>
+        </div>
+    </div>
+</section>
+
+<!-- RSVP -->
+<section class="section rsvp" id="rsvp">
+    <div class="container" data-aos="fade-up">
+        <div class="rsvp-container">
+            <div class="section-label">RSVP</div>
+            <h2 class="section-title mt-3">Votre présence nous honore</h2>
+            <div class="gold-line"></div>
+
+            <p class="text-muted mb-5">
+                Merci de confirmer votre réponse en cliquant sur l'un des boutons ci-dessous.
+            </p>
+
+            <form action="/presence/confirmation/{{ guest.id if guest else 0 }}/{{ event.id if event else (guest.event.id if guest and guest.event else 0) }}" method="post" class="d-grid gap-3 mb-4">
+                <button type="submit" class="btn btn-rsvp btn-yes" name="response" value="yes">
+                    <i class="bi bi-check-circle-fill fs-5"></i> Je serai présent(e)
+                </button>
+                <button type="submit" class="btn btn-rsvp btn-neuter" name="response" value="neuter">
+                    <i class="bi bi-dash-circle-fill fs-5"></i> Je m'abstiens
+                </button>
+                <button type="submit" class="btn btn-rsvp btn-no" name="response" value="no">
+                    <i class="bi bi-x-circle-fill fs-5"></i> Je ne pourrai pas venir
+                </button>
+                {% if message %}
+            <div class="alert alert-danger section-message mt-3 mb-0 border-0 shadow-sm" style="border-radius: 12px;">
+                <i class="bi bi-exclamation-triangle-fill me-1"></i> <strong>{{ message }}</strong>
+            </div>
+            {% endif %}
+            </form>
+        </div>
+    </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+    <div class="footer-names">
+        {{ guest.event.couple_name if guest and guest.event else "King Kaditshi Alain & Queen Kishala Agy" }}
+    </div>
+
+    <div class="footer-text mt-3">
+        {% if guest and guest.event and guest.event.date %}
+            {{ guest.event.date.strftime("%d %B %Y à partir de %H:%M") }}
+        {% else %}
+            09 Octobre 2026
+        {% endif %}
+    </div>
+
+    <div class="footer-brand">
+        Invitation digitale · EasyInvite <br>
+        <p class="mb-2 mt-3"><strong>Besoin d'assistance ?</strong></p>
+        <p class="mb-1"><i class="bi bi-telephone me-1"></i> +243 897 401 210 ou +243 991 152 067</p>
+        <p class="mb-1"><i class="bi bi-telephone me-1"></i> +243 898 147 644 ou +243 982 727 007</p>
+        <p class="mb-1"><i class="bi bi-envelope me-1"></i> contact@easyevent-rdc.com</p>
+        <p class="text-secondary opacity-75 mt-3">&copy; {{ copyright.strftime('%Y') if copyright else '2026' }} EasyInvite. Tous droits réservés.</p>
+    </div>
+</footer>
+
+<!-- JS Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/aos@2.3.4/dist/aos.js"></script>
+<script>
+    AOS.init({
+        duration: 800,
+        once: true,
+        offset: 100
+    });
+</script>
+
+</body>
+</html>

@@ -22,7 +22,7 @@ from Routers.loging import get_current_user_from_cookie
 from app.security.permissions import permission_required
 from urllib.parse import quote
 from jose import jwt 
-from config import secret,algo,whatsap_phone_Number_ID,whatsapp_token,account_sid,auth_token,twilio_number,text_content,media_content,set_secure_cookie,verify_csrf
+from config import secret,algo,template_name,whatsap_phone_Number_ID,whatsapp_token,account_sid,auth_token,twilio_number,text_content,media_content,set_secure_cookie,verify_csrf
 from pydantic import BaseModel
 from twilio.rest import Client
 from twilio.base.exceptions import TwilioRestException
@@ -222,7 +222,53 @@ async def send_whatsapp_ticket_api(
 
     # Redirection propre vers la liste des invités
     return RedirectResponse(f"/guest_list/{event_id}", status_code=303)
-#===============================================
+#===============================================send invite without meta or twilio
+@Root.get("/wa_me/share_invite/{event_id}/{guest_id}")
+async def send_invite_with_wa_me(request:Request,event_id:str,guest_id:str,db:AsyncSession = Depends(connecting)):
+    # 1. Récupérer l'invité et l'événement en BDD
+    guest_res = await db.execute(select(Guest).where(Guest.id == guest_id, Guest.event_id == event_id))
+    guest = guest_res.scalars().first()
+    
+    event_res = await db.execute(select(Event).where(Event.id == event_id))
+    event = event_res.scalars().first()
+    
+    if not event or not guest:
+        raise HTTPException(status_code=404, detail="Invité ou événement non trouvé")
+        
+    guest_name_backup = guest.name
+
+    # 2. Nettoyage et validation du numéro de téléphone
+    try:
+        clean_phone = clean_and_format_rdc_phone(guest.telephone)
+    except Exception:
+        clean_phone = None
+
+    if not clean_phone or len(clean_phone) != 12:
+        request.session["flash_message"] = f"Le numéro de téléphone de {guest_name_backup} est invalide ou mal formaté."
+        request.session["flash_type"] = "danger"
+        return RedirectResponse(f"/guest_list/{event_id}", status_code=303)
+
+    # 3. Préparer le message d'invitation
+    invite_url = f"https://www.easyevent-rdc.com/invite/{event_id}/{guest_id}/create"
+    message_text = (
+    f"🎉 *INVITATION OFFICIELLE* \n\n"
+    f"Très cher(e) {guest_name_backup},\n\n"
+    f"{event.couple_name} ont l'immense joie de vous inviter à célébrer leur union ! 💍✨\n\n"
+    f"📅 *Date :* {event.date:%d-%m-%Y}\n"
+    f"⏰ *Heure :* {event.date.time()}\n"
+    f"📍 *Salle :* {event.location}\n"
+    f" *Addresse :* {event.address}\n"
+    f"Votre jeton d'accès : {guest.get_pass}\n"
+    f"⚠️ _Présentez le QR code à l'entrée._"
+    f"Voici le lien pour voir votre invitation en ligne :\n{invite_url}\n\n"
+    )
+    
+    encoded_message = urllib.parse.quote(message_text)
+    wa_me_link = f"https://wa.me/{clean_phone}?text={encoded_message}"
+
+    # Redirection vers le lien wa.me
+    return RedirectResponse(url=wa_me_link)
+#==============================================
 class TicketRequest(BaseModel):
     to_phone: str          # Exemple: "243897401210"
     guest_name: str        # Nom de l'invité
@@ -833,3 +879,122 @@ async def deleteGuest(request:Request,event_id:str,guest_id:str=Form(...),user=D
     await db.commit()#application de modification dans la db
     return RedirectResponse(f"/guest_list/{event_id}",status_code=303)
 
+#=========================================================test
+import os
+import requests
+from dotenv import load_dotenv
+
+load_dotenv()
+
+
+
+async def envoyer_invitation_whatsapp(
+    numero_destinataire: str,
+    nom_invite: str,
+    nom_couple: str,
+    type_evenement: str,
+    date_et_heure: str,
+    lien_image_header: str,
+    token_invitation_bouton: str = None
+):
+    url = f"https://graph.facebook.com/v20.0/{whatsap_phone_Number_ID}/messages"
+    
+    headers = {
+        "Authorization": f"Bearer {whatsapp_token}",
+        "Content-Type": "application/json"
+    }
+    
+    components = [
+        {
+            "type": "header",
+            "parameters": [
+                {
+                    "type": "image",
+                    "image": {
+                        "link": lien_image_header
+                    }
+                }
+            ]
+        },
+        {
+            "type": "body",
+            "parameters": [
+                {"type": "text", "text": nom_invite},
+                {"type": "text", "text": nom_couple},
+                {"type": "text", "text": type_evenement},
+                {"type": "text", "text": date_et_heure}
+            ]
+        }
+    ]
+    
+    if token_invitation_bouton:
+        components.append({
+            "type": "button",
+            "sub_type": "url",
+            "index": "0",
+            "parameters": [
+                {
+                    "type": "text",
+                    "text": token_invitation_bouton
+                }
+            ]
+        })
+
+    payload = {
+        "messaging_product": "whatsapp",
+        "to": numero_destinataire,
+        "type": "template",
+        "template": {
+            "name": "hello_world",
+            "language": {
+                "code": "fr"
+            },
+            "components": components
+        }
+    }
+    
+    async with httpx.AsyncClient() as client:
+        response = await client.post(url, json=payload, headers=headers)
+        # RETOURNER BIEN LES 2 VALEURS :
+        return response.status_code, response.json()
+
+# Structure des données reçues pour le test
+class TestInvitationRequest(BaseModel):
+    telephone: str  # Ex: "243810000000"
+    nom_invite: str
+    nom_couple: str
+    type_evenement: str
+    date_et_heure: str
+    lien_image_header: str
+    token_invitation_bouton: str | None = None
+
+# ROUTE DE TEST (POST)
+@Root.post("/test-whatsapp")
+async def route_test_whatsapp(request: TestInvitationRequest):
+    """
+    Route de test synchrone pour vérifier la réponse Meta en direct.
+    """
+    if not whatsapp_token or not whatsap_phone_Number_ID:
+        raise HTTPException(status_code=500, detail="Variables d'environnement WhatsApp non configurées.")
+
+    status_code, response_meta = await envoyer_invitation_whatsapp(
+    numero_destinataire=request.telephone,
+    nom_invite=request.nom_invite,
+    nom_couple=request.nom_couple,
+    type_evenement=request.type_evenement,
+    date_et_heure=request.date_et_heure,
+    lien_image_header=request.lien_image_header,
+    token_invitation_bouton=request.token_invitation_bouton
+    )
+    
+    if status_code != 200:
+        raise HTTPException(
+            status_code=status_code, 
+            detail={"message": "Échec de l'envoi Meta", "error": response_meta}
+        )
+        
+    return {
+        "status": "success",
+        "message": "Invitation WhatsApp envoyée avec succès !",
+        "meta_response": response_meta
+    }

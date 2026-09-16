@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Rôles, Permissions & Groupes — EasyEvent</title>
+    
+    <!-- Bootstrap 5 CSS & Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <!-- Bootstrap JS Bundle avec defer -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" defer></script>
+
+    <style>
+        body {
+            background-color: #f8fafc;
+            color: #334155;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .card-custom {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            background-color: #ffffff;
+        }
+
+        .list-container {
+            max-height: 280px;
+            overflow-y: auto;
+        }
+
+        .dropdown-toggle::after {
+            display: none; /* Masque la flèche du dropdown */
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Toast de Notification -->
+    {% if success %}
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1055;">
+        <div id="successToast" class="toast align-items-center text-bg-success border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body d-flex align-items-center">
+                    <i class="bi bi-check-circle-fill fs-5 me-2"></i>
+                    <span>{{ success }}</span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Fermer"></button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+    {% if failled %}
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1055;">
+        <div id="successToast" class="toast align-items-center text-bg-danger border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body d-flex align-items-center">
+                    <i class="bi bi-check-circle-fill fs-5 me-2"></i>
+                    <span>{{ failled }}</span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Fermer"></button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="container py-4">
+        
+        <!-- En-tête -->
+        <div class="mb-4">
+            <a href="/params" class="btn btn-outline-primary px-3 shadow-sm mb-3">
+                <i class="bi bi-arrow-left me-1"></i> Retour à l'accueil
+            </a>
+            <h3 class="fw-bold text-dark">Paramètres d'Accès & Organisation</h3>
+            <p class="text-muted">Gérez les rôles, les permissions et les groupes d'utilisateurs.</p>
+        </div>
+
+        <!-- Grille Principale (3 Colonnes) -->
+        <div class="row g-4">
+
+            <!-- 1. BLOC RÔLES -->
+            <div class="col-md-4">
+                <div class="card card-custom p-3 h-100 d-flex flex-column">
+                    <h5 class="fw-bold text-primary mb-3">Créer un rôle</h5>
+                    
+                    <form action="/create_role" method="POST" class="mb-4">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <div class="mb-3">
+                            <input type="text" name="role_name" class="form-control" placeholder="Nom du rôle" required>
+
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 fw-bold">Créer</button>
+                    </form>
+
+                    <hr class="text-muted">
+
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="fw-bold mb-0">Rôles enregistrés</h6>
+                        <span class="badge bg-primary-subtle text-primary border">{{ roles|length }}</span>
+                    </div>
+
+                    <div class="list-group list-group-flush border rounded list-container mt-auto">
+                        {% for role in roles %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                            <span class="fw-medium text-truncate me-2">{{ role.name }}</span>
+                            
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-light border-0 py-0 px-2 dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                    <li>
+                                        <button type="button" 
+                                                class="dropdown-item d-flex align-items-center gap-2 btn-edit" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#editModal" 
+                                                data-type="role"
+                                                data-id="{{ role.id }}"
+                                                data-name="{{ role.name }}">
+                                            <i class="bi bi-pencil text-warning"></i> Modifier
+                                        </button>
+                                    </li>
+                                    <li><hr class="dropdown-divider my-1"></li>
+                                    <li>
+                                        <form action="/roles/{{ role.id }}/delete" method="POST" onsubmit="return confirm('Supprimer ce rôle ?');">
+                                            <button type="submit" class="dropdown-item d-flex align-items-center gap-2 text-danger">
+                                                <i class="bi bi-trash"></i> Supprimer
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="list-group-item text-center text-muted small py-3">Aucun rôle trouvé</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. BLOC PERMISSIONS -->
+            <div class="col-md-4">
+                <div class="card card-custom p-3 h-100 d-flex flex-column">
+                    <h5 class="fw-bold text-primary mb-3">Créer une permission</h5>
+                    
+                    <form action="/create_permission" method="POST" class="mb-4">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <div class="mb-3">
+                            <input type="text" name="permission_name" class="form-control" placeholder="Nom de la permission" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 fw-bold">Créer</button>
+                    </form>
+
+                    <hr class="text-muted">
+
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="fw-bold mb-0">Permissions enregistrées</h6>
+                        <span class="badge bg-primary-subtle text-primary border">{{ permissions|length }}</span>
+                    </div>
+
+                    <div class="list-group list-group-flush border rounded list-container mt-auto">
+                        {% for perm in permissions %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                            <span class="fw-medium text-truncate me-2">{{ perm.name }}</span>
+                            
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-light border-0 py-0 px-2 dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                    <li>
+                                        <button type="button" 
+                                                class="dropdown-item d-flex align-items-center gap-2 btn-edit" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#editModal" 
+                                                data-type="permission"
+                                                data-id="{{ perm.id }}"
+                                                data-name="{{ perm.name }}">
+                                            <i class="bi bi-pencil text-warning"></i> Modifier
+                                        </button>
+                                    </li>
+                                    <li><hr class="dropdown-divider my-1"></li>
+                                    <li>
+                                        <form action="/permissions/{{ perm.id }}/delete" method="POST" onsubmit="return confirm('Supprimer cette permission ?');">
+                                            <button type="submit" class="dropdown-item d-flex align-items-center gap-2 text-danger">
+                                                <i class="bi bi-trash"></i> Supprimer
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="list-group-item text-center text-muted small py-3">Aucune permission trouvée</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. BLOC GROUPES -->
+            <div class="col-md-4">
+                <div class="card card-custom p-3 h-100 d-flex flex-column">
+                    <h5 class="fw-bold text-primary mb-3">Créer un groupe</h5>
+                    
+                    <form action="/create_group" method="POST" class="mb-4">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <div class="mb-3">
+                            <input type="text" name="group_name" class="form-control" placeholder="Nom du groupe" required>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100 fw-bold">Créer</button>
+                    </form>
+
+                    <hr class="text-muted">
+
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h6 class="fw-bold mb-0">Groupes enregistrés</h6>
+                        <span class="badge bg-primary-subtle text-primary border">{{ groups|length }}</span>
+                    </div>
+
+                    <div class="list-group list-group-flush border rounded list-container mt-auto">
+                        {% for group in groups %}
+                        <div class="list-group-item d-flex justify-content-between align-items-center py-2 px-3">
+                            <span class="fw-medium text-truncate me-2">{{ group.name }}</span>
+                            
+                            <div class="dropdown">
+                                <button class="btn btn-sm btn-light border-0 py-0 px-2 dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                    <i class="bi bi-three-dots-vertical"></i>
+                                </button>
+                                <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                                    <li>
+                                        <button type="button" 
+                                                class="dropdown-item d-flex align-items-center gap-2 btn-edit" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#editModal" 
+                                                data-type="group"
+                                                data-id="{{ group.id }}"
+                                                data-name="{{ group.name }}">
+                                            <i class="bi bi-pencil text-warning"></i> Modifier
+                                        </button>
+                                    </li>
+                                    <li><hr class="dropdown-divider my-1"></li>
+                                    <li>
+                                        <form action="/groups/{{ group.id }}/delete" method="POST" onsubmit="return confirm('Supprimer ce groupe ?');">
+                                            <button type="submit" class="dropdown-item d-flex align-items-center gap-2 text-danger">
+                                                <i class="bi bi-trash"></i> Supprimer
+                                            </button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </div>
+                        </div>
+                        {% else %}
+                        <div class="list-group-item text-center text-muted small py-3">Aucun groupe trouvé</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- MODAL GÉNÉRIQUE DE MODIFICATION -->
+    <div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title fw-bold" id="editModalTitle">Modifier l'élément</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+                <form id="editForm" method="POST">
+                    <div class="modal-body p-4">
+                        <div class="mb-3">
+                            <label for="editInputName" class="form-label fw-semibold">Nom</label>
+                            <input type="text" class="form-control" id="editInputName" name="name" required>
+                        </div>
+                    </div>
+                    <div class="modal-footer bg-light">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-primary fw-bold">Enregistrer</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- SCRIPTS JS -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Affichage du Toast de succès
+            const toastEl = document.getElementById('successToast');
+            if (toastEl && typeof bootstrap !== 'undefined') {
+                const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+                toast.show();
+            }
+
+            // Écouteur d'événement natif sur la Modal de Bootstrap
+            const editModal = document.getElementById('editModal');
+            if (editModal) {
+                editModal.addEventListener('show.bs.modal', function(event) {
+                    // Élément déclencheur (le bouton Modifier)
+                    const button = event.relatedTarget;
+                    
+                    // Extraction des données via les attributs data-*
+                    const type = button.getAttribute('data-type');
+                    const id = button.getAttribute('data-id');
+                    const name = button.getAttribute('data-name');
+
+                    // Éléments du formulaire modal
+                    const modalTitle = document.getElementById('editModalTitle');
+                    const form = document.getElementById('editForm');
+                    const inputName = document.getElementById('editInputName');
+
+                    const labels = {
+                        'role': 'le rôle',
+                        'permission': 'la permission',
+                        'group': 'le groupe'
+                    };
+
+                    // Mise à jour de l'interface
+                    modalTitle.textContent = `Modifier ${labels[type] || 'l\'élément'}`;
+                    inputName.value = name;
+                    form.action = `/${type}s/${id}/update`;
+                });
+            }
+        });
+    </script>
+</body>
+</html>

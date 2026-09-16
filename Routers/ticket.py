@@ -211,7 +211,7 @@ async def get_paiement_view(request:Request,event_id:str):
     success_message = request.session.pop("success_message",None)
     return templates.TemplateResponse("ticket/forms/form.html",{'request':request,'success':success_message,'event_id':event_id})
 
-@Root.post("/submit_ticket/{event_id}")
+@Root.post("/submit_ticket/{event_id}")#l'enregistrement du prix d'un ticket
 async def get_submitted_form(request:Request,event_id:str ,ticket_type:str = Form(...),price:str=Form(...),device:str = Form(...),db:AsyncSession = Depends(connecting)):
     converted_price = float(price)
     ticket_res = await db.execute(select(Ticket_price).where(Ticket_price.event_id==event_id,Ticket_price.ticket_type == ticket_type))
@@ -431,7 +431,7 @@ async def delete_ticket(request: Request, ticket_id: str,event_id:str = Form(...
         await db.commit()
     except Exception as e:
         await db.rollback()
-        print(f"-Erreur-------------------------------{e}")
+        #print(f"-Erreur-------------------------------{e}")
         raise HTTPException(status_code=500, detail="Erreur lors de la suppression")
     request.session["success_deleting"] = "🎉 Tiquet supprimée avec succès !"
     

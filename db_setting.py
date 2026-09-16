@@ -3,17 +3,17 @@ from sqlalchemy.ext.asyncio import create_async_engine,async_sessionmaker,AsyncS
 from dotenv import load_dotenv
 import ssl
 import os,asyncio
-
+from config import bool_state
 #---------------------initialising
 Base = declarative_base() #-----------------la classe mere pour la creation de table
 
 load_dotenv()
-DB_URL =os.getenv('db_url')
-#DB_URL =os.getenv('db_url_local')
+#DB_URL =os.getenv('db_url')
+DB_URL =os.getenv('db_url_local')
 #DB_URL =os.getenv('external_db')
 engine = create_async_engine(
     DB_URL,
-    echo =True,
+    echo =False,
 
 )
         

@@ -208,8 +208,8 @@ async def login(
     response.set_cookie(
         key="access_token",
         value=access_token,       # Si ton middleware attend "Bearer ...", mets f"Bearer {access_token}"
-        httponly=True,            # Anti-XSS
-        secure=True,              # Exige HTTPS (Production)
+        httponly=set_secure_cookie,            # Anti-XSS
+        secure=set_secure_cookie,              # Exige HTTPS (Production)
         samesite="lax",           # Anti-CSRF
         max_age=86400 * 7         # Expiration (ex: 7 jours en secondes)
     )

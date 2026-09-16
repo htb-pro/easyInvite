@@ -690,7 +690,7 @@ input::placeholder {
                                 {% if event.is_past %}
                                     <button type="button" class="btn btn-secondary w-100" style="border-radius: 8px;" disabled>Détails indisponibles</button>
                                 {% else %}
-                                    <a href="/api/event/detail/{{event.id}}" class="btn btn-outline-primary w-100" style="border-radius: 8px;"><i class="bi bi-ticket-perforated-fill me-2"></i> Participer à l'événement</a>
+                                    <a href="/api/event/detail/{{event.id}}" class="btn btn-outline-warning w-100" style="border-radius: 8px;"><i class="bi bi-ticket-perforated-fill me-2"></i> Participer à l'événement</a>
                                 {% endif %}
                             </div>
                         </div>
@@ -782,7 +782,7 @@ input::placeholder {
 
                     <div class="d-grid">
                         <button class="btn btn-warning">
-                        Envoyer la réclamation
+                        Soumettre la réclamation
                         </button>
                     </div>
 
@@ -812,7 +812,7 @@ input::placeholder {
     </div>
 </section>
 
-    <footer class="bg-dark text-secondary pt-5 pb-4 border-top border-secondary border-opacity-10" id="footer" style="background-color: #0B1224 !important;">
+<footer class="bg-dark text-secondary pt-5 pb-4 border-top border-secondary border-opacity-10" id="footer" style="background-color: #0B1224 !important;">
     <div class="container">
         <div class="row g-4">
             

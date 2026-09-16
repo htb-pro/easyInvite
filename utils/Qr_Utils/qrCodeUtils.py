@@ -4,7 +4,7 @@ import os,io
 from utils.cryptography.crypt_file import encrypt_token
 
 
-def generateInviteQrCode(guest_id,event_id):
+def generateInviteQrCode(event_id,guest_id):
     #secure_id = encrypt_token(guest_id) #on encrypte l'id de l'inviter
     qr_data = f"https://app.easyevent-rdc.com/invite/{event_id}/{guest_id}/create"
     qr = QRCode(

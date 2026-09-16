@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modifier l'Élément du Programme</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        body {
+            background-color: #f8fafc;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px 10px;
+        }
+        .form-card {
+            max-width: 550px;
+            width: 100%;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            border: 1px solid #e2e8f0;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card form-card bg-white p-4">
+    <!-- En-tête -->
+    <div class="d-flex align-items-center mb-4">
+        <div class="bg-warning text-white p-3 rounded-3 me-3">
+            <i class="fa-solid fa-pen-to-square fs-4"></i>
+        </div>
+        <div>
+            <h4 class="fw-bold mb-0">Modifier le Programme</h4>
+            <p class="text-muted small mb-0">Mettez à jour les détails de cette activité</p>
+        </div>
+    </div>
+
+    <!-- Formulaire d'édition -->
+    <form action="/program/{{ program.id }}/update" method="POST" id="programForm">
+        
+        {% if message %}
+        <div class="alert alert-danger" role="alert">
+            {{ message }}
+        </div>
+        {% endif %}
+        
+        {% if event_error %}
+        <div class="alert alert-danger" role="alert">
+            {{ event_error }}
+        </div>
+        {% endif %}
+
+        {% if success %}
+        <!-- Toast de Succès -->
+        <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 11;">
+            <div id="successToast" class="toast align-items-center text-bg-success border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body d-flex align-items-center">
+                        <i class="fa-solid fa-circle-check fs-5 me-2"></i>
+                        <span>{{ success }}</span>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <!-- Sélection de l'Événement -->
+        <div class="mb-3">
+            <label for="event_id" class="form-label fw-semibold">Événement <span class="text-danger">*</span></label>
+            <div class="input-group">
+                <span class="input-group-text bg-light"><i class="fa-solid fa-calendar-days text-muted"></i></span>
+                <select class="form-select" id="event_id" name="event_id" required>
+                    <option value="" disabled>-- Choisir un événement --</option>
+                    {% for event in events %}
+                        <option value="{{ event.id }}" 
+                            {% if (data.fields and data.fields.event_id|string == event.id|string) or program.event_id|string == event.id|string %}selected{% endif %}>
+                            {{ event.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <!-- Titre (title) -->
+        <div class="mb-3">
+            <label for="title" class="form-label fw-semibold">Titre de l'activité <span class="text-danger">*</span></label>
+            <div class="input-group">
+                <span class="input-group-text bg-light"><i class="fa-solid fa-heading text-muted"></i></span>
+                <input type="text" class="form-control {{ 'is-invalid' if data.errors.title else '' }}" 
+                       id="title" name="title" 
+                       value="{{ data.fields.title if data.fields.title is defined else program.title }}" 
+                       placeholder="Ex: Prédication / Mot de bienvenue" required>
+            </div>
+            {% if data.errors.title %}
+                <div class="invalid-feedback d-block">
+                    {{ data.errors.title }}
+                </div>
+            {% endif %}
+        </div>
+
+        <!-- Heure / Plage horaire (time) -->
+        <div class="mb-3">
+            <label for="time" class="form-label fw-semibold">Heure / Horaire <span class="text-danger">*</span></label>
+            <div class="input-group">
+                <span class="input-group-text bg-light"><i class="fa-regular fa-clock text-muted"></i></span>
+                <input type="text" class="form-control {{ 'is-invalid' if data.errors.time else '' }}" 
+                       id="time" name="time" 
+                       value="{{ data.fields.time if data.fields.time is defined else program.time }}" 
+                       placeholder="Ex: 16h30 ou 16h30 - 17h15" required>
+            </div>
+            {% if data.errors.time %}
+                <div class="invalid-feedback d-block">
+                    {{ data.errors.time }}
+                </div>
+            {% endif %}
+            <div class="form-text">Vous pouvez saisir une heure précise ou une tranche horaire.</div>
+        </div>
+
+        <!-- Dates de début et fin -->
+        <div class="row g-3 mb-3">
+            <!-- Date & Heure de Début -->
+            <div class="col-md-6">
+                <label for="start_date" class="form-label fw-semibold">
+                    Date et heure de début <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="fa-solid fa-calendar-day text-muted"></i></span>
+                    <input 
+                        type="datetime-local" 
+                        class="form-control {{ 'is-invalid' if data.errors.start_date else '' }}" 
+                        id="start_date" 
+                        name="start_date" 
+                        value="{{ data.fields.start_date if data.fields.start_date is defined else program.start_date }}"
+                        required
+                    >
+                </div>
+                {% if data.errors.start_date %}   
+                    <div class="invalid-feedback d-block">
+                        {{ data.errors.start_date }}
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Date & Heure de Fin -->
+            <div class="col-md-6">
+                <label for="end_date" class="form-label fw-semibold">
+                    Date et heure de fin <span class="text-danger">*</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="fa-solid fa-calendar-check text-muted"></i></span>
+                    <input 
+                        type="datetime-local" 
+                        class="form-control {{ 'is-invalid' if data.errors.end_date else '' }}" 
+                        id="end_date" 
+                        name="end_date" 
+                        value="{{ data.fields.end_date if data.fields.end_date is defined else program.end_date }}"
+                        required
+                    >
+                </div>
+                {% if data.errors.end_date %}   
+                    <div class="invalid-feedback d-block">
+                        {{ data.errors.end_date }}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Description -->
+        <div class="mb-4">
+            <label for="description" class="form-label fw-semibold">Description <span class="text-muted">(optionnel)</span></label>
+            <div class="input-group">
+                <span class="input-group-text bg-light"><i class="fa-solid fa-align-left text-muted"></i></span>
+                <textarea class="form-control" id="description" name="description" rows="3" 
+                          placeholder="Présentation détaillée, nom de l'orateur ou détails du déroulé...">{{ data.fields.description if data.fields.description is defined else program.description }}</textarea>
+            </div>
+        </div>
+
+        <!-- Boutons d'action -->
+        <div class="d-flex justify-content-between align-items-center">
+            <a href="javascript:history.back()" class="btn btn-outline-secondary px-4">
+                <i class="fa-solid fa-arrow-left me-1"></i> Annuler
+            </a>
+            <button type="submit" class="btn btn-warning text-white px-4 fw-bold">
+                <i class="fa-solid fa-floppy-disk me-2"></i>Mettre à jour
+            </button>
+        </div>
+
+    </form>
+</div>
+
+<!-- Bootstrap 5 JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Scripts d'interaction JavaScript -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        // Affichage Toast
+        const toastEl = document.getElementById('successToast');
+        if (toastEl) {
+            const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+            toast.show();
+        }
+
+        // Cohérence de sélection des dates
+        const startDateInput = document.getElementById("start_date");
+        const endDateInput = document.getElementById("end_date");
+
+        if (startDateInput && endDateInput) {
+            startDateInput.addEventListener("change", function () {
+                endDateInput.min = startDateInput.value;
+                if (endDateInput.value && endDateInput.value < startDateInput.value) {
+                    endDateInput.value = startDateInput.value;
+                }
+            });
+        }
+    });
+</script>
+</body>
+</html>

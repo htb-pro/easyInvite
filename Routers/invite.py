@@ -3,6 +3,7 @@ import asyncio
 import base64,qrcode,re
 import os
 from qrcode import QRCode
+from Routers import guest
 from fastapi import Request,Depends,APIRouter,HTTPException,Form,BackgroundTasks
 from fastapi.responses import HTMLResponse,StreamingResponse,RedirectResponse,FileResponse
 from fastapi.templating import Jinja2Templates
@@ -18,8 +19,10 @@ import zipfile
 from utils.Qr_Utils.qrCodeUtils import generateInviteQrCode
 from pathlib import Path
 from playwright.sync_api import sync_playwright
+from weasyprint import HTML
 from utils.cryptography.crypt_file import encrypt_token
 from concurrent.futures import ThreadPoolExecutor
+from xhtml2pdf import pisa
 
 executor = ThreadPoolExecutor(max_workers=3)
 Root = APIRouter()
@@ -31,7 +34,11 @@ def get_event_deadline(event_date:datetime): #setting a deadline
     return deadline
 
 def generate_qr_code_base64(data: str) -> str:
-    secure_id = encrypt_token(data) # On encrypte l'id de l'invité
+    #secure_id = encrypt_token(data) # On encrypte l'id de l'invité
+    clean_data = data.strip()  # Nettoyage des espaces superflus
+    if not clean_data:
+        raise ValueError("Le contenu du QR Code ne peut pas être vide.")
+    secure_id = clean_data # On encrypte l'id de l'invité
     qr = QRCode(
         version=1,
         error_correction = qrcode.constants.ERROR_CORRECT_M,
@@ -85,7 +92,7 @@ async def getGuestInvite(
     query = (
         select(Guest)
         .where(Guest.id == guest_id, Guest.event_id == event_id)
-        .options(selectinload(Guest.invite), selectinload(Guest.event))
+        .options(selectinload(Guest.invite), selectinload(Guest.event).selectinload(Event.programs))
     )
     result = await db.execute(query)
     guestInvite = result.scalars().first()
@@ -111,7 +118,7 @@ async def getGuestInvite(
     copyright_year = datetime.now()
     event_img = event.photo_url
     event_type = event.type
-    
+    get_message = request.session.pop("message", None) 
     context = {
         "request": request,
         "guest": guestInvite,
@@ -122,26 +129,29 @@ async def getGuestInvite(
         "qr_code_url": qr_code_url,  # Ajout crucial ici
         "google_map": google_maps_url,
         "event_day": get_day(event.date) if event.date else "",
-        "event_month": get_month(event.date) if event.date else ""
+        "event_month": get_month(event.date) if event.date else "",
+        "lang": getattr(event, "language", "fr"),
+        'message': get_message,
     }
-    
-    # 6. Routage dynamique vers les templates selon le type d'événement
-    if event_type == "Mariage":
-        if event.language == "en":
-            return templates.TemplateResponse("Invitation/show_invite/wedding_event/en_wedding_event.html", context)
-        return templates.TemplateResponse("Invitation/show_invite/wedding_event/wedding_event.html", context)
-        
-    elif event_type == "birth_day":
-        return templates.TemplateResponse("Invitation/show_invite/birth_day_event/birthday_event.html", context)
-        
-    elif event_type == "conference":
-        return templates.TemplateResponse("Invitation/show_invite/conference_event/conference_event.html", context)
-        
-    elif event_type == "other":
-        return templates.TemplateResponse("Invitation/show_invite/other/ticket.html", context)
-        
+
+    # 2. Ta table de correspondance (type d'événement -> template)
+    TEMPLATES = {
+        ("Mariage", "en"): "Invitation/show_invite/wedding_event/en_wedding_event.html",
+        ("Mariage", "fr"): "Invitation/show_invite/wedding_event/invite_luxe.html",
+        ("birth_day", "fr"): "Invitation/show_invite/birth_day_event/birthday_event.html",
+        ("ecclésiastique", "fr"): "Invitation/show_invite/church_event/index.html",
+        ("conference", "fr"): "Invitation/show_invite/conference_event/conference_event.html",
+    }
+
+    # 3. Récupération du template (avec fallback vers le billet par défaut)
+    key = (event_type, context["lang"])
+    template_path = TEMPLATES.get(key, "Invitation/show_invite/other/ticket.html")
+
+    # 4. Un SEUL return propre pour toute la fonction !
+    return templates.TemplateResponse(template_path, context) 
+    if not event:
     # Au cas où le type d'événement ne correspond à rien de connu
-    return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html", {"request": request})
+        return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html", {"request": request})
 
 @Root.get('/transfer_message',name="message")
 async def show_transfer_message(request:Request):
@@ -218,7 +228,7 @@ async def GuestResponse(
             request.session['message'] = "❌ The deadline for confirmation has passed."
         else:
             request.session['message'] = "❌ La date limite pour la confirmation est dépassée."
-        return RedirectResponse(f'/presence/confirmation/{guest_id}/{event_id}', status_code=303)
+        return RedirectResponse(f'/invite/{event_id}/{guest_id}/create#rsvp', status_code=303)
         
     # 3. Vérification si une réponse existe déjà
     get_response = select(PresenceConfirmation).where(PresenceConfirmation.guest_id == guest_id)
@@ -252,7 +262,7 @@ async def GuestResponse(
         request.session['message'] = "❌ Une erreur technique est survenue. Veuillez réessayer."
         
     # 5. Redirection finale propre (Pattern PRG)
-    return RedirectResponse(f'/presence/confirmation/{guest_id}/{event_id}', status_code=303)
+    return RedirectResponse(f'/invite/{event_id}/{guest_id}/create#rsvp', status_code=303)
 
 
 # @Root.get("/invitation/download-image/{guest_id}")
@@ -342,7 +352,7 @@ def remove_file(path: str):#supprime le fichier temporaire apres telechargement
     except Exception as e:
         print(f"Erreur lors de la suppression du fichier temporaire : {e}")
 
-@Root.get("/invitation/download-pdf/{guest_id}")
+@Root.get("/invitation/download-pdf/{guest_id}") #la route de generation de l'invitation pdf
 async def download_invitation_pdf(
     guest_id: str,
     background_tasks: BackgroundTasks, 
@@ -350,7 +360,7 @@ async def download_invitation_pdf(
     db: AsyncSession = Depends(connecting)
 ):
     # 1. Récupération de l'invité et de l'événement
-    query = select(Guest).where(Guest.id == guest_id).options(selectinload(Guest.event))
+    query = select(Guest).where(Guest.id == guest_id).options(selectinload(Guest.event).selectinload(Event.programs))
     result = await db.execute(query)
     guest = result.scalars().first()
     
@@ -360,7 +370,7 @@ async def download_invitation_pdf(
         raise HTTPException(status_code=404, detail="Événement associé non trouvé.")
         
     event = guest.event
-    
+    event_id = guest.event_id
     # 2. Sécurisation du nom de fichier sur le serveur (On utilise l'UUID de l'invité)
     output_pdf = f"invitation_tmp_{guest_id}.pdf"
     
@@ -371,21 +381,26 @@ async def download_invitation_pdf(
     
     # 3. Génération dynamique du lien de vérification du QR Code
     # request.base_url s'adapte automatiquement (localhost en dev, easyinvite.cd en prod)
-    qr_data = f"{str(request.base_url).rstrip('/')}/verify/{guest_id}"
+    qr_data = f"{str(request.base_url).rstrip('/')}https://app.easyevent-rdc.com/invite/{event_id}/{guest_id}/create"
     qr_code_generated = generate_qr_code_base64(qr_data)
     
     try:
         # 4. Préparation du template HTML avec les données réelles de la BDD
-        template = templates.get_template("Invitation/show_invite/wedding_event/invite.html")
+        template = templates.get_template("Invitation/show_invite/wedding_event/invite_pdf_template.html")
         html_content = template.render(
             guest_name=guest.name,
             couple_name=event.couple_name,
             qr_code_url=qr_code_generated,
             event_date=event.date,
+            day = get_day(event.date),
             event_location=event.location,
-            phone_number=event.contact_phone if hasattr(event, 'contact_phone') else "+243812345678", # À adapter selon ton modèle
+            phone_number=event.contact_phone if hasattr(event, 'contact_phone') else "+243897401210", # À adapter selon ton modèle
             get_pass=guest.get_pass,
-            event_image=event.photo_url
+            guest_place = guest.place,
+            event_image=event.photo_url,
+            event_address = event.address,
+            programs=event.programs if hasattr(event, 'programs') else [],
+            copyright=datetime.now(),
         )
         
         # 5. Exécution sécurisée dans le Thread Pool (Anti-NotImplementedError sous Windows)
@@ -407,7 +422,64 @@ async def download_invitation_pdf(
         traceback.print_exc()
         # En production, on évite de renvoyer l'erreur technique brute à l'utilisateur
         raise HTTPException(status_code=500, detail="Une erreur est survenue lors de la génération de votre invitation PDF.")
+#=========================================generation des plusieurs invitations(Qrcodes)========================================
+@Root.get("/events/{event_id}/export-invitations-pdf")
+async def export_invitations_pdf(event_id: str, db: AsyncSession = Depends(connecting)):
+    # 1. Récupération de l'événement
+    event_result = await db.execute(select(Event).where(Event.id == event_id))
+    event = event_result.scalars().first()
+    if not event:
+        raise HTTPException(status_code=404, detail="Événement introuvable")
 
+    # 2. Récupération des invités de cet événement
+    guests_result = await db.execute(select(Guest).where(Guest.event_id == event_id))
+    guests_list = guests_result.scalars().all()
+
+    if not guests_list:
+        raise HTTPException(status_code=400, detail="Aucun invité enregistré pour cet événement.")
+
+    # 3. Préparation des données invités avec leurs QR Codes en Base64
+    guests_data = []
+    for g in guests_list:
+        # L'URL/Donnée encodée dans le QR Code de l'invité
+        qr_payload = f"https://app.easyevent-rdc.com/invite/{event_id}/{g.id}/create"
+        
+        guests_data.append({
+            "name": g.name,
+            "get_pass": g.get_pass,
+            "place": g.place,
+            "event_location": event.location,
+            "phone_number":event.contact_phone if hasattr(event, 'contact_phone') else "+243897401210", # À adapter selon ton modèle
+            "get_pass": g.get_pass,
+            "guest_place": g.place,
+            "event_image": event.photo_url,
+            "event_address": event.address,
+            "qr_code_base64": generate_qr_code_base64(qr_payload)
+        })
+
+    # 4. Rendu du template Jinja2
+    template = templates.get_template("Invitation/show_invite/wedding_event/invites.html")
+    html_rendered = template.render(
+        #guest_name=guest.name,
+        couple_name=event.couple_name,
+        #qr_code_url=qr_code_generated,
+        # event_date=event.date,
+        # day = get_day(event.date),
+        
+        guests=guests_data
+    )
+
+    # 5. Conversion du HTML en PDF via WeasyPrint
+    pdf_bytes = HTML(string=html_rendered).write_pdf()
+
+    # 6. Envoi du fichier PDF au navigateur
+    filename = f"invitations_{event.id}.pdf"
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+#=========================================
 @Root.get("/download/invite/{event_id}/{guest_id}")#telecharger une invitation
 async def get_guest_invite(event_id:str,guest_id :str,db:AsyncSession =Depends(connecting)):
     get_guest = select(Guest).where(Guest.id == guest_id,Guest.event_id == event_id)

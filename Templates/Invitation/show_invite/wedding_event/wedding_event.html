@@ -49,14 +49,14 @@
         }
 
         .hero-overlay {
-        position: absolute;
-        bottom: 0;
-        left: 0;
-        right: 0;
-        height: 60%; /* L'ombre ne couvre que les 50% du bas */
-        background: linear-gradient(to top, rgba(0, 0, 0, 0.973) 0%, rgba(0, 0, 0, 0) 100%);
-        pointer-events: none; /* S'assure que le dégradé ne bloque pas les clics */
-    }
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60%;
+            background: linear-gradient(to top, rgba(0, 0, 0, 0.973) 0%, rgba(0, 0, 0, 0) 100%);
+            pointer-events: none;
+        }
 
         .hero-card {
             position: relative;
@@ -157,6 +157,88 @@
             margin: 0 auto 20px;
         }
 
+        /* --- Timeline / Programme --- */
+        .timeline {
+            position: relative;
+            padding: 20px 0;
+            list-style: none;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            width: 2px;
+            margin-left: -1px;
+            background-color: var(--primary-accent);
+            opacity: 0.3;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 30px;
+        }
+
+        .timeline-item::after {
+            content: "";
+            display: table;
+            clear: both;
+        }
+
+        .timeline-badge {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 40px;
+            height: 40px;
+            margin-left: -20px;
+            border-radius: 50%;
+            background-color: var(--card-bg);
+            border: 2px solid var(--primary-accent);
+            color: var(--primary-accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2;
+            font-size: 1.1rem;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+        }
+
+        .timeline-panel {
+            position: relative;
+            width: 45%;
+            float: left;
+            padding: 20px;
+            background: var(--card-bg);
+            border-radius: 15px;
+            border: 1px solid #F0F0F0;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.03);
+            text-align: right;
+        }
+
+        .timeline-item.inverted .timeline-panel {
+            float: right;
+            text-align: left;
+        }
+
+        /* Adaptabilité mobile pour la Timeline */
+        @media (max-width: 767px) {
+            .timeline::before {
+                left: 20px;
+            }
+            .timeline-badge {
+                left: 20px;
+                margin-left: 0;
+            }
+            .timeline-panel, .timeline-item.inverted .timeline-panel {
+                width: calc(100% - 60px);
+                float: right;
+                text-align: left;
+            }
+        }
+
         /* --- Buttons --- */
         .btn-gold {
             background: var(--primary-accent);
@@ -217,7 +299,6 @@
         <div class="container hero-card text-center" data-aos="zoom-out" data-aos-duration="1200">
             <div class="text-overlay">
                 
-                <!-- SCÈNE 1 : Annonce du couple -->
                 <!-- SCÈNE 1 : Annonce du couple -->
                 <div class="motion-text scene-1">
                     <p class="text-uppercase tracking-widest small mb-1 text-gold fw-semibold" style="text-shadow: 0 1px 4px rgba(0,0,0,0.8);">
@@ -347,6 +428,77 @@
         </div>
     </section>
 
+    <!-- SECTION PROGRAMME DU J-J (NOUVEAU) -->
+    {% if guest.event.programs %}
+    <section class="py-5 bg-light rounded-4 my-5 container" data-aos="fade-up">
+        <div class="text-center mb-5">
+            <h2 class="font-heading display-6 mb-2 fw-bold">Programme de la Journée</h2>
+            <p class="text-gold text-uppercase tracking-widest small fw-semibold">Le déroulement de notre événement</p>
+        </div>
+
+        <ul class="timeline">
+            
+                {% for item in guest.event.programs %}
+                <li class="timeline-item {% if loop.index is even %}inverted{% endif %}">
+                    <div class="timeline-badge">
+                        <i class="bi {{ item.icon | default('bi-clock') }}"></i>
+                    </div>
+                    <div class="timeline-panel">
+                        <span class="badge bg-soft text-gold border border-warning mb-2">{{ item.time }}</span>
+                        <h4 class="font-heading h5 fw-bold mb-1">{{ item.title }}</h4>
+                        <p class="text-muted small mb-0">{{ item.description if item.description and item.description != 'None' else '' }}</p>
+                    </div>
+                </li>
+                {% endfor %}
+           
+                <!-- Structure statique par défaut (si non dynamique dans la BDD)
+                <li class="timeline-item">
+                    <div class="timeline-badge">
+                        <i class="bi bi-heart-fill"></i>
+                    </div>
+                    <div class="timeline-panel">
+                        <span class="badge bg-light text-gold border border-warning mb-2">15:00</span>
+                        <h4 class="font-heading h5 fw-bold mb-1">Cérémonie Civile / Religieuse</h4>
+                        <p class="text-muted small mb-0">Échange des vœux et célébration officielle de l'union.</p>
+                    </div>
+                </li>
+
+                <li class="timeline-item inverted">
+                    <div class="timeline-badge">
+                        <i class="bi bi-camera-fill"></i>
+                    </div>
+                    <div class="timeline-panel">
+                        <span class="badge bg-light text-gold border border-warning mb-2">17:00</span>
+                        <h4 class="font-heading h5 fw-bold mb-1">Séance Photos & Cocktail</h4>
+                        <p class="text-muted small mb-0">Moment de convivialité, rafraîchissements et photos de famille.</p>
+                    </div>
+                </li>
+
+                <li class="timeline-item">
+                    <div class="timeline-badge">
+                        <i class="bi bi-cup-hot-fill"></i>
+                    </div>
+                    <div class="timeline-panel">
+                        <span class="badge bg-light text-gold border border-warning mb-2">19:00</span>
+                        <h4 class="font-heading h5 fw-bold mb-1">Entrée dans la Salle & Dîner</h4>
+                        <p class="text-muted small mb-0">Ouverture du buffet / banquet et discours des proches.</p>
+                    </div>
+                </li>
+
+                <li class="timeline-item inverted">
+                    <div class="timeline-badge">
+                        <i class="bi bi-music-note-beamed"></i>
+                    </div>
+                    <div class="timeline-panel">
+                        <span class="badge bg-light text-gold border border-warning mb-2">21:30</span>
+                        <h4 class="font-heading h5 fw-bold mb-1">Soirée Dansante</h4>
+                        <p class="text-muted small mb-0">Ouverture du bal et célébration jusqu'au bout de la nuit !</p>
+                    </div>
+                </li> -->
+            {% endif %}
+        </ul>
+    </section>
+
     <!-- ACCÈS ET PASS VIP (QR CODE) -->
     <section class="py-5 container" data-aos="fade-up">
         <div class="row justify-content-center">
@@ -381,7 +533,8 @@
     <footer class="py-4 text-center text-muted border-top mt-5" style="font-size: 0.85rem;">
         <div class="container">
             <p class="mb-2"><strong>Besoin d'assistance ?</strong></p>
-            <p class="mb-1"><i class="bi bi-telephone me-1"></i> +243 897 401 210 / +243 991 152 067</p>
+            <p class="mb-1"><i class="bi bi-telephone me-1"></i> +243 897 401 210 ou +243 991 152 067</p>
+            <p class="mb-1"><i class="bi bi-telephone me-1"></i> +243 898 147 644 ou +243 982 727 007</p>
             <p class="mb-1"><i class="bi bi-envelope  me-1"></i> contact@easyevent-rdc.com</p>
             <p class="text-muted opacity-75 mt-3">&copy; {{ copyright.strftime('%Y') }} EasyInvite. Tous droits réservés.</p>
         </div>

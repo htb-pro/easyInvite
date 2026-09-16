@@ -156,6 +156,7 @@
                         <select name="eventType" id="event_type" class="form-control" style="appearance:none; -webkit-appearance:none; cursor:pointer;" required>
                             <option value="" disabled selected>Choisir le type</option>
                             <option value="Mariage" {%if data.fields.event_type == "Mariage"%}selected{%endif%}>Mariage (wedding)</option>
+                            <option value="ecclésiastique" {%if data.fields.event_type == "ecclésiastique"%}selected{%endif%}>Programme ecclésiastique</option>
                             <option value="concours" {%if data.fields.event_type == "concours"%}selected{%endif%}>Concours</option>
                             <option value="birth_day" {%if data.fields.event_type == "birth_day"%}selected{%endif%}>Anniversaire (birthday)</option>
                             <option value="conference" {%if data.fields.event_type == "conference"%}selected{%endif%}>Conférence</option>

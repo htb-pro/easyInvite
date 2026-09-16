@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion des Programmes — EasyInvite</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="/static/Css/bootstrap.min.css" rel="stylesheet">
+    <script src="/static/Js/bootstrap.bundle.js " defer></script>
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-dark: #0f172a;
+            --accent-gold: #c5a059;
+            --accent-gold-hover: #b08d46;
+        }
+
+        body {
+            background-color: #f8fafc;
+            color: #334155;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .navbar-custom {
+            background-color: var(--primary-dark);
+            border-bottom: 2px solid var(--accent-gold);
+        }
+
+        .btn-gold {
+            background-color: var(--accent-gold);
+            color: #ffffff;
+            font-weight: 500;
+        }
+
+        .btn-gold:hover {
+            background-color: var(--accent-gold-hover);
+            color: #ffffff;
+        }
+
+        .text-gold {
+            color: var(--accent-gold) !important;
+        }
+
+        .badge-gold {
+            background-color: var(--primary-dark);
+            color: var(--accent-gold);
+            border: 1px solid var(--accent-gold);
+        }
+
+        .page-header {
+            background-color: #ffffff;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 2rem 0;
+            margin-bottom: 2rem;
+        }
+
+        .card-custom {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        .table thead {
+            background-color: var(--primary-dark);
+            color: #ffffff;
+        }
+
+        .table th {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+            padding: 1rem;
+        }
+
+        .table td {
+            padding: 1rem;
+            vertical-align: middle;
+        }
+
+        .search-box {
+            position: relative;
+        }
+
+        .search-box i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+        }
+
+        .search-box input {
+            padding-left: 38px;
+            border-radius: 8px;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Barre de Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom shadow-sm">
+        <div class="container">
+            <a class="navbar-brand fw-bold text-gold" href="#">
+                <i class="bi bi-envelope-open-heart me-2"></i>EasyEvent
+            </a>
+            <div class="d-flex align-items-center">
+                <span class="text-light me-3 d-none d-sm-inline">Administration</span>
+                <div class="rounded-circle bg-gold text-white p-2 d-flex align-items-center justify-content-center" style="width:35px; height:35px;">
+                    <i class="bi bi-person"></i>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- En-tête de la page -->
+    <div class="page-header">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-7">
+                    <h2 class="fw-bold mb-1" style="color: var(--primary-dark);">Programmes enregistrés</h2>
+                    <p class="text-muted mb-0">Gérez le déroulement et les horaires de vos différents événements.</p>
+                </div>
+                <div class="col-md-5 text-md-end mt-3 mt-md-0">
+                    <a href="/event/{{event.id}}/program" class="btn btn-gold px-4 shadow-sm">
+                        <i class="bi bi-plus-lg me-2"></i>Nouveau Programme
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<!-- Toast de Notification de Succès -->
+    {% if success %}
+    <div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1055;">
+        <div id="successToast" class="toast align-items-center text-bg-success border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body d-flex align-items-center">
+                    <i class="bi bi-check-circle-fill fs-5 me-2"></i>
+                    <span>{{ success }}</span>
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Fermer"></button>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Contenu Principal -->
+    <div class="container mb-5">
+        
+        <!-- Barre de Filtre et Recherche -->
+        <div class="card card-custom p-3 mb-4">
+            <div class="row g-3">
+                <div class="col-md-6 col-lg-4">
+                    <div class="search-box">
+                        <i class="bi bi-search"></i>
+                        <input type="text" id="searchInput" class="form-control" placeholder="Rechercher une étape, un lieu...">
+                    </div>
+                </div>
+                <div class="col-md-6 col-lg-4">
+                    <select class="form-select" id="filterEvent">
+                        <option value="" selected>Tous les événements</option>
+                        <option value="mariage">Mariage King & Kishala</option>
+                        <option value="anniversaire">Anniversaire VIP</option>
+                        <option value="cocktail">Cocktail Pro</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tableau des Programmes -->
+        <div class="card card-custom">
+            <div class="table-responsive">
+                {% if programs %}
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Heure</th>
+                            <th>Titre</th>
+                            <th>Étape / Titre</th>
+                            <th>Description</th>
+                            <th>Événement</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for program in programs %}
+                        <tr>
+                            <td>
+                                <span class="fw-bold text-dark"><i class="bi bi-clock me-1 text-gold"></i>{{program.time}}</span>
+                            </td>
+                            <td><span class="fw-medium">{{program.title}}</span></td>
+                            <td><span class="fw-semibold">{{program.step_title if program.step_title else program.title}}</span></td>
+                            <td class="text-truncate" style="max-width: 200px;">
+                                {{program.description if program.description else "Aucune description renseignée"}}
+                            </td>
+                            <td>{{program.event.name}}</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-secondary me-1 btn-view" 
+                                        title="Voir"
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#viewProgramModal"
+                                        data-heure="{{program.time}}"
+                                        data-titre="{{program.title}}"
+                                        data-etape="{{program.step_title if program.step_title else program.title}}"
+                                        data-description="{{program.description if program.description else 'Aucune description renseignée'}}"
+                                        data-evenement="{{program.event.name}}">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <a class="btn btn-sm btn-outline-primary me-1" title="Modifier" href="/program/{{program.id}}/edit"><i class="bi bi-pencil"></i></a>
+                                <form action="/program/{{ program.id }}/delete" method="POST" class="d-inline" onsubmit="return confirm('Êtes-vous sûr de vouloir supprimer ce programme ?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Supprimer">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <div class="text-center p-5">
+                    <i class="bi bi-calendar-x fs-1 text-muted mb-3"></i>
+                    <h5 class="text-muted">Aucun programme enregistré pour cet événement.</h5>
+                    <p class="text-muted small">Vous pouvez ajouter un nouveau programme en cliquant sur le bouton "Nouveau Programme" ci-dessus.</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Pagination -->
+            <div class="card-footer bg-white border-top-0 d-flex align-items-center justify-content-between py-3">
+                <span class="text-muted small">Affichage des programmes</span>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        <li class="page-item disabled"><a class="page-link" href="#">Précédent</a></li>
+                        <li class="page-item active"><a class="page-link bg-dark border-dark" href="#">1</a></li>
+                        <li class="page-item"><a class="page-link text-dark" href="#">Suivant</a></li>
+                    </ul>
+                </nav>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal d'affichage des détails du programme -->
+    <div class="modal fade" id="viewProgramModal" tabindex="-1" aria-labelledby="viewProgramModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+                
+                <div class="modal-header text-white" style="background-color: var(--primary-dark); border-bottom: 2px solid var(--accent-gold);">
+                    <h5 class="modal-title fw-bold text-gold" id="viewProgramModalLabel">
+                        <i class="bi bi-calendar-event me-2"></i>Détails du Programme
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+
+                <div class="modal-body p-4" style="background-color: #f8fafc;">
+                    <div class="mb-3">
+                        <small class="text-muted text-uppercase fw-semibold d-block">Événement</small>
+                        <span id="modalEvent" class="fs-6 fw-bold text-dark"></span>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-5">
+                            <small class="text-muted text-uppercase fw-semibold d-block">Heure</small>
+                            <span id="modalTime" class="badge badge-gold fs-6 mt-1"></span>
+                        </div>
+                        <div class="col-7">
+                            <small class="text-muted text-uppercase fw-semibold d-block">Titre</small>
+                            <span id="modalTitle" class="fw-semibold text-dark fs-6 d-block mt-1"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <small class="text-muted text-uppercase fw-semibold d-block">Étape / Titre</small>
+                        <span id="modalStep" class="fw-medium text-dark"></span>
+                    </div>
+
+                    <div>
+                        <small class="text-muted text-uppercase fw-semibold d-block">Description</small>
+                        <p id="modalDescription" class="text-secondary bg-white p-3 rounded border mt-1 mb-0" style="white-space: pre-line;"></p>
+                    </div>
+                </div>
+
+                <div class="modal-footer bg-white border-top-0">
+                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Fermer</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle -->
+
+    <!-- Scripts JS : Modal dynamique + Filtres de recherche -->
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        
+        // 1. Gestion du Modal Bootstrap
+        const viewProgramModal = document.getElementById('viewProgramModal');
+        if (viewProgramModal) {
+            viewProgramModal.addEventListener('show.bs.modal', function(event) {
+                const button = event.relatedTarget;
+                if (!button) return;
+
+                document.getElementById('modalTime').textContent = button.getAttribute('data-heure') || '-';
+                document.getElementById('modalTitle').textContent = button.getAttribute('data-titre') || '-';
+                document.getElementById('modalStep').textContent = button.getAttribute('data-etape') || '-';
+                document.getElementById('modalDescription').textContent = button.getAttribute('data-description') || '-';
+                document.getElementById('modalEvent').textContent = button.getAttribute('data-evenement') || '-';
+            });
+        }
+
+        // 2. Filtrage dynamique du tableau
+        const searchInput = document.getElementById('searchInput');
+        const filterEvent = document.getElementById('filterEvent');
+        const tableRows = document.querySelectorAll('tbody tr');
+
+        if (searchInput && filterEvent && tableRows.length > 0) {
+            function filterTable() {
+                const searchText = searchInput.value.toLowerCase().trim();
+                const selectedEvent = filterEvent.value.toLowerCase().trim();
+
+                tableRows.forEach(row => {
+                    const timeText = row.children[0]?.textContent.toLowerCase() || '';
+                    const titleText = row.children[1]?.textContent.toLowerCase() || '';
+                    const stepText = row.children[2]?.textContent.toLowerCase() || '';
+                    const descText = row.children[3]?.textContent.toLowerCase() || '';
+                    const eventText = row.children[4]?.textContent.toLowerCase() || '';
+
+                    const matchesSearch = titleText.includes(searchText) || 
+                                          stepText.includes(searchText) || 
+                                          descText.includes(searchText) || 
+                                          timeText.includes(searchText);
+
+                    const matchesEventFilter = selectedEvent === '' || eventText.includes(selectedEvent);
+
+                    row.style.display = (matchesSearch && matchesEventFilter) ? '' : 'none';
+                });
+            }
+
+            searchInput.addEventListener('input', filterTable);
+            filterEvent.addEventListener('change', filterTable);
+        }
+
+        // 3. Affichage du Toast de succès
+        const toastEl = document.getElementById('successToast');
+        if (toastEl && typeof bootstrap !== 'undefined') {
+            const toast = new bootstrap.Toast(toastEl, { delay: 4000 });
+            toast.show();
+        }
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualisation des Programmes — EasyInvite</title>
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Bootstrap Icons -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-dark: #0f172a;
+            --accent-gold: #c5a059;
+            --accent-gold-hover: #b08d46;
+        }
+
+        body {
+            background-color: #f8fafc;
+            color: #334155;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        .navbar-custom {
+            background-color: var(--primary-dark);
+            border-bottom: 2px solid var(--accent-gold);
+        }
+
+        .text-gold {
+            color: var(--accent-gold) !important;
+        }
+
+        .badge-gold {
+            background-color: var(--primary-dark);
+            color: var(--accent-gold);
+            border: 1px solid var(--accent-gold);
+        }
+
+        .card-custom {
+            border: none;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        .table thead {
+            background-color: var(--primary-dark);
+            color: #ffffff;
+        }
+
+        .table th {
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+            padding: 1rem;
+        }
+
+        .table td {
+            padding: 1rem;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark navbar-custom shadow-sm mb-4">
+        <div class="container">
+            <a class="navbar-brand fw-bold text-gold" href="#">
+                <i class="bi bi-envelope-open-heart me-2"></i>EasyInvite
+            </a>
+        </div>
+    </nav>
+
+    <!-- Conteneur principal -->
+    <div class="container mb-5">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h3 class="fw-bold text-dark mb-1">Programmes enregistrés</h3>
+                <p class="text-muted mb-0">Cliquez sur le bouton d'œil pour afficher le détail d'un programme.</p>
+            </div>
+        </div>
+
+        <!-- Tableau des programmes -->
+        <div class="card card-custom">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead>
+                        <tr>
+                            <th>Heure</th>
+                            <th>Titre</th>
+                            <th>Étape / Titre</th>
+                            <th>Description</th>
+                            <th>Événement</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Programme 1 -->
+                        <tr>
+                            <td class="fw-bold"><i class="bi bi-clock me-1 text-gold"></i> 15:00</td>
+                            <td class="fw-semibold">Cérémonie Religieuse</td>
+                            <td>Mise en place & Échange des vœux</td>
+                            <td class="text-truncate" style="max-width: 200px;">Célébration à la Cathédrale suivi de la bénédiction.</td>
+                            <td>Mariage King & Kishala</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-secondary btn-view" 
+                                        title="Voir le programme"
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#viewProgramModal"
+                                        data-heure="15:00"
+                                        data-titre="Cérémonie Religieuse"
+                                        data-etape="Mise en place & Échange des vœux"
+                                        data-description="Célébration à la Cathédrale Notre-Dame de Lubumbashi. Accueil des invités à partir de 14h30."
+                                        data-evenement="Mariage King & Kishala">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+
+                        <!-- Programme 2 -->
+                        <tr>
+                            <td class="fw-bold"><i class="bi bi-clock me-1 text-gold"></i> 18:00</td>
+                            <td class="fw-semibold">Vin d'Honneur</td>
+                            <td>Cocktail de bienvenue</td>
+                            <td class="text-truncate" style="max-width: 200px;">Service des rafraîchissements et photos.</td>
+                            <td>Mariage King & Kishala</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-secondary btn-view" 
+                                        title="Voir le programme"
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#viewProgramModal"
+                                        data-heure="18:00"
+                                        data-titre="Vin d'Honneur"
+                                        data-etape="Cocktail de bienvenue"
+                                        data-description="Service de rafraîchissements, petits fours et séance de photos avec la famille et les invités."
+                                        data-evenement="Mariage King & Kishala">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+
+                        <!-- Programme 3 -->
+                        <tr>
+                            <td class="fw-bold"><i class="bi bi-clock me-1 text-gold"></i> 20:00</td>
+                            <td class="fw-semibold">Grande Réception</td>
+                            <td>Dîner & Soirée Dansante</td>
+                            <td class="text-truncate" style="max-width: 200px;">Ouverture du buffet et animations musicales.</td>
+                            <td>Mariage King & Kishala</td>
+                            <td class="text-end">
+                                <button class="btn btn-sm btn-outline-secondary btn-view" 
+                                        title="Voir le programme"
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#viewProgramModal"
+                                        data-heure="20:00"
+                                        data-titre="Grande Réception"
+                                        data-etape="Dîner & Soirée Dansante"
+                                        data-description="Ouverture du buffet gastronomique, discours des mariés et ouverture du bal."
+                                        data-evenement="Mariage King & Kishala">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal d'affichage du détail -->
+    <div class="modal fade" id="viewProgramModal" tabindex="-1" aria-labelledby="viewProgramModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+                
+                <!-- En-tête -->
+                <div class="modal-header text-white" style="background-color: var(--primary-dark); border-bottom: 2px solid var(--accent-gold);">
+                    <h5 class="modal-title fw-bold text-gold" id="viewProgramModalLabel">
+                        <i class="bi bi-calendar-event me-2"></i>Détails du Programme
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Fermer"></button>
+                </div>
+
+                <!-- Corps du modal -->
+                <div class="modal-body p-4" style="background-color: #f8fafc;">
+                    <div class="mb-3">
+                        <small class="text-muted text-uppercase fw-semibold d-block">Événement</small>
+                        <span id="modalEvent" class="fs-6 fw-bold text-dark"></span>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-5">
+                            <small class="text-muted text-uppercase fw-semibold d-block">Heure</small>
+                            <span id="modalTime" class="badge badge-gold fs-6 mt-1"></span>
+                        </div>
+                        <div class="col-7">
+                            <small class="text-muted text-uppercase fw-semibold d-block">Titre</small>
+                            <span id="modalTitle" class="fw-semibold text-dark fs-6 d-block mt-1"></span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <small class="text-muted text-uppercase fw-semibold d-block">Étape / Titre</small>
+                        <span id="modalStep" class="fw-medium text-dark"></span>
+                    </div>
+
+                    <div>
+                        <small class="text-muted text-uppercase fw-semibold d-block">Description</small>
+                        <p id="modalDescription" class="text-secondary bg-white p-3 rounded border mt-1 mb-0" style="white-space: pre-line;"></p>
+                    </div>
+                </div>
+
+                <!-- Pied de page -->
+                <div class="modal-footer bg-white border-top-0">
+                    <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Fermer</button>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Script d'injection dynamique dans le Modal -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const viewProgramModal = document.getElementById('viewProgramModal');
+            
+            if (viewProgramModal) {
+                viewProgramModal.addEventListener('show.bs.modal', function(event) {
+                    const button = event.relatedTarget;
+
+                    // Récupération des données data-*
+                    const heure = button.getAttribute('data-heure') || '-';
+                    const titre = button.getAttribute('data-titre') || '-';
+                    const etape = button.getAttribute('data-etape') || '-';
+                    const description = button.getAttribute('data-description') || 'Aucune description disponible.';
+                    const evenement = button.getAttribute('data-evenement') || '-';
+
+                    // Remplissage du Modal
+                    document.getElementById('modalTime').textContent = heure;
+                    document.getElementById('modalTitle').textContent = titre;
+                    document.getElementById('modalStep').textContent = etape;
+                    document.getElementById('modalDescription').textContent = description;
+                    document.getElementById('modalEvent').textContent = evenement;
+                });
+            }
+        });
+    </script>
+</body>
+</html>

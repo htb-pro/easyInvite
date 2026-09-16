@@ -13,6 +13,8 @@ from Routers.loging import get_current_user_from_cookie
 from config import secret,algo
 from jose import jwt 
 from utils.cryptography.crypt_file import decrypt_token
+from urllib.parse import urlparse
+import logging
 
 Root = APIRouter(tags = ["easyInvite"],dependencies =[Depends(get_current_user_from_cookie)])
 templates = Jinja2Templates(directory="Templates")#ou sont stocker les templates
@@ -34,99 +36,160 @@ def scanQrCode(request:Request):
     valid_token = request.session.pop("token_message",None)
     return templates.TemplateResponse("easyInviteApk/scanQrCode/scan.html",{'request':request,'valid_token_message':valid_token,'wrong_token_message':scan_message})
 
+# Configuration globale des logs (À placer TOUT EN HAUT du fichier)
+logging.basicConfig(level=logging.INFO)
+
 @Root.get("/scan-ticket-secure")
 async def scan_ticket_secure(qr_data: str, db: AsyncSession = Depends(connecting)):
-    # 1. Nettoyage de sécurité sur la chaîne reçue du scanner
     qr_data = qr_data.strip()
     
-    # Validation du préfixe de la plateforme
+    # =========================================================================
+    # CAS A : BILLET PAYANT AVEC TOTP (Préfixe EI~)
+    # =========================================================================
     if qr_data.startswith("EI~"):
         try:
-            # Découpage du QR code (Format attendu : EI~ID_BILLET~TOKEN_TOTP)
             parts = qr_data.split("~")
             if len(parts) != 3:
                 return {"valid": False, "is_scanned": False, "message": "Format de QR code invalide."}
             
             prefix, ticket_id, scanned_token = parts
             
-            # 2. Récupération asynchrone du billet dans la base de données
-            result = await db.execute(select(Ticket).where(Ticket.id == ticket_id))
+            # Récupération asynchrone du billet
+            result = await db.execute(
+                select(Ticket)
+                .where(Ticket.id == ticket_id)
+                .options(selectinload(Ticket.events), selectinload(Ticket.orders))
+            )
             ticket = result.scalars().first()
 
-            # Si le billet n'existe pas
             if not ticket:
                 return {"valid": False, "is_scanned": False, "message": "Billet introuvable."}
             
-            # 3. Vérification anti-fraude : le billet a-t-il déjà été utilisé ?
-            if ticket.is_scanned is True:
+            # Billet déjà scanné
+            if ticket.is_scanned:
                 return {
                     "valid": True, 
-                    "is_scanned": True, 
+                    "is_scanned": True,
+                    "ticket_id": ticket.get_pass,
+                    "name": ticket.participator_name, 
+                    "phone": ticket.participator_number, 
+                    "ticket_type": ticket.orders.ticket_type if ticket.orders else "Standard",
                     "state": True, 
                     "message": "⚠️ Ce billet a déjà été validé et utilisé."
                 }
 
-            # 4. Nettoyage de la clé Base32 (Sécurité contre les erreurs de caractères 0/O et 1/I)
+            # Nettoyage de la clé Base32
             secret_propre = ticket.totp_secret.upper().strip().replace('0', 'O').replace('1', 'I')
             
-            # 5. Initialisation de l'algorithme TOTP avec la clé propre
+            # Validation TOTP
             totp = pyotp.TOTP(secret_propre, interval=30)
-
-            # Synchronisation temporelle basée sur le timestamp de la machine
             timestamp_local = int(time.time())
-            # 6. Vérification du token avec une fenêtre de tolérance (valid_window=4)
+
             if totp.verify(scanned_token, for_time=timestamp_local, valid_window=4):
-                
-                # Validation validée ! On marque immédiatement le billet comme scanné
                 ticket.is_scanned = True 
-                
-                # Sauvegarde immédiate en base de données (AWAIT obligatoire)
                 await db.commit()
                 
-                # Récupération sécurisée des attributs du billet pour l'affichage au guichet
-                participant = getattr(ticket, "name", "Détenteur du billet")
-                type_billet = getattr(ticket, "type", "Standard")
-
-                # ON RENVOIE "is_scanned": True ICI pour que l'UI affiche le succès au premier scan
                 return {
                     "valid": True,
-                    "is_scanned": False,
+                    "is_scanned": False, # Premier scan = succès
                     "state": False,
                     "type": "ticket",
-                    "ticket_id": ticket.id,
-                    "name": participant,
-                    "ticket_type": type_billet,
+                    "ticket_id": ticket.get_pass,
+                    "name": ticket.participator_name, 
+                    "phone": ticket.participator_number, 
+                    "ticket_type": ticket.orders.ticket_type if ticket.orders else "Standard",
                     "message": "✅ Billet validé avec succès ! Bienvenue."
                 }
             else:
                 return {"valid": False, "is_scanned": False, "message": "Code expiré. Veuillez rafraîchir le QR Code."}
 
         except Exception as e:
-            return {"valid": False, "is_scanned": False, "message": f"Erreur lors du traitement du billet : {str(e)}"}
-    #============================================================       
-    #CAS B : IL S'AGIT D'UNE INVITATION CLASSIQUE (Pas de préfixe EI~)
+            await db.rollback()
+            logging.error(f"Erreur lors du scan du billet : {e}")
+            return {"valid": False, "is_scanned": False, "message": "Une erreur interne est survenue lors de la validation."}
+
+    # =========================================================================
+    # CAS B : INVITATION CLASSIQUE (URL)
+    # =========================================================================
+    # =========================================================================
+    # CAS B : INVITATION CLASSIQUE (URL https://app.easyevent-rdc.com/invite/{event_id}/{guest_id}/create)
     # =========================================================================
     else:
         try:
-            # On cherche l'invité dans la table des invités à partir des données brutes du QR Code
-            # (Adapte 'Guest.qr_code' ou 'Guest.id' selon le stockage de tes invitations)
-            guest_id = decrypt_token(qr_data)
-            result = await db.execute(select(Guest).where(Guest.id == guest_id))
+            path = urlparse(qr_data).path
+            parts = [p for p in path.strip("/").split("/") if p]
+
+            # Exemple de parts pour '/invite/{event_id}/{guest_id}/create':
+            # ['invite', '4a8a...', '0f41b...', 'create']
+
+            if "create" in parts:
+                parts.remove("create")
+
+            # Après nettoyage de 'create' : ['invite', '{event_id}', '{guest_id}']
+            if len(parts) < 2:
+                return {
+                    "valid": False,
+                    "message": "Structure de lien d'invitation invalide.",
+                }
+
+            guest_id = parts[-1]
+            event_id = parts[-2]
+
+            # Vérification et récupération dans la base de données
+            result = await db.execute(
+                select(Guest).where(
+                    Guest.id == guest_id, Guest.event_id == event_id
+                )
+            )
             guest = result.scalars().first()
+
             if not guest:
-                return {"valid": False, "message": "Invitation inconnue ou invalide."}
+                return {
+                    "valid": False,
+                    "message": "Invitation inconnue ou invalide.",
+                }
+
+            # Si l'invité a déjà été scanné
+            if guest.is_present:
                 
-            # Renvoi des informations de l'invitation pour le lien cliquable JavaScript
+                return {
+                    "valid": True,
+                    "is_scanned": True,
+                    "name": guest.name,
+                    "get_pass": guest.get_pass,
+                    "guest_type": guest.guest_type,
+                    "telephone": guest.telephone,
+                    "place": guest.place,
+                    "type": "invitation",
+                    "message": "⚠️ Cette invitation a déjà été validée !",
+                }
+
+            # Premier scan : On valide la présence
+            guest.is_present = True
+            await db.commit()
+
             return {
                 "valid": True,
+                "is_scanned": False,#l'etat du guest
+                "name": guest.name,
+                "get_pass": guest.get_pass,
+                "guest_type": guest.guest_type,
+                "telephone": guest.telephone,
+                "place": guest.place,
                 "type": "invitation",
-                "guest_id": guest.id,
-                "name": getattr(guest, "name", "Invité Spécial")
+                "message": "✅ Invitation validée. Bienvenue !",
             }
-            
+
         except Exception as e:
-            return {"valid": False, "message": f"Erreur lors du traitement de l'invitation : {str(e)}"}
-    
+            await db.rollback()
+            logging.error(f"Erreur lors du scan de l'invitation : {e}")
+            return {
+                "valid": False,
+                "message": (
+                    "Une erreur interne est survenue lors de la validation."
+                ),
+            }
+             
 @Root.get('/invite/result/{guest_id}')#traitement de la request json pour la verification du guest
 async def scanResult(request:Request,guest_id :str,db:AsyncSession = Depends(connecting)):
     get_guest = await db.execute(select(Guest).where(Guest.id == guest_id).options(selectinload(Guest.invite),selectinload(Guest.event)))

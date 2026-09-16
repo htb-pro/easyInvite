@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, asc, desc,delete,or_
 from sqlalchemy.orm import selectinload
 from db_setting import connecting
-from config import secret, algo,REDIS_SETTINGS,set_secure_cookie,verify_csrf,resend_api_key,check_current_user_session
+from config import secret, algo,REDIS_SETTINGS,set_secure_cookie,verify_csrf,resend_api_key,check_current_user_session,get_safe_redirect_url
 import jwt,random,io,secrets,urllib
 from models import Organizer, Ticket_price, User, Order, Event,ExternalUser,OTP,Ticket
 from app.security.permissions import permission_required
@@ -1299,20 +1299,6 @@ async def login_page(request: Request, db: AsyncSession = Depends(connecting)):
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 DUMMY_HASH = pwd_context.hash("dummy_password_for_timing") # Hash factice pour l'anti-timing attack
 
-def get_safe_redirect_url(next_url: str | None, default_url: str = "/") -> str: #methode de protection de la redirection
-    if not next_url:
-        return default_url
-    
-    # 1. Vérifier si l'URL commence par un seul '/' et JAMAIS par '//' (ex: //hacker.com)
-    if not next_url.startswith("/") or next_url.startswith("//"):
-        return default_url
-    
-    # 2. Analyser l'URL pour s'assurer qu'il n'y a pas de nom de domaine (host/netloc)
-    parsed = urlparse(next_url)
-    if parsed.netloc or parsed.scheme:
-        return default_url
-        
-    return next_url
 
 @Root.post("/auth/login")
 async def login_unique(

@@ -2,88 +2,160 @@ document.addEventListener("DOMContentLoaded", function () {
     
     if (typeof Html5QrcodeScanner !== "undefined") {
         
-        // --- FONCTIONS D'AFFICHAGE ---
+        // --- DONNÉES DU DERNIER SCAN ---
+        let lastScanData = null;
+
+        // --- ÉLÉMENTS DU DOM ---
+        const showResultBtn = document.getElementById("show-result-btn");
+        const modal = document.getElementById("scan-modal");
+        const closeModalBtn = document.getElementById("close-modal-btn");
+        const scanNextBtn = document.getElementById("scan-next-btn");
+
         function showMessage(text, color) {
             document.getElementById("result").innerHTML =
                 `<div class="alert alert-${color} mt-3">${text}</div>`;
         }
 
-        // Affichage pour les invitations
-        function showLink(name, guest) {
-            document.getElementById("result").innerHTML = `
-                <div class="alert alert-info mt-3">📩 Invitation détectée</div>
-                <a href="/invite/result/${guest}" class="result-link bg-success text-white d-block text-center p-3 mt-2 font-weight-bold text-uppercase text-decoration-none rounded">
-                    Vérifier l'invitation de : ${name}
-                </a>
-            `;
+        // --- PRÉPARATION DU BOUTON POUR INVITATION ---
+       function prepareGuestResult(result) {
+    lastScanData = result;
+
+    if (showResultBtn) {
+        showResultBtn.disabled = false;
+        showResultBtn.classList.add("active");
+        
+        const btnText = document.getElementById("btn-text");
+        const guestName = result.name ? result.name.toUpperCase() : "INVITÉ";
+
+        // Détection dynamique du type
+        const isInvitation = result.type === "invitation";
+        const labelType = isInvitation ? "INVITATION" : "BILLET";
+
+        if (btnText) {
+            if (result.is_scanned) {
+                showResultBtn.style.backgroundColor = "#eab308"; // Jaune
+                showResultBtn.style.color = "#000000";
+                btnText.innerText = `⚠️ ${labelType} DÉJÀ UTILISÉ(E) - ${guestName}`;
+            } else {
+                showResultBtn.style.backgroundColor = "#22c55e"; // Vert
+                showResultBtn.style.color = "#ffffff";
+                btnText.innerText = `📩 ${labelType} VALIDE - ${guestName}`;
+            }
+        }
+    }
+
+    if (navigator.vibrate) {
+        navigator.vibrate(result.is_scanned ? [100, 50, 100] : [150]);
+    }
+}
+
+        // --- OUVERTURE DU MODAL AU CLIC ---
+        if (showResultBtn) {
+            showResultBtn.addEventListener("click", function () {
+                if (!lastScanData) return;
+
+                const isSuccess = !lastScanData.is_scanned;
+
+                // Remplissage dynamique pour un INVITÉ
+                document.getElementById("modal-status-icon").innerText = isSuccess ? "📩" : "⚠️";
+                document.getElementById("modal-status-title").innerText = isSuccess ? "Invitation Valide" : "Invitation Déjà Utilisée";
+                document.getElementById("modal-status-title").style.color = isSuccess ? "#4ade80" : "#facc15";
+
+                // Type d'invité (ex: VIP, Regular) avec fallback propre
+                const guestType = lastScanData.guest_type || lastScanData.ticket_type || lastScanData.type_invite || " ";
+                const guestTypeElement = document.getElementById("modal-guest-type") || document.getElementById("modal-ticket-type");
+                if (guestTypeElement) guestTypeElement.innerText = guestType ;
+
+                // 1. Nom
+                document.getElementById("modal-guest-name").innerText = lastScanData.name || "Invité Anonyme";
+
+                // 2. Token / Code unique
+                const guestTokenElement = document.getElementById("modal-guest-token") || document.getElementById("modal-ticket-code");
+                if (guestTokenElement) {
+                    guestTokenElement.innerText = lastScanData.get_pass || lastScanData.guest_token || lastScanData.ticket_id || "#----";
+                }
+
+                // 3. Téléphone (Sécurisé avec alternatives de clés)
+                const guestPhoneElement = document.getElementById("modal-guest-phone");
+                if (guestPhoneElement) {
+                    guestPhoneElement.innerText = lastScanData.telephone || lastScanData.phone || lastScanData.guest_phone || "non renseigné";
+                }
+
+                // 4. Table / Place (CORRECTION DU BUG ICI)
+                const guestTableElement = document.getElementById("modal-guest-table");
+                if (guestTableElement) {
+                    // Utilise bien guestTableElement ici !
+                    guestTableElement.innerText = lastScanData.place || lastScanData.table || lastScanData.seat || "non assignée";
+                }
+
+                // Message d'information
+                const msgElement = document.getElementById("modal-message");
+                msgElement.innerText = lastScanData.message || (isSuccess ? "Accès autorisé. Bienvenue !" : "Attention : cet invité a déjà été enregistré !");
+                msgElement.style.color = isSuccess ? "#4ade80" : "#facc15";
+
+                // Redirection optionnelle vers la fiche complète si un lien existe
+                const guestLink = document.getElementById("modal-guest-link");
+                if (guestLink && (lastScanData.guest_id || lastScanData.id)) {
+                    guestLink.href = `/invite/result/${lastScanData.guest_id || lastScanData.id}`;
+                    guestLink.style.display = "inline-block";
+                }
+
+                // Affichage du modal
+                if (modal) modal.classList.remove("hidden");
+            });
         }
 
-        // Affichage dynamique pour les billets (S'adapte selon l'état d'utilisation)
-        function showLinkTicket(name, ticketId, ticket_type, isScanned, message) {
-            let alertClass = "alert-info";
-            let btnClass = "bg-success"; // Vert par défaut (Valide)
-            let prefixIcon = "🎟️ Billet Valide";
+        // --- RESET ET FERMETURE DU MODAL ---
+        function resetScannerUI() {
+            if (modal) modal.classList.add("hidden");
 
-            // Si le serveur indique que le billet a déjà été validé/scanné
-            if (isScanned) {
-                alertClass = "alert-warning";
-                btnClass = "bg-warning text-dark"; // Orange (Déjà utilisé)
-                prefixIcon = "⚠️ Billet Déjà Utilisé";
+            if (showResultBtn) {
+                showResultBtn.disabled = true;
+                showResultBtn.classList.remove("active");
+                showResultBtn.style.backgroundColor = "";
+                showResultBtn.style.color = "";
+                
+                const btnText = document.getElementById("btn-text");
+                if (btnText) btnText.innerText = "SCANNEZ UNE INVITATION";
             }
 
-            document.getElementById("result").innerHTML = `
-                <div class="alert ${alertClass} mt-3">${prefixIcon} (${ticket_type})</div>
-                <p class="text-center small text-muted my-1">${message || ""}</p>
-                <a href="/ticket/view/${ticketId}" class="result-link ${btnClass} d-block text-center p-3 mt-2 font-weight-bold text-uppercase text-decoration-none rounded">
-                    Voir le detail
-                </a>
-            `;
+            lastScanData = null;
         }
 
-        // --- VERROU DU SCAN ---
+        if (closeModalBtn) closeModalBtn.addEventListener("click", resetScannerUI);
+        if (scanNextBtn) scanNextBtn.addEventListener("click", resetScannerUI);
+
+        // --- VERROU DE SCAN ---
         let scanEnCours = false;
 
-        // --- FONCTION DE DETECTION UNIFIÉE ---
+        // --- DÉTECTION DU QR CODE ---
         async function onScanSuccess(decodedText) {
-            if (scanEnCours) return; // Bloque les lectures en rafale
+            if (scanEnCours) return;
             
-            scanEnCours = true; // Enclenche le verrou
+            scanEnCours = true;
             
             try {
-                // Envoi de la requête de vérification sécurisée à FastAPI
+                // Endpoint sécurisé pour les invitations
                 const response = await fetch(`/scan-ticket-secure?qr_data=${encodeURIComponent(decodedText)}`);
                 const result = await response.json();
                 
-                // Si le serveur valide la structure et le jeton TOTP
                 if (result.valid) {
-                    if (result.type === "invitation") {
-                        showLink(result.name, result.guest_id);
-                    } else {
-                        // On passe le booléen 'is_scanned' et le message pour appliquer la bonne couleur
-                        showLinkTicket(
-                            result.name, 
-                            result.ticket_id, 
-                            result.ticket_type, 
-                            result.is_scanned, 
-                            result.message
-                        );
-                    }
+                    // Préparation des données d'invitation pour le modal
+                    prepareGuestResult(result);
                 } else {
-                    // Code TOTP expiré ou mauvais QR code (Écran Rouge)
-                    showMessage(`❌ ${result.message || "Code invalide ou expiré."}`, "danger");
+                    showMessage(`❌ ${result.message || "Invitation invalide ou expirée."}`, "danger");
                 }
             } catch (error) {
                 console.error("Erreur réseau :", error);
                 showMessage("❌ Erreur de communication avec le serveur.", "danger");
             } finally {
-                // Maintien du blocage pendant 2,5 secondes
                 setTimeout(() => {
                     scanEnCours = false;
                 }, 2500);
             }
         }
 
-        // Initialisation du scanner
+        // Initialisation de la caméra
         const scanner = new Html5QrcodeScanner(
             "reader",
             { fps: 10, qrbox: 250 }
@@ -101,7 +173,7 @@ document.addEventListener("DOMContentLoaded", function () {
             });
         }
 
-        // Traduction de l'interface en français
+        // Traduction des textes de la bibliothèque
         setTimeout(() => {
             const scan_text = document.querySelector("#html5-qrcode-anchor-scan-type-change");
             const scan_camera_permission = document.querySelector("#reader__dashboard_section_csr button");
