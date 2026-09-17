@@ -635,8 +635,8 @@ async def render_event_pictures_page(
         }
     )
 
-    @Root.post("/register/picture", status_code=status.HTTP_201_CREATED)
-    async def create_event_picture(
+@Root.post("/register/picture", status_code=status.HTTP_201_CREATED)
+async def create_event_picture(
         payload: schemas.EventPictureCreate,  # FastAPI lit directement le JSON envoyé par fetch
         request: Request,
         db: AsyncSession = Depends(connecting)
