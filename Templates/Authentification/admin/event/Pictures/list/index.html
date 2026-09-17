@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gestion des images d'événement</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 min-h-screen p-6">
+
+  <div class="max-w-3xl mx-auto bg-white p-6 rounded-lg shadow-md">
+    <!-- En-tête -->
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold text-gray-800">Images de l'événement</h1>
+      <button 
+        id="openModalBtn"
+        class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-md shadow transition"
+      >
+        + Ajouter une image
+      </button>
+    </div>
+
+    <!-- Conteneur unique de la liste -->
+    <div id="imageList" class="space-y-3">
+      {% if existing_pictures %}
+        {% for picture in existing_pictures %}
+          <div class="flex items-center justify-between p-3 bg-gray-50 border rounded-lg shadow-sm" data-id="{{ picture.id }}">
+            <div class="flex items-center space-x-3 overflow-hidden">
+              <img src="{{ picture.url }}" alt="miniature" class="w-12 h-12 object-cover rounded border flex-shrink-0">
+              <a href="{{ picture.url }}" target="_blank" class="text-sm text-indigo-600 hover:underline truncate">
+                {{ picture.url }}
+              </a>
+            </div>
+            
+            <!-- Actions -->
+            <div class="flex items-center space-x-2">
+              <button 
+                onclick="deleteImage('{{ picture.id }}')" 
+                class="text-red-600 hover:text-red-800 p-2 rounded-md hover:bg-red-50 transition"
+                title="Supprimer l'image"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        {% endfor %}
+      {% else %}
+        <p id="emptyMessage" class="text-gray-500 text-sm italic">Aucune image enregistrée pour le moment.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ----------------- MODALE ----------------- -->
+  <div id="pictureModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center p-4 z-50">
+    <div class="bg-white rounded-lg shadow-xl max-w-md w-full p-6 relative">
+      <button id="closeModalBtn" class="absolute top-3 right-3 text-gray-400 hover:text-gray-600 text-xl font-bold">&times;</button>
+
+      <h2 class="text-xl font-bold mb-4 text-gray-800">Ajouter une URL d'image</h2>
+      <div id="alertBox" class="hidden mb-4 p-3 rounded text-sm"></div>
+
+      <form id="pictureForm" class="space-y-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}" id="csrf_token">
+        <input type="hidden" name="event_id" value="{{ event.id }}" id="eventId">
+
+        <div>
+          <label for="imageUrl" class="block text-sm font-medium text-gray-700">URL de l'image</label>
+          <input 
+            type="url" 
+            id="imageUrl" 
+            name="url" 
+            required 
+            placeholder="https://exemple.com/image.jpg"
+            class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 text-sm"
+          >
+        </div>
+
+        <div id="previewContainer" class="hidden">
+          <p class="text-xs font-medium text-gray-500 mb-1">Aperçu :</p>
+          <img id="imagePreview" src="" alt="Aperçu" class="w-full h-36 object-cover rounded border">
+        </div>
+
+        <div class="flex justify-end space-x-2 pt-2">
+          <button type="button" id="cancelBtn" class="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 rounded-md text-sm font-medium">Annuler</button>
+          <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-md text-sm font-medium shadow">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const modal = document.getElementById('pictureModal');
+    const openModalBtn = document.getElementById('openModalBtn');
+    const closeModalBtn = document.getElementById('closeModalBtn');
+    const cancelBtn = document.getElementById('cancelBtn');
+    
+    const form = document.getElementById('pictureForm');
+    const imageUrlInput = document.getElementById('imageUrl');
+    const previewContainer = document.getElementById('previewContainer');
+    const imagePreview = document.getElementById('imagePreview');
+    const alertBox = document.getElementById('alertBox');
+    
+    const imageList = document.getElementById('imageList');
+    const csrfToken = document.getElementById('csrf_token').value;
+
+    // Modale controls
+    const openModal = () => modal.classList.remove('hidden');
+    const closeModal = () => {
+      modal.classList.add('hidden');
+      form.reset();
+      previewContainer.classList.add('hidden');
+      alertBox.classList.add('hidden');
+    };
+
+    openModalBtn.addEventListener('click', openModal);
+    closeModalBtn.addEventListener('click', closeModal);
+    cancelBtn.addEventListener('click', closeModal);
+
+    // Dynamic preview
+    imageUrlInput.addEventListener('input', () => {
+      const url = imageUrlInput.value.trim();
+      if (url.startsWith('http://') || url.startsWith('https://')) {
+        imagePreview.src = url;
+        previewContainer.classList.remove('hidden');
+      } else {
+        previewContainer.classList.add('hidden');
+      }
+    });
+
+    // Form submit
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+
+      const payload = {
+        event_id: document.getElementById('eventId').value,
+        url: imageUrlInput.value.trim(),
+        csrf_token: csrfToken
+      };
+
+      try {
+        const response = await fetch('/register/picture', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-Token': csrfToken
+          },
+          body: JSON.stringify(payload)
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          addImageToList(data.picture.url, data.picture.id);
+          closeModal();
+        } else {
+          showAlert(data.detail || 'Une erreur est survenue', 'error');
+        }
+      } catch (err) {
+        showAlert('Impossible de contacter le serveur', 'error');
+      }
+    });
+
+    // Insert image item dynamically with delete button
+    function addImageToList(url, id) {
+      const emptyMsg = document.getElementById('emptyMessage');
+      if (emptyMsg) emptyMsg.remove();
+
+      const item = document.createElement('div');
+      item.className = 'flex items-center justify-between p-3 bg-gray-50 border rounded-lg shadow-sm';
+      item.setAttribute('data-id', id);
+
+      item.innerHTML = `
+        <div class="flex items-center space-x-3 overflow-hidden">
+          <img src="${url}" alt="miniature" class="w-12 h-12 object-cover rounded border flex-shrink-0">
+          <a href="${url}" target="_blank" class="text-sm text-indigo-600 hover:underline truncate">
+            ${url}
+          </a>
+        </div>
+        <div class="flex items-center space-x-2">
+          <button 
+            onclick="deleteImage('${id}')" 
+            class="text-red-600 hover:text-red-800 p-2 rounded-md hover:bg-red-50 transition"
+            title="Supprimer l'image"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+          </button>
+        </div>
+      `;
+
+      imageList.prepend(item);
+    }
+
+    // Suppression d'une image
+    async function deleteImage(pictureId) {
+      if (!confirm('Voulez-vous vraiment supprimer cette image ?')) return;
+
+      try {
+        const response = await fetch(`/pictures/${pictureId}`, {
+          method: 'DELETE',
+          credentials: 'same-origin',
+          headers: {
+            'X-CSRF-Token': csrfToken
+          }
+        });
+
+        if (response.ok) {
+          const row = document.querySelector(`[data-id="${pictureId}"]`);
+          if (row) row.remove();
+
+          if (imageList.children.length === 0) {
+            imageList.innerHTML = '<p id="emptyMessage" class="text-gray-500 text-sm italic">Aucune image enregistrée pour le moment.</p>';
+          }
+        } else {
+          alert('Erreur lors de la suppression');
+        }
+      } catch (err) {
+        alert('Impossible de joindre le serveur');
+      }
+    }
+
+    function showAlert(message, type) {
+      alertBox.textContent = message;
+      alertBox.classList.remove('hidden', 'bg-green-100', 'text-green-800', 'bg-red-100', 'text-red-800');
+      alertBox.classList.add(type === 'success' ? 'bg-green-100' : 'bg-red-100');
+      alertBox.classList.add(type === 'success' ? 'text-green-800' : 'text-red-800');
+    }
+  </script>
+</body>
+</html>

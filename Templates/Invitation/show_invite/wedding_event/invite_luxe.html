@@ -338,7 +338,7 @@
         .gallery-img {
             width: 100%;
             height: 400px;
-            object-fit: cover;
+            object-fit: contain;
             transition: .5s;
         }
 
@@ -691,9 +691,13 @@
             <div class="col-md-6 gallery-item" data-aos="zoom-in" data-aos-delay="100">
                 <img src="{{ guest.event.photo_url if guest and guest.event and guest.event.photo_url else 'photo.jpg' }}" class="gallery-img" alt="Photo du couple">
             </div>
+            {% if pictures %}
+            {% for picture in pictures %}
             <div class="col-md-6 gallery-item" data-aos="zoom-in" data-aos-delay="200">
-                <img src="{{ guest.event.photo_url if guest and guest.event and guest.event.photo_url else 'photo.jpg' }}" class="gallery-img" alt="Photo du couple">
+                <img src="{{ picture.url }}" class="gallery-img" alt="Photo du couple">
             </div>
+            {% endfor %}
+            {%endif%}
         </div>
     </div>
 </section>
@@ -807,8 +811,7 @@
     <div class="footer-brand">
         Invitation digitale · EasyInvite <br>
         <p class="mb-2 mt-3"><strong>Besoin d'assistance ?</strong></p>
-        <p class="mb-1"><i class="bi bi-telephone me-1"></i> +243 897 401 210 ou +243 991 152 067</p>
-        <p class="mb-1"><i class="bi bi-telephone me-1"></i> +243 898 147 644 ou +243 982 727 007</p>
+        <p class="mb-1"><i class="bi bi-telephone me-1"></i> +243 897 401 210 ou +243 982 727 007</p>
         <p class="mb-1"><i class="bi bi-envelope me-1"></i> contact@easyevent-rdc.com</p>
         <p class="text-secondary opacity-75 mt-3">&copy; {{ copyright.strftime('%Y') if copyright else '2026' }} EasyInvite. Tous droits réservés.</p>
     </div>

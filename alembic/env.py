@@ -10,7 +10,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 # Import de tes modèles SQLAlchemy
 from db_setting import Base  # <--- remplace par ton module où se trouve Base
-
+import models
 
 load_dotenv()
 

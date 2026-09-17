@@ -115,6 +115,16 @@ class Event(Base): #event table
     organizers = relationship("Organizer", back_populates="events")
     votes = relationship("Vote", back_populates="event", cascade="all, delete-orphan")
     candidates = relationship("Candidate", back_populates="event", cascade="all, delete-orphan")
+    pictures = relationship("EventPictures", back_populates="event", cascade="all, delete-orphan")
+
+class EventPictures(Base):
+    __tablename__ = "event_pictures"
+    id = Column(String, primary_key=True, default=lambda: str(uuid4()))
+    event_id = Column(String, ForeignKey("events.id", ondelete="CASCADE"))
+    url = Column(String, nullable=False)
+
+    # Relation inverse vers l'événement
+    event = relationship("Event", back_populates="pictures")
 
 class Program(Base):
     __tablename__ = "programs"

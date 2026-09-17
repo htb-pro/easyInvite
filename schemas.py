@@ -1,7 +1,13 @@
-from pydantic import BaseModel,EmailStr
+from pydantic import BaseModel,EmailStr, HttpUrl
 from datetime import date
 from typing import Optional,List
 from uuid import UUID
+
+
+class EventPictureCreate(BaseModel):
+    event_id: str
+    url: HttpUrl  # Valide automatiquement qu'il s'agit d'un format d'URL correct
+    csrf_token: Optional[str] = None
 
 class eventForm(BaseModel):
     name :str

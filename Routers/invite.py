@@ -96,7 +96,11 @@ async def getGuestInvite(
     )
     result = await db.execute(query)
     guestInvite = result.scalars().first()
-    
+
+    picture_query = (select(EventPictures).where(EventPictures.event_id == event_id))
+    picture_result = await db.execute(picture_query)
+    pictures = picture_result.scalars().all()
+
     # 2. Vérification d'existence (Sécurité)
     if not guestInvite or not guestInvite.event:
         return templates.TemplateResponse("Invitation/show_invite/inviteNotFound.html", {"request": request})
@@ -132,6 +136,7 @@ async def getGuestInvite(
         "event_month": get_month(event.date) if event.date else "",
         "lang": getattr(event, "language", "fr"),
         'message': get_message,
+        'pictures': pictures,
     }
 
     # 2. Ta table de correspondance (type d'événement -> template)

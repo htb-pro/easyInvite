@@ -1,5 +1,6 @@
 #APIRouter permet juste l'organisation du code au lieu d' avoir tout les routes dans un fichier main oon cree les root separement
 from asyncio.log import logger
+from email.header import Header
 
 from fastapi import Request,Form,Depends,HTTPException,APIRouter,UploadFile,File,Cookie,status
 from fastapi.responses import RedirectResponse,StreamingResponse
@@ -9,6 +10,9 @@ from fastapi.concurrency import run_in_threadpool
 from uuid import uuid4
 import os,cloudinary,cloudinary.uploader,secrets
 from db_setting import engine,connecting
+import models
+import models
+import schemas
 from sqlalchemy.orm import selectinload
 from sqlalchemy import func,desc,select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -593,6 +597,129 @@ async def deleteEvent(
     # 3. Notification et Redirection
     request.session["success"] = "🎉 Événement supprimé avec succès !"
     return RedirectResponse("/event_list", status_code=303)
+
+@Root.get("/events/{event_id}/pictures")
+async def render_event_pictures_page(
+    request: Request,
+    event_id: str,
+    db: AsyncSession = Depends(connecting)
+):
+    # 1. Récupérer l'événement
+    result = await db.execute(select(Event).where(Event.id == event_id))
+    event = result.scalars().first()
+
+    if not event:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Événement non trouvé"
+        )
+
+    # 2. Récupérer la liste des images déjà enregistrées pour cet événement
+    pictures_result = await db.execute(
+        select(EventPictures).where(EventPictures.event_id == event_id)
+    )
+    existing_pictures = pictures_result.scalars().all()
+
+    # 3. Générer ou récupérer le token CSRF
+    # Adapte selon la méthode de ton projet (ex: request.state.csrf_token)
+    csrf_token = getattr(request.state, "csrf_token", "")
+
+    # 4. Rendu du template Jinja2
+    return templates.TemplateResponse(
+        "Authentification/admin/event/Pictures/list/index.html",  # Remplace par le nom exact de ton fichier HTML
+        {
+            "request": request,
+            "event": event,
+            "existing_pictures": existing_pictures,
+            "csrf_token": csrf_token
+        }
+    )
+
+    @Root.post("/register/picture", status_code=status.HTTP_201_CREATED)
+    async def create_event_picture(
+        payload: schemas.EventPictureCreate,  # FastAPI lit directement le JSON envoyé par fetch
+        request: Request,
+        db: AsyncSession = Depends(connecting)
+    ):
+        # 1. Vérification de l'événement
+        result = await db.execute(select(Event).where(Event.id == payload.event_id))
+        event = result.scalars().first()
+        
+        if not event:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND, 
+                detail="Événement non trouvé"
+            )
+
+        # 2. Création de l'image
+        new_picture = EventPictures(
+            id=str(uuid.uuid4()),
+            event_id=payload.event_id,
+            url=str(payload.url)
+        )
+
+        # 3. Enregistrement
+        db.add(new_picture)
+        await db.commit()
+        await db.refresh(new_picture)
+
+        return {
+            "message": "Image enregistrée avec succès",
+            "picture": {
+                "id": new_picture.id,
+                "event_id": new_picture.event_id,
+                "url": new_picture.url
+            }
+        }
+
+    # @Root.delete("/delete/pictures/{picture_id}", status_code=status.HTTP_200_OK)
+    # async def delete_event_picture(
+    #     picture_id: str,
+    #     x_csrf_token: str = Header(None, alias="X-CSRF-Token"),
+    #     db: AsyncSession = Depends(connecting)
+    # ):
+    #     # 1. Vérification CSRF
+    #     if not x_csrf_token:
+    #         raise HTTPException(
+    #             status_code=status.HTTP_403_FORBIDDEN,
+    #             detail="Token CSRF manquant"
+    #         )
+
+    #     # 2. Recherche en base de données
+    #     result = await db.execute(
+    #         select(EventPictures).where(EventPictures.id == picture_id)
+    #     )
+    #     picture = result.scalars().first()
+
+    #     if not picture:
+    #         raise HTTPException(
+    #             status_code=status.HTTP_404_NOT_FOUND,
+    #             detail="Image introuvable"
+    #         )
+
+    #     # 3. Extraction du Public ID et suppression sur Cloudinary
+    #     public_id = extract_public_id_from_url(picture.url)
+    #     cloudinary_deleted = False
+
+    #     if public_id:
+    #         try:
+    #             # Appel à l'API Cloudinary pour détruire le fichier
+    #             response = cloudinary.uploader.destroy(public_id)
+    #             if response.get("result") == "ok":
+    #                 cloudinary_deleted = True
+    #         except Exception as e:
+    #             # Tu peux logger l'erreur sans forcément bloquer la suppression BDD
+    #             print(f"⚠️ Erreur lors de la suppression Cloudinary: {e}")
+
+    #     # 4. Suppression en BDD
+    #     await db.delete(picture)
+    #     await db.commit()
+
+    #     return {
+    #         "message": "Image supprimée avec succès",
+    #         "deleted_id": picture_id,
+    #         "cloudinary_deleted": cloudinary_deleted
+    #     }
 
 @Root.get("/download/list_guest/{event_id}/export_excel") #endpoint pour le telechargement du fichier des invités
 async def downloadGuestList(request:Request,event_id:str,db:AsyncSession = Depends(connecting),user=permission_required("view_guest")):
