@@ -689,12 +689,12 @@
 
         <div class="row g-4">
             <div class="col-md-6 gallery-item" data-aos="zoom-in" data-aos-delay="100">
-                <img src="{{ guest.event.photo_url if guest and guest.event and guest.event.photo_url else 'photo.jpg' }}" class="gallery-img" alt="Photo du couple">
+                <img src="{{ guest.event.photo_url if guest and guest.event and guest.event.photo_url else 'photo.jpg' }}" class="gallery-img w-full h-auto object-contain block" alt="Photo du couple">
             </div>
             {% if pictures %}
             {% for picture in pictures %}
             <div class="col-md-6 gallery-item" data-aos="zoom-in" data-aos-delay="200">
-                <img src="{{ picture.url }}" class="gallery-img" alt="Photo du couple">
+                <img src="{{ picture.url }}" class="gallery-img w-full h-auto object-contain block" alt="Photo du couple">
             </div>
             {% endfor %}
             {%endif%}
