@@ -197,31 +197,35 @@
 
     // Suppression d'une image
     async function deleteImage(pictureId) {
-      if (!confirm('Voulez-vous vraiment supprimer cette image ?')) return;
+  if (!confirm('Voulez-vous vraiment supprimer cette image ?')) return;
 
-      try {
-        const response = await fetch(`/pictures/${pictureId}`, {
-          method: 'DELETE',
-          credentials: 'same-origin',
-          headers: {
-            'X-CSRF-Token': csrfToken
-          }
-        });
-
-        if (response.ok) {
-          const row = document.querySelector(`[data-id="${pictureId}"]`);
-          if (row) row.remove();
-
-          if (imageList.children.length === 0) {
-            imageList.innerHTML = '<p id="emptyMessage" class="text-gray-500 text-sm italic">Aucune image enregistrée pour le moment.</p>';
-          }
-        } else {
-          alert('Erreur lors de la suppression');
-        }
-      } catch (err) {
-        alert('Impossible de joindre le serveur');
+  try {
+    const response = await fetch(`/pictures/${pictureId}`, {
+      method: 'DELETE',
+      credentials: 'same-origin',
+      headers: {
+        'X-CSRF-Token': csrfToken
       }
+    });
+
+    if (response.ok) {
+      // Suppression de l'élément HTML dans le DOM
+      const row = document.querySelector(`[data-id="${pictureId}"]`);
+      if (row) row.remove();
+
+      // Gestion du cas où la liste devient vide
+      if (imageList && imageList.children.length === 0) {
+        imageList.innerHTML = '<p id="emptyMessage" class="text-gray-500 text-sm italic">Aucune image enregistrée pour le moment.</p>';
+      }
+    } else {
+      const errorData = await response.json().catch(() => ({}));
+      alert(errorData.detail || 'Erreur lors de la suppression');
     }
+  } catch (err) {
+    console.error(err);
+    alert('Impossible de joindre le serveur');
+  }
+}
 
     function showAlert(message, type) {
       alertBox.textContent = message;

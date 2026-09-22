@@ -1,6 +1,7 @@
 #APIRouter permet juste l'organisation du code au lieu d' avoir tout les routes dans un fichier main oon cree les root separement
 from asyncio.log import logger
 from email.header import Header
+import re
 
 from fastapi import Request,Form,Depends,HTTPException,APIRouter,UploadFile,File,Cookie,status
 from fastapi.responses import RedirectResponse,StreamingResponse
@@ -720,6 +721,64 @@ async def create_event_picture(
     #         "deleted_id": picture_id,
     #         "cloudinary_deleted": cloudinary_deleted
     #     }
+
+# Fonction utilitaire pour extraire le public_id depuis une URL Cloudinary
+def extract_public_id(url_or_id: str) -> str:
+    """
+    Transforme : https://res.cloudinary.com/cloud_name/image/upload/v123456/folder/sample.jpg
+    En : folder/sample
+    """
+    if not url_or_id:
+        return ""
+    if not url_or_id.startswith("http"):
+        return url_or_id # C'est déjà un public_id
+
+    # Pattern regex pour isoler le public_id de l'URL
+    match = re.search(r'/upload/(?:v\d+/)?(.+?)(?:\.[a-zA-Z0-9]+)?$', url_or_id)
+    if match:
+        return match.group(1)
+    return url_or_id
+
+@Root.delete("/pictures/{picture_id}")
+async def delete_picture(
+    picture_id: str, 
+    request: Request,
+    db: AsyncSession = Depends(connecting)  # Remplacez par votre dépendance de session DB
+):
+    """Route pour supprimer une image hébergée sur Cloudinary."""
+    stmt = (select(EventPictures).where(EventPictures.id == picture_id))
+    result = await db.execute(stmt)
+    picture = result.scalars().first()
+    if not picture:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Image non trouvée"
+        )
+    public_id = extract_public_id(picture.url)
+    if public_id:
+        try:
+            cloud_res = cloudinary.uploader.destroy(public_id)
+            # On log la réponse Cloudinary
+            print(f"Cloudinary response for {public_id}: {cloud_res}")
+        except Exception as e:
+            # On log l'erreur mais on ne bloque pas la suppression en BDD si l'image n'existe plus sur Cloudinary
+            print(f"Avertissement Cloudinary : {str(e)}")
+    #4. Suppression dans la base de données (SQLAlchemy Async)
+    try:
+        await db.delete(picture)
+        await db.commit()
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Erreur lors de la suppression en BDD : {str(e)}"
+        )
+
+    return {
+        "status": "success",
+        "message": "Image supprimée avec succès",
+        "id": picture_id
+    }
 
 @Root.get("/download/list_guest/{event_id}/export_excel") #endpoint pour le telechargement du fichier des invités
 async def downloadGuestList(request:Request,event_id:str,db:AsyncSession = Depends(connecting),user=permission_required("view_guest")):

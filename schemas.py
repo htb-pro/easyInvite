@@ -53,12 +53,6 @@ class User(UserBase):
 class Group(BaseModel):
     name: str
 
-# order_id
-# event_id
-# ype
-# seri
-# number
-# participator_name
-# participator_number
-# qr_token
-# get_pass
+#dfonction pour la suppression d'image
+class DeleteImageRequest(BaseModel):
+    public_id: str
