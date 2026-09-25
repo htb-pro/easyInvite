@@ -133,6 +133,7 @@
                 <tbody> 
                 {% for guest in guests %}
                     <tr>
+                        <td>{{ loop.index }}</td>
                         <td>{{ guest.name }}</td>
                         {% if guest.event.type != "Concours" %}
                             <td>{{ guest.guest_type }}</td>
