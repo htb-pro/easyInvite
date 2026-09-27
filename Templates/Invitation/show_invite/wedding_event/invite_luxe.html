@@ -574,7 +574,7 @@
             {% if guest and guest.event and guest.event.description and guest.event.description != "None" %}
                 {{ guest.event.description }}
             {% else %}
-                Trés cher(e) {{ guest.name }}, c'est avec beaucoup de joie, nous vous invitons à partager avec nous cette journée exceptionnelle et à célébrer notre union entourés de ceux qui nous sont chers.
+                Trés cher(e) {{'couple' if guest.guest_type == 'Couple' else ''}} {{ guest.name }}, c'est avec beaucoup de joie, nous vous invitons à partager avec nous cette journée exceptionnelle et à célébrer notre union entourés de ceux qui nous sont chers.
             {% endif %}
         </p>
 

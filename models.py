@@ -158,10 +158,10 @@ class Guest(Base):
     
     event = relationship("Event",back_populates="guests")
     invite = relationship("Invite",back_populates="guest",uselist = False,cascade="all,delete-orphan")
-    __table_args__ = (
-        UniqueConstraint('email', 'event_id', name='uix_email_event'),
-        UniqueConstraint('telephone', 'event_id', name='uix_telephone_event'),
-    )
+    # __table_args__ = (
+    #     UniqueConstraint('email', 'event_id', name='uix_email_event'),
+    #     UniqueConstraint('telephone', 'event_id', name='uix_telephone_event'),
+    # )
 
 class PresenceConfirmation(Base):
     __tablename__ = "guestPresence"

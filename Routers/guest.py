@@ -1,8 +1,8 @@
 #APIRouter permet juste l'organisation du code au lieu d' avoir tout les routes dans un fichier main oon cree les root separement
 import json
 from xmlrpc import client
-from fastapi import Request,Form,Depends,HTTPException,APIRouter,Cookie,Form,UploadFile,File,BackgroundTasks
-from fastapi.responses import RedirectResponse
+from fastapi import Request,Form,Depends,HTTPException,APIRouter,Cookie,Form,UploadFile,File,BackgroundTasks,status,Query
+from fastapi.responses import RedirectResponse,HTMLResponse,JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.concurrency import run_in_threadpool
@@ -96,7 +96,9 @@ async def get_guest_list(request:Request,event_id:str,access_token = Cookie(None
     nb_sent_message = (await db.execute(select(func.count()).select_from(Guest).where(Guest.whatsapp_status == "sent"))).scalar() or 0 # nombre de message envoyer
     nb_failed_message = (await db.execute(select(func.count()).select_from(Guest).where(Guest.whatsapp_status == "failed"))).scalar() or 0 # nombre de message echoue
     nb_no_whatsapp_message = (await db.execute(select(func.count()).select_from(Guest).where(Guest.whatsapp_status == "no_whatsapp"))).scalar() or 0 # nombre de compte sans whatsapp
-    nb_pending_message = (await db.execute(select(func.count()).select_from(Guest).where(Guest.whatsapp_status == "pending"))).scalar() or 0 # nombre de message en attende    
+    nb_pending_message = (await db.execute(select(func.count()).select_from(Guest).where(Guest.whatsapp_status == "pending"))).scalar() or 0 # nombre de message en attende 
+    nb_couple = (await db.execute(select(func.count()).select_from(Guest).where(Guest.guest_type == "Couple"))).scalar() or 0
+    nb_single = (await db.execute(select(func.count()).select_from(Guest).where(Guest.guest_type == "Singleton"))).scalar() or 0
     #variable contenant message whatsapp
     sent_message = request.session.pop("sent_message",None)
     if not event :
@@ -104,7 +106,8 @@ async def get_guest_list(request:Request,event_id:str,access_token = Cookie(None
     if not guests :
         return templates.TemplateResponse("Guest/List/notFound.html",{'request':request,"Error":'404','event':event})
     return templates.TemplateResponse("Guest/List/list.html",{'request':request,'sent_message':sent_message,'invite':invite,'event':event,'guests':guests,'event_id':event_id,'present_guest':present_guest,'absent_guest':absent_guest,'current_user_role':user_role,'tickets':tickets,
-    'nb_sent_message':nb_sent_message,'nb_failed_message':nb_failed_message, 'nb_no_whatsapp_message':nb_no_whatsapp_message, 'nb_pending_message':nb_pending_message},status_code=303)
+    'nb_sent_message':nb_sent_message,'nb_failed_message':nb_failed_message, 'nb_no_whatsapp_message':nb_no_whatsapp_message, 'nb_pending_message':nb_pending_message,
+    'single_number':nb_single,'couple_number':nb_couple},status_code=303)
 
 VERSION = "v20.0"
 
@@ -250,14 +253,18 @@ async def send_invite_with_wa_me(request:Request,event_id:str,guest_id:str,db:As
 
     # 3. Préparer le message d'invitation
     invite_url = f"https://www.easyevent-rdc.com/invite/{event_id}/{guest_id}/create"
+    if (guest.guest_type) == 'Couple':
+        salutation_name = f"couple {guest.name}"
+    else:
+        salutation_name = guest.name
     message_text = (
     f"🎉 *INVITATION OFFICIELLE* \n\n"
-    f"Très cher(e) {guest_name_backup},\n\n"
+    f"Très cher(e) {salutation_name},\n\n"
     f"{event.couple_name} ont l'immense joie de vous inviter à célébrer leur union ! 💍✨\n\n"
     f"📅 *Date :* {event.date:%d-%m-%Y}\n"
     f"⏰ *Heure :* {event.date.time()}\n"
     f"📍 *Salle :* {event.location}\n"
-    f" *Addresse :* {event.address}\n"
+    f" *Adresse :* {event.address}\n"
     f"Votre jeton d'accès : {guest.get_pass}\n"
     f"⚠️ _Présentez le QR code à l'entrée._"
     f"Voici le lien pour voir votre invitation en ligne :\n{invite_url}\n\n"
@@ -566,23 +573,71 @@ async def send_whatsapp_redirect(event_id: str,guest_id: str, db: AsyncSession =
     return RedirectResponse(url=sms_link)
     #---------
 
-@Root.get("/telephone/{event_id}") #la rechecher d'une donnee
-async def searchEvent(request:Request,event_id :str,telephone:str = None,db:AsyncSession = Depends(connecting),user = Depends(permission_required("view_guest"))):
-    query =select(Guest).where(Guest.event_id==event_id)
-    if telephone:
-        searched_number = format_to_drc_phone(telephone)
-        query =(select(Guest).where(Guest.telephone.ilike(f"%{searched_number}%"),Guest.event_id==event_id)\
-        )#.order_by(asc(Event.created_date), desc(Event.created_date))\
-    #)# .offset(offset)\
-    #     .limit(per_page)) # rechercher la donnee renseigner dans la barre de recherche, ilike permet d'ignorer le magiscule ou miniscule
-    res = await db.execute(query)
-    guests =res.scalars().all()
-    event_res = await db.execute(select(Event).where(Event.id==event_id))
-    event =event_res.scalars().first()
-    if not guests :
-        raise HTTPException(404,"invite introuvable")
-    return templates.TemplateResponse("Guest/List/list.html",{'request':request,"guests":guests,'event':event,'event_id':event_id})
+@Root.get("/events/{event_id}/guests/search", response_class=HTMLResponse)
+async def search_event_guests(
+    request: Request,
+    event_id: str,
+    access_token = Cookie(None),
+    # Remplacer min_length par un traitement souple :
+    guest_name: Optional[str] = Query(None, max_length=100),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
+    db: AsyncSession = Depends(connecting),
+    user = Depends(permission_required("view_guest"))
+):
+    """Recherche paginée des invités d'un événement."""
+    current_res = jwt.decode(access_token,secret,algorithms = [algo])
+    user_id = current_res.get("user")
+    if user_id:
+        user_res = await db.execute(select(User).where(User.id ==user_id))
+        user = user_res.scalars().first()
+        for role in user.roles:
+             user_role = role.name
+    # Nettoyage manuel de la chaîne (enlève les espaces superflus)
+    if guest_name:
+        guest_name = guest_name.strip()
+        # Si la chaîne est vide après nettoyage, on la remet à None
+        if not guest_name:
+            guest_name = None
 
+    # 1. Vérification de l'événement
+    event_res = await db.execute(select(Event).where(Event.id == event_id))
+    event = event_res.scalars().first()
+    if not event:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Événement introuvable"
+        )
+
+    # 2. Construction de la requête
+    query = select(Guest).where(Guest.event_id == event_id)
+    
+    # La recherche ne s'exécute que si guest_name contient au moins 1 caractère valide
+    if guest_name:
+        safe_name = guest_name.replace("%", r"\%").replace("_", r"\_")
+        query = query.where(Guest.name.ilike(f"%{safe_name}%"))
+
+    # 3. Pagination
+    offset = (page - 1) * per_page
+    query = query.order_by(Guest.name.asc()).offset(offset).limit(per_page)
+
+    res = await db.execute(query)
+    guests = res.scalars().all()
+
+    # 4. Rendu Jinja2
+    return templates.TemplateResponse(
+        "Guest/List/list.html",
+        {
+            "request": request,
+            "guests": guests,
+            "event": event,
+            "event_id": event_id,
+            "search_query": guest_name or "",
+            "current_page": page,
+            "per_page": per_page,
+            'current_user_role':user_role
+        }
+    )
 @Root.get('/guest/{guest_id}/{event_id}/detail')#detail endpoint
 async def guestDetail(request:Request,guest_id:str,event_id:str,user=Depends(permission_required("view_guest")),db:AsyncSession = Depends(connecting)):
     get_guest =select(Guest).where(Guest.id ==guest_id,Guest.event_id == event_id)
@@ -711,10 +766,10 @@ async def newGuest(
     tel_res = await db.execute(select_guest_tel)
     is_guest_tel = tel_res.scalars().first()
     
-    if is_guest_tel:
-        error_msg = 'Un invité existe déjà avec ce numéro de téléphone pour cet événement.'
-        set_data(error_msg)
-        return RedirectResponse(f'/create/{event_id}/guest', status_code=303)
+    # if is_guest_tel: c'est bloc de code a ete commenter car l'utilite a change au lieu d'envoyer l'invitation au guest il sera envoye au couple et ce dernier va distribuer a ses guests
+    #     error_msg = 'Un invité existe déjà avec ce numéro de téléphone pour cet événement.'
+    #     set_data(error_msg)
+    #     return RedirectResponse(f'/create/{event_id}/guest', status_code=303)
                 
     # 5. Création du Guest et de l'invitation liée
     guest_get_pass = str(uuid4())[:8]
@@ -834,17 +889,17 @@ async def editGuestPost(
     tel_res = await db.execute(select_guest_tel)
     is_guest_tel = tel_res.scalars().first()
     
-    if is_guest_tel:
-        error_message = 'Un invité existe déjà avec ce numéro de téléphone.'
-        return templates.TemplateResponse(
-            "Guest/Forms/edit_form.html", 
-            {
-                'request': request, 'guest': guest, 'guestName': guestName, 
-                'guestType': guestType, 'guestTel': guestTel, 'guestPlace': guestPlace, 
-                'guestState': guestState, 'event': event, 'uniqueValueError': error_message, 'csrf_token': csrf_token
-            }, 
-            status_code=400
-        )
+    # if is_guest_tel:
+    #     error_message = 'Un invité existe déjà avec ce numéro de téléphone.'
+    #     return templates.TemplateResponse(
+    #         "Guest/Forms/edit_form.html", 
+    #         {
+    #             'request': request, 'guest': guest, 'guestName': guestName, 
+    #             'guestType': guestType, 'guestTel': guestTel, 'guestPlace': guestPlace, 
+    #             'guestState': guestState, 'event': event, 'uniqueValueError': error_message, 'csrf_token': csrf_token
+    #         }, 
+    #         status_code=400
+    #     )
 
     # 4. Appliquer les modifications
     guest.name = guestName

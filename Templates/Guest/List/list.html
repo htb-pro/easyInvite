@@ -69,6 +69,9 @@
                     </div>
                 </div>
 
+                <small class="mb-3 text-light"><strong>Singleton : {{single_number}} </strong> </small>
+                <small class="mb-3 text-light"><strong>Couple : {{couple_number}} </strong></small>
+
                 <small class="mb-3 text-light"><strong>Total : {{guests | length}} </strong> </small>
                 <small class="mb-3 text-light"><strong>Présents : {{present_guest}} </strong></small>
                 <small class="mb-3 text-light"><strong>Absent : {{absent_guest}} </strong></small>
@@ -82,10 +85,11 @@
     </div>
 
     <!--barre de recherche-->
-    <form class="mb-3 d-flex" method="get" action="/telephone/{{event_id}}" style="position:relative;z-index:1;">
-        <input type="text" class="form-control me-2" placeholder="Rechercher un invité" name="telephone">
+    <form class="mb-3 d-flex" method="get" action="/events/{{ event_id }}/guests/search" style="position:relative;z-index:1;">
+        <input type="text" class="form-control me-2" placeholder="Rechercher un invité" name="guest_name" value="{{ search_query }}">
         <button type="submit" class="btn btn-primary">🔍</button>
     </form>
+
         {% if request.session.get('flash_message') %}
     <div class="alert alert-{{ request.session.pop('flash_type', 'info') }} alert-dismissible fade show" role="alert">
         {{ request.session.pop('flash_message') }}
@@ -163,7 +167,7 @@
                                 <a href="/invitation/download-pdf/{{ guest.id }}" class="btn btn-outline-light">PDF</a>
                                 {% if current_user_role == "admin" or current_user_role == "manager" %}                       
                                     
-                                    <a href="/wa_me/share_invite/{{event.id}}/{{guest.id}}"  class="btn btn-outline-success  ">                                        <button class="btn btn-sm btn-outline-success"><i class="bi bi-whatsapp"></i></button>
+                                    <a href="/wa_me/share_invite/{{event.id}}/{{guest.id}}"  class="btn btn-outline-success  ">                                        
                                     <i class="bi bi-whatsapp"></i>
                                     </a>
                                 {% endif %}
