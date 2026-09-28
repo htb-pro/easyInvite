@@ -95,10 +95,10 @@ async def get_guest_list(request:Request,event_id:str,access_token = Cookie(None
     tickets = ticket_res.scalars().all()
     nb_sent_message = (await db.execute(select(func.count()).select_from(Guest).where(Guest.whatsapp_status == "sent"))).scalar() or 0 # nombre de message envoyer
     nb_failed_message = (await db.execute(select(func.count()).select_from(Guest).where(Guest.whatsapp_status == "failed"))).scalar() or 0 # nombre de message echoue
-    nb_no_whatsapp_message = (await db.execute(select(func.count()).select_from(Guest).where(Guest.whatsapp_status == "no_whatsapp"))).scalar() or 0 # nombre de compte sans whatsapp
-    nb_pending_message = (await db.execute(select(func.count()).select_from(Guest).where(Guest.whatsapp_status == "pending"))).scalar() or 0 # nombre de message en attende 
-    nb_couple = (await db.execute(select(func.count()).select_from(Guest).where(Guest.guest_type == "Couple"))).scalar() or 0
-    nb_single = (await db.execute(select(func.count()).select_from(Guest).where(Guest.guest_type == "Singleton"))).scalar() or 0
+    nb_no_whatsapp_message = (await db.execute(select(func.count()).select_from(Guest).where(Guest.whatsapp_status == "no_whatsapp", Guest.event_id == event_id))).scalar() or 0 # nombre de compte sans whatsapp
+    nb_pending_message = (await db.execute(select(func.count()).select_from(Guest).where(Guest.whatsapp_status == "pending", Guest.event_id == event_id))).scalar() or 0 # nombre de message en attende 
+    nb_couple = (await db.execute(select(func.count()).select_from(Guest).where(Guest.guest_type == "Couple", Guest.event_id == event_id))).scalar() or 0
+    nb_single = (await db.execute(select(func.count()).select_from(Guest).where(Guest.guest_type == "Singleton", Guest.event_id == event_id))).scalar() or 0
     #variable contenant message whatsapp
     sent_message = request.session.pop("sent_message",None)
     if not event :
