@@ -252,7 +252,7 @@ async def send_invite_with_wa_me(request:Request,event_id:str,guest_id:str,db:As
         return RedirectResponse(f"/guest_list/{event_id}", status_code=303)
 
     # 3. Préparer le message d'invitation
-    invite_url = f"https://www.easyevent-rdc.com/invite/{event_id}/{guest_id}/create"
+    invite_url = f"https://app.easyevent-rdc.com/invite/{event_id}/{guest_id}/create"
     if (guest.guest_type) == 'Couple':
         salutation_name = f"couple {guest.name}"
     else:
