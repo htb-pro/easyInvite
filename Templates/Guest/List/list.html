@@ -209,7 +209,7 @@
                         <div>
                             <h3 class="fw-bold mb-1">{{guest.name}}</h3>
                             {%if guest.event.type != "Concours"%}
-                            <small style="font-size:18px;">{{guest.type}}</small>
+                            <small style="font-size:18px;">{{guest.guest_type}}</small> <br>
                             {%endif%}
                             <small style="font-size:18px;">{{guest.telephone}}</small></br>
                             <small style="font-size:18px;">{{guest.created_date.strftime('%d-%m-%Y %H:%M' )}}</small>
