@@ -50,6 +50,7 @@ class User(Base):
     #relationship
     groups = relationship("Group",secondary = user_groups,back_populates = "users")
     roles = relationship("Role",secondary = user_roles,back_populates = "users")
+    events = relationship("Event", back_populates="creator")
 
 class Group(Base):
     __tablename__= "groups"
@@ -92,7 +93,7 @@ class Event(Base): #event table
     couple_name = Column(String(50))
     couple_phone_number= Column(String(15))
     guest_present = Column(Boolean,default=False)
-    created_by = Column(String,ForeignKey("users.id"))
+    created_by = Column(String,ForeignKey("users.id",ondelete="SET NULL"),nullable=True)
     group_id= Column(String,ForeignKey("groups.id"))
     organizer_id = Column(String, ForeignKey("organizers.id", ondelete="SET NULL"), nullable=True)
     organizer = Column(String(255))#organisateur d'evenement
@@ -116,6 +117,7 @@ class Event(Base): #event table
     votes = relationship("Vote", back_populates="event", cascade="all, delete-orphan")
     candidates = relationship("Candidate", back_populates="event", cascade="all, delete-orphan")
     pictures = relationship("EventPictures", back_populates="event", cascade="all, delete-orphan")
+    creator = relationship("User", back_populates="events")
 
 class EventPictures(Base):
     __tablename__ = "event_pictures"

@@ -164,7 +164,7 @@ body {
                                             <span class="badge bg-danger-subtle text-danger-emphasis border border-danger-subtle">{{ event.state }}</span>
                                         {% endif %}
                                     </td>
-                                    <td>{{ event.group_id }}</td>
+                                    <td>{{ event.groups.name if event.groups else 'Admin' }}</td>
                                     <td class="text-end">
                                         <form action="/admin/delete_event/{{ event.id }}" method="post" class="d-inline">
                                             <div class="btn-group btn-group-sm" role="group">

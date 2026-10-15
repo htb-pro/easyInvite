@@ -97,6 +97,13 @@ async def getGuestInvite(
     result = await db.execute(query)
     guestInvite = result.scalars().first()
 
+    #==========recuperation des guests a la meme table
+    table_query = select(Guest).where(Guest.event_id == event_id, 
+                    Guest.place == guestInvite.place,
+                    Guest.id != guest_id)  # Exclure l'invité actuel
+    table_result = await db.execute(table_query)
+    table_guests = table_result.scalars().all()
+
     picture_query = (select(EventPictures).where(EventPictures.event_id == event_id))
     picture_result = await db.execute(picture_query)
     pictures = picture_result.scalars().all()
@@ -137,6 +144,7 @@ async def getGuestInvite(
         "lang": getattr(event, "language", "fr"),
         'message': get_message,
         'pictures': pictures,
+        'table_mates': table_guests  # Ajout des invités à la même table
     }
 
     # 2. Ta table de correspondance (type d'événement -> template)

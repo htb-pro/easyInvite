@@ -8,9 +8,9 @@
     <!-- Bootstrap 5 -->
     <link rel="stylesheet" href="/static/Css/bootstrap.min.css">
     <script src="/static/Js/bootstrap.bundle.js"></script>
-        <!-- Bootstrap CSS -->
+    <!-- Bootstrap CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-        <!-- Icons -->
+    <!-- Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
     <style>
         @media (min-width : 716px){
@@ -165,18 +165,11 @@
                         <td>
                             <div class="d-flex gap-1 align-items-center justify-content-start">
                                 <a href="/invitation/download-pdf/{{ guest.id }}" class="btn btn-outline-light">PDF</a>
-                                {% if current_user_role == "admin" or current_user_role == "manager" %}                       
+                                {% if current_user_role == "admin" or current_user_role == "manager" %}                     
                                     
-                                    <a href="/wa_me/share_invite/{{event.id}}/{{guest.id}}"  class="btn btn-outline-success  ">                                        
+                                    <a href="/wa_me/share_invite/{{event.id}}/{{guest.id}}"  class="btn btn-outline-success  ">                                       
                                     <i class="bi bi-whatsapp"></i>
                                     </a>
-                                {% endif %}
-
-                                {% if current_user_role == "admin" or current_user_role == "manager" %}                       
-                                    <!-- <a href="/sms_sharing_invite/{{ event.id }}/{{ guest.id }}" class="btn btn-sm btn-outline-light text-dark border-secondary">
-                                        <i class="bi bi-chat-left-text"></i>
-                                    </a> -->
-                                     
                                 {% endif %}
 
                                 <a href="/guest/{{ guest.id }}/{{ event_id }}/detail" class="btn btn-sm btn-outline-light text-dark border-secondary">👁</a>
@@ -197,6 +190,31 @@
             </table>
             
         </div>
+        <!-- Section Pagination Desktop -->
+        <nav aria-label="Navigation des pages" class="my-4">
+            <ul class="pagination justify-content-center">
+                <!-- Bouton Précédent -->
+                <li class="page-item {% if current_page <= 1 %}disabled{% endif %}">
+                    <a class="page-link" href="/guest_list/{{event.id}}?skip={{ (current_page - 2) * limit if current_page > 2 else 0 }}&limit={{ limit }}" tabindex="-1">
+                        <i class="bi bi-chevron-left"></i> Précédent
+                    </a>
+                </li>
+
+                <!-- Indicateur de page actuelle -->
+                <li class="page-item disabled">
+                    <span class="page-link bg-light text-dark border-secondary">
+                        Page {{ current_page }} / {{ total_pages }}
+                    </span>
+                </li>
+
+                <!-- Bouton Suivant -->
+                <li class="page-item {% if current_page >= total_pages %}disabled{% endif %}">
+                    <a class="page-link" href="/guest_list/{{event.id}}?skip={{ current_page * limit }}&limit={{ limit }}">
+                        Suivant <i class="bi bi-chevron-right"></i>
+                    </a>
+                </li>
+            </ul>
+        </nav>
     </div>
 
 <div class="d-block d-md-none d-lg-none d-xl-none">
@@ -230,16 +248,10 @@
                             <small class="d-flex justify-content-center ">
                                 <a href="/invitation/download-pdf/{{ guest.id }}" class="btn btn-outline-light">PDF</a>
                                 <a href="/guest/{{guest.id}}/{{event_id}}/detail"  class="btn btn-outline-light ">👁</a>
-                                {%if current_user_role == "admin" or current_user_role == "manager" %}                     
-                                <!-- <form action="/share_invite/{{ guest.event_id }}/{{ guest.id }}" method="post" class="m-0">
-                                        <button class="btn btn-sm btn-outline-success"><i class="bi bi-whatsapp"></i></button>
-                                </form> -->
+                                {%if current_user_role == "admin" or current_user_role == "manager" %}                    
                                 <a href="/wa_me/share_invite/{{event.id}}/{{guest.id}}"  class="btn btn-outline-success  ">
                                     <i class="bi bi-whatsapp"></i>
                                 </a>
-                                <!-- <a href="/sms_sharing_invite/{{event.id}}/{{guest.id}}"  class="btn btn-outline-light  ">
-                                    <i class="bi bi-chat-left-text"></i>
-                                </a> -->
                                 <a href="/invite/{{event_id}}/{{guest.id}}/create" class="btn btn-outline-light "><i class="bi bi-envelope me-1"></i></a>
                                 <a href="/edit_guest_form/{{event_id}}/{{guest.id}}" class="btn btn-outline-light ms-2">✏</a>
                                 <form action="/delete_guest/{{event_id}}/guest" method="post" class="ms-2">
@@ -261,18 +273,33 @@
                 <p class="text-light mb-0">
                     Cliquez sur <strong>"Ajouter des invités"</strong> pour commencer.
                 </p>
-                   
-                    {%endif%}
+                    
+                {%endif%}
     </div>
 
-            <!-- Pagination -->
+            <!-- Section Pagination Mobile -->
             <nav class="mt-4 d-block d-md-none">
                 <ul class="pagination justify-content-center pagination-sm">
-                    <li class="page-item"><a class="page-link" href="#">←</a></li>
-                    <li class="page-item active"><a class="page-link" href="#">1</a></li>
-                    <li class="page-item"><a class="page-link" href="#">2</a></li>
-                    <li class="page-item"><a class="page-link" href="#">3</a></li>
-                    <li class="page-item"><a class="page-link" href="#">→</a></li>
+                    <!-- Bouton Précédent -->
+                    <li class="page-item {% if current_page <= 1 %}disabled{% endif %}">
+                        <a class="page-link" href="/guest_list/{{event.id}}?skip={{ (current_page - 2) * limit if current_page > 2 else 0 }}&limit={{ limit }}" tabindex="-1">
+                            <i class="bi bi-chevron-left"></i> Précédent
+                        </a>
+                    </li>
+
+                    <!-- Indicateur de page actuelle -->
+                    <li class="page-item disabled">
+                        <span class="page-link bg-light text-dark border-secondary">
+                            Page {{ current_page }} / {{ total_pages }}
+                        </span>
+                    </li>
+
+                    <!-- Bouton Suivant -->
+                    <li class="page-item {% if current_page >= total_pages %}disabled{% endif %}">
+                        <a class="page-link" href="/guest_list/{{event.id}}?skip={{ current_page * limit }}&limit={{ limit }}">
+                            Suivant <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
                 </ul>
             </nav>
         </div>
@@ -280,7 +307,3 @@
 </div>
 </body>
 </html>
-
-
-
-

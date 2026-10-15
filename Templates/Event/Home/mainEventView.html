@@ -53,12 +53,9 @@
         border-color :rgba(255,255,255,0.3);
         color:white;
     }
-    /* Force le conteneur du modal à passer au-premier plan */
     .modal {
         z-index: 99999 !important;
     }
-
-    /* Force l'arrière-plan sombre du modal à être juste en dessous de la boîte de dialogue */
     .modal-backdrop {
         z-index: 99990 !important;
     }
@@ -116,13 +113,15 @@
     </div>
 
     <div class="row g-2 mb-3">
-        {% if event.type == "other"  and current_user_role == "admin" or current_user_role == "manager" %}
+        <!-- Si c'est "other" ET que l'utilisateur est admin ou manager -->
+        {% if event.type == "other" and (current_user_role == "admin" or current_user_role == "manager") %}
         <div class="col-12 col-md-6 col-lg-3">
             <a href="/list_tickets/{{event.id}}" class="btn btn-success w-100">
                 <i class="bi bi-eye"></i> Voir les tickets
             </a>
         </div>
-        {% else %}
+        <!-- Sinon, si c'est un Mariage (ou par défaut pour les autres types), on affiche "Voir les invités" -->
+        {% elif event.type == "Mariage" %}
         <div class="col-12 col-md-6 col-lg-3">
             <a href="/guest_list/{{event.id}}" class="btn btn-success w-100">
                 <i class="bi bi-eye"></i> Voir les invités
@@ -158,7 +157,7 @@
             <a href="/payments/{{event.id}}" class="btn btn-outline-success text-light w-100">Set payment</a>
         </div>
         {% endif%}
-        {% if event.type == "other" and current_user_role == "admin" or current_user_role == "manager"%}
+        {% if event.type == "other" and (current_user_role == "admin" or current_user_role == "manager") %}
         <div class="col-12 col-md-6 col-lg-3">
             <a href="/list_orders/{{event.id}}" class="btn btn-outline-success text-light w-100">Voir les commandes</a>
         </div>
@@ -171,6 +170,7 @@
     </div>
     {% endif %}
 
+    <!-- ===== VERSION DESKTOP ===== -->
     <div class="d-none d-md-block">
         <nav class="navbar bg-primary text-white px-3 mb-2 rounded">
             <span class="navbar-brand mb-0 h5 text-white">Liste des Invités</span>
@@ -181,7 +181,7 @@
             {% endif %}
         </nav>
 
-        {% if event.guests %}
+        {% if guests %}
         <div class="table-view">
             <table class="table table-striped table-hover table-easy">
                 <thead>
@@ -195,7 +195,7 @@
                     </tr>
                 </thead>   
                 <tbody>
-                    {% for guest in event.guests %}
+                    {% for guest in guests %}
                     <tr>
                         <td>{{ guest.name }}</td>
                         <td>{{ guest.guest_type }}</td>
@@ -207,58 +207,27 @@
                     {% endfor %}
                 </tbody>
             </table>
-        </div>
-        {% elif event.type == "other" %}
-        <div class="table-view">
-            {% if tickets %}
-            <table class="table table-striped table-hover table-easy">
-                <thead>
-                    <tr>
-                        <th>Nom du Participant</th>
-                        <th>Type de billet</th> 
-                        <th>Qr token</th> 
-                        <th>Get_pass</th>
-                        <th>État</th>
-                    </tr>
-                </thead>   
-                <tbody>
-                    {% for ticket in tickets %}
-                    <tr>
-                        <td>{{ ticket.participator_name }}</td>
-                        <td>{% if ticket.orders.ticket_type %}{{ticket.orders.ticket_type}}{%else%}<span class="text-danger">deleted</span>{%endif%}</td>
-                        <td>{{ ticket.qr_token }}</td>
-                        <td>{{ ticket.get_pass }}</td>
-                        <td><span class="text-success">{% if ticket.is_scanned %}<i class="bi bi-check-circle"></i> Scanné</span>{%else%}<span class="text-danger"><i class="bi bi-x-octagon"></i> Non scanné{%endif%}</span></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-            <nav class="mt-4">
+            
+            <!-- Pagination Desktop -->
+            <nav aria-label="Navigation des pages" class="my-4">
                 <ul class="pagination justify-content-center">
-                    <li class="page-item {% if page <= 1 %}disabled{% endif %}">
-                        <a class="page-link" href="?page={{ page - 1 }}">Précédent</a>
+                    <li class="page-item {% if current_page <= 1 %}disabled{% endif %}">
+                        <a class="page-link" href="/event_description/{{event.id}}?skip={{ (current_page - 2) * limit if current_page > 2 else 0 }}&limit={{ limit }}" tabindex="-1">
+                            <i class="bi bi-chevron-left"></i> Précédent
+                        </a>
                     </li>
-                    {% for p in range(1, total_pages + 1) %}
-                        {% if p == 1 or p == total_pages or (p >= page - 1 and p <= page + 1) %}
-                        <li class="page-item {% if page == p %}active{% endif %}">
-                            <a class="page-link" href="?page={{ p }}">{{ p }}</a>
-                        </li>
-                        {% elif p == page - 2 or p == page + 2 %}
-                        <li class="page-item disabled"><span class="page-link">...</span></li>
-                        {% endif %}
-                    {% endfor %}
-                    <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
-                        <a class="page-link" href="?page={{ page + 1 }}">Suivant</a>
+                    <li class="page-item disabled">
+                        <span class="page-link bg-light text-dark border-secondary">
+                            Page {{ current_page }} / {{ total_pages }}
+                        </span>
+                    </li>
+                    <li class="page-item {% if current_page >= total_pages %}disabled{% endif %}">
+                        <a class="page-link" href="/event_description/{{event.id}}?skip={{ current_page * limit }}&limit={{ limit }}">
+                            Suivant <i class="bi bi-chevron-right"></i>
+                        </a>
                     </li>
                 </ul>
             </nav>
-            {% else %}
-            <div class="text-center text-light py-4">
-                <i class="bi bi-clipboard-plus fs-1 text-secondary d-block mb-2"></i>
-                <h6 class="fw-bold">Aucun billet ajouté pour le moment</h6>
-                <p class="text-white-50 small">Cliquez sur "Ajouter" pour commencer.</p>
-            </div>
-            {% endif %}
         </div>
         {% else %}
         <div class="text-center text-light py-4">
@@ -269,73 +238,59 @@
         {% endif %}
     </div>
 
+    <!-- ===== VERSION MOBILE (Corrigée avec les invités paginés) ===== -->
     <div class="d-block d-md-none mt-4">
         <nav class="navbar bg-primary text-white px-3 rounded mb-2">
             <span class="navbar-brand mb-0 h5 text-light">Liste des Invités</span>
             <a href="/create/{{event.id}}/guest" class="btn btn-light btn-sm"><i class="bi bi-plus"></i> Ajouter</a>
         </nav>
 
-        {% if event.guests %}
+        {% if guests %}
         <div class="table-responsive">
             <table class="table mb-0">
                 <thead>
                     <tr>
-                        <th class="text-light">Index</th>
                         <th class="text-light">Nom</th>
+                        <th class="text-light">Type</th>
+                        <th class="text-light">Table</th>
                     </tr>
                 </thead> 
                 <tbody>
-                    {% for guest in event.guests %}
+                    {% for guest in guests %}
                     <tr>
-                        <td class="text-light">{{loop.index}}</td>
-                        <td class="text-light">{{guest.name}}</td>
+                        <td class="text-light">{{ guest.name }}</td>
+                        <td class="text-light">{{ guest.guest_type }}</td>
+                        <td class="text-light">{{ guest.place }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
-        </div>
-        {% elif event.type == "other" and tickets %}
-        <div class="table-responsive">
-            <table class="table mb-0">
-                <thead>
-                    <tr>
-                        <th class="text-light">Index</th>
-                        <th class="text-light">Nom</th>
-                    </tr>
-                </thead> 
-                <tbody>
-                    {% for ticket in tickets %}
-                    <tr>
-                        <td class="text-light">{{loop.index}}</td>
-                        <td class="text-light">{{ticket.participator_name}}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        <nav class="mt-4">
+
+            <!-- Pagination Mobile -->
+            <nav aria-label="Navigation mobile" class="my-4">
                 <ul class="pagination justify-content-center">
-                    <li class="page-item {% if page <= 1 %}disabled{% endif %}">
-                        <a class="page-link" href="?page={{ page - 1 }}">Précédent</a>
+                    <li class="page-item {% if current_page <= 1 %}disabled{% endif %}">
+                        <a class="page-link" href="/event_description/{{event.id}}?skip={{ (current_page - 2) * limit if current_page > 2 else 0 }}&limit={{ limit }}" tabindex="-1">
+                            <i class="bi bi-chevron-left"></i> Précédent
+                        </a>
                     </li>
-                    {% for p in range(1, total_pages + 1) %}
-                        {% if p == 1 or p == total_pages or (p >= page - 1 and p <= page + 1) %}
-                        <li class="page-item {% if page == p %}active{% endif %}">
-                            <a class="page-link" href="?page={{ p }}">{{ p }}</a>
-                        </li>
-                        {% elif p == page - 2 or p == page + 2 %}
-                        <li class="page-item disabled"><span class="page-link">...</span></li>
-                        {% endif %}
-                    {% endfor %}
-                    <li class="page-item {% if page >= total_pages %}disabled{% endif %}">
-                        <a class="page-link" href="?page={{ page + 1 }}">Suivant</a>
+                    <li class="page-item disabled">
+                        <span class="page-link bg-light text-dark border-secondary">
+                            Page {{ current_page }} / {{ total_pages }}
+                        </span>
+                    </li>
+                    <li class="page-item {% if current_page >= total_pages %}disabled{% endif %}">
+                        <a class="page-link" href="/event_description/{{event.id}}?skip={{ current_page * limit }}&limit={{ limit }}">
+                            Suivant <i class="bi bi-chevron-right"></i>
+                        </a>
                     </li>
                 </ul>
             </nav>
+        </div>
         {% else %}
         <div class="text-center text-light py-4">
             <i class="bi bi-clipboard-plus fs-1 text-secondary d-block mb-2"></i>
-            <h6 class="fw-bold text-light">Aucun élément disponible</h6>
+            <h6 class="fw-bold text-light">Aucun invité disponible</h6>
             <p class="text-white-50 small">Cliquez sur "Ajouter" pour commencer.</p>
         </div>
         {% endif %}
@@ -343,27 +298,27 @@
 
 </div>
 
-<div class="modal fade" id="confirmShareModal" tabindex="-1" aria-hidden="true" >
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content bg-dark text-white border-secondary">
-                <div class="modal-header border-secondary">
-                    <h5 class="modal-title fw-bold text-danger">🚨 Action Irréversible</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Vous êtes sur le point de lancer la distribution automatique des invitations WhatsApp pour cet événement de <strong>{{ event.type }}</strong>.</p>
-                    <p class="text-warning small"><i class="bi bi-exclamation-triangle"></i> Cette action va envoyer un message personnalisé à tous les invités de la liste.</p>
-                </div>
-                <div class="modal-footer border-secondary">
-                    <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Annuler</button>                        
-                    <button type="button" id="startBulkSend" data-event-id="{{ event.id }}" class="btn btn-danger px-4">
-                        Confirmer et lancer l'envoi
-                    </button>
-                </div>
+<!-- Modal -->
+<div class="modal fade" id="confirmShareModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content bg-dark text-white border-secondary">
+            <div class="modal-header border-secondary">
+                <h5 class="modal-title fw-bold text-danger">🚨 Action Irréversible</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Vous êtes sur le point de lancer la distribution automatique des invitations WhatsApp pour cet événement de <strong>{{ event.type }}</strong>.</p>
+                <p class="text-warning small"><i class="bi bi-exclamation-triangle"></i> Cette action va envoyer un message personnalisé à tous les invités de la liste.</p>
+            </div>
+            <div class="modal-footer border-secondary">
+                <button type="button" class="btn btn-outline-light" data-bs-dismiss="modal">Annuler</button>                        
+                <button type="button" id="startBulkSend" data-event-id="{{ event.id }}" class="btn btn-danger px-4">
+                    Confirmer et lancer l'envoi
+                </button>
             </div>
         </div>
     </div>
-
+</div>
 
 <script>
     setTimeout(() => {
@@ -375,12 +330,12 @@
         }
     }, 3000);
 </script>
+
 <script>
 document.getElementById('startBulkSend').addEventListener('click', async function() {
     const button = this;
     const modalElement = document.getElementById('confirmShareModal');
     const modalInstance = bootstrap.Modal.getInstance(modalElement);
-    
     const eventId = button.getAttribute('data-event-id') || "{{ event.id }}"; 
 
     const originalText = button.innerHTML;
@@ -390,31 +345,24 @@ document.getElementById('startBulkSend').addEventListener('click', async functio
     try {
         const response = await fetch(`/share_all_invites/${eventId}`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            }
+            headers: { 'Content-Type': 'application/json' }
         });
 
-        // On vérifie d'abord si la réponse est bien du JSON
         const contentType = response.headers.get("content-type");
         if (contentType && contentType.indexOf("application/json") !== -1) {
             const data = await response.json();
-
             if (response.ok) {
                 modalInstance.hide();
-                // Au lieu d'un alert bloquant, on recharge la page directement
                 window.location.reload();
             } else {
                 alert(`❌ Erreur : ${data.detail || "Une erreur est survenue lors du lancement."}`);
             }
         } else {
-            // Si le serveur a renvoyé autre chose (ex: HTML suite à une erreur ou redirection)
             window.location.reload();
         }
-
     } catch (error) {
         console.error('Erreur lors de la requête:', error);
-        alert('❌ Impossible de joindre le serveur ou analyse de réponse échouée.');
+        alert('❌ Impossible de joindre le serveur.');
     } finally {
         button.disabled = false;
         button.innerHTML = originalText;

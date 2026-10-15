@@ -1,5 +1,5 @@
 #APIRouter permet juste l'organisation du code au lieu d' avoir tout les routes dans un fichier main oon cree les root separement
-import json
+import json,math
 from xmlrpc import client
 from fastapi import Request,Form,Depends,HTTPException,APIRouter,Cookie,Form,UploadFile,File,BackgroundTasks,status,Query
 from fastapi.responses import RedirectResponse,HTMLResponse,JSONResponse
@@ -67,48 +67,105 @@ def format_to_drc_phone(phone_number: str) -> str: #methode pour formater le num
     return digits
 
 
-@Root.get("/guest_list/{event_id}",name="guest_list") #get the guest list
-async def get_guest_list(request:Request,event_id:str,access_token = Cookie(None),db:AsyncSession = Depends(connecting),user = Depends(permission_required("view_guest"))):
-    current_res = jwt.decode(access_token,secret,algorithms = [algo])
-    user_id = current_res.get("user")
-    if user_id:
-        user_res = await db.execute(select(User).where(User.id ==user_id))
-        user = user_res.scalars().first()
-        for role in user.roles:
-             user_role = role.name
-    get_event_guest = select(Event).options(selectinload(Event.guests)).where(Event.id == event_id)#prendre l'evenement qui a des invites
+@Root.get("/guest_list/{event_id}", name="guest_list")
+async def get_guest_list(
+    request: Request,
+    event_id: str,
+    skip: int = Query(0, ge=0, description="le nombre de guests a sauter"),
+    limit: int = Query(10, ge=1, le=100, description="le nombre limite a prendre a la fois"),
+    access_token: str = Cookie(None),
+    db: AsyncSession = Depends(connecting),
+    user = Depends(permission_required("view_guest"))
+):
+    # Gestion du rôle utilisateur de manière sécurisée
+    user_role = "user"  # Valeur par défaut
+    if access_token:
+        try:
+            current_res = jwt.decode(access_token, secret, algorithms=[algo])
+            user_id = current_res.get("user")
+            if user_id:
+                user_res = await db.execute(select(User).where(User.id == user_id))
+                user = user_res.scalars().first()
+                if user and user.roles:
+                    user_role = user.roles[0].name
+        except Exception:
+            pass
+
+    # Vérification de l'événement
+    get_event_guest = select(Event).options(selectinload(Event.guests)).where(Event.id == event_id)
     result = await db.execute(get_event_guest)
     event = result.scalars().first()
-    guest_res = await db.execute(select(Guest).where(Guest.event_id==event_id).options(selectinload(Guest.invite)).order_by(desc(Guest.created_date)))#prendre les invites de l'evenement
+
+    if not event:
+        raise HTTPException(404, "aucun evenement trouvé")
+
+    # Récupération des invités avec pagination
+    guest_res = await db.execute(
+        select(Guest)
+        .where(Guest.event_id == event_id)
+        .offset(skip)
+        .limit(limit)
+        .options(selectinload(Guest.invite))
+        .order_by(desc(Guest.created_date))
+    )
     guests = guest_res.scalars().all()
+
+    # Statistiques et comptages
     get_invite = await db.execute(select(Invite))
     invite = get_invite.scalars().all()
-    get_present = select(Guest).where(Guest.event_id == event_id,Guest.is_present == True)
-    get_absent = select(Guest).where(Guest.event_id == event_id,Guest.is_present == False)
-    present_res = await db.execute(get_present) 
-    absent_res = await db.execute(get_absent) 
-    get_present_guest = present_res.scalars().all()#guest nombre qui sont present 
-    get_absent_guest = absent_res.scalars().all()#guest nombre qui sont absent
-    present_guest = len(get_present_guest)
-    absent_guest = len(get_absent_guest)
+
+    present_res = await db.execute(select(Guest).where(Guest.event_id == event_id, Guest.is_present == True))
+    absent_res = await db.execute(select(Guest).where(Guest.event_id == event_id, Guest.is_present == False))
+    present_guest = len(present_res.scalars().all())
+    absent_guest = len(absent_res.scalars().all())
+
     ticket_res = await db.execute(select(Ticket).where(Ticket.event_id == event_id))
     tickets = ticket_res.scalars().all()
-    nb_sent_message = (await db.execute(select(func.count()).select_from(Guest).where(Guest.whatsapp_status == "sent"))).scalar() or 0 # nombre de message envoyer
-    nb_failed_message = (await db.execute(select(func.count()).select_from(Guest).where(Guest.whatsapp_status == "failed"))).scalar() or 0 # nombre de message echoue
-    nb_no_whatsapp_message = (await db.execute(select(func.count()).select_from(Guest).where(Guest.whatsapp_status == "no_whatsapp", Guest.event_id == event_id))).scalar() or 0 # nombre de compte sans whatsapp
-    nb_pending_message = (await db.execute(select(func.count()).select_from(Guest).where(Guest.whatsapp_status == "pending", Guest.event_id == event_id))).scalar() or 0 # nombre de message en attende 
+
+    nb_sent_message = (await db.execute(select(func.count()).select_from(Guest).where(Guest.whatsapp_status == "sent", Guest.event_id == event_id))).scalar() or 0
+    nb_failed_message = (await db.execute(select(func.count()).select_from(Guest).where(Guest.whatsapp_status == "failed", Guest.event_id == event_id))).scalar() or 0
+    nb_no_whatsapp_message = (await db.execute(select(func.count()).select_from(Guest).where(Guest.whatsapp_status == "no_whatsapp", Guest.event_id == event_id))).scalar() or 0
+    nb_pending_message = (await db.execute(select(func.count()).select_from(Guest).where(Guest.whatsapp_status == "pending", Guest.event_id == event_id))).scalar() or 0
     nb_couple = (await db.execute(select(func.count()).select_from(Guest).where(Guest.guest_type == "Couple", Guest.event_id == event_id))).scalar() or 0
     nb_single = (await db.execute(select(func.count()).select_from(Guest).where(Guest.guest_type == "Singleton", Guest.event_id == event_id))).scalar() or 0
-    #variable contenant message whatsapp
-    sent_message = request.session.pop("sent_message",None)
-    if not event :
-        raise HTTPException(404,"aucun evenement trouvé")
-    if not guests :
-        return templates.TemplateResponse("Guest/List/notFound.html",{'request':request,"Error":'404','event':event})
-    return templates.TemplateResponse("Guest/List/list.html",{'request':request,'sent_message':sent_message,'invite':invite,'event':event,'guests':guests,'event_id':event_id,'present_guest':present_guest,'absent_guest':absent_guest,'current_user_role':user_role,'tickets':tickets,
-    'nb_sent_message':nb_sent_message,'nb_failed_message':nb_failed_message, 'nb_no_whatsapp_message':nb_no_whatsapp_message, 'nb_pending_message':nb_pending_message,
-    'single_number':nb_single,'couple_number':nb_couple},status_code=303)
 
+    # ========================= PAGINATION CORRIGÉE =============================
+    stmt = select(func.count()).select_from(Guest).where(Guest.event_id == event_id)
+    get_guest_res = await db.execute(stmt)
+    total_guests = get_guest_res.scalar() or 0
+
+    current_page = (skip // limit) + 1
+    total_pages = math.ceil(total_guests / limit) if total_guests > 0 else 1
+    # ===========================================================================
+
+    sent_message = request.session.pop("sent_message", None)
+
+    # Si l'utilisateur tape un skip trop grand dans l'URL manuellement, on le redirige ou on gère proprement
+    # (Optionnel : vous pouvez laisser passer et afficher un message "aucun invité sur cette page" dans le HTML)
+
+    return templates.TemplateResponse("Guest/List/list.html", {
+        'request': request,
+        'sent_message': sent_message,
+        'invite': invite,
+        'event': event,
+        'guests': guests,
+        'event_id': event_id,
+        'present_guest': present_guest,
+        'absent_guest': absent_guest,
+        'current_user_role': user_role,
+        'tickets': tickets,
+        'nb_sent_message': nb_sent_message,
+        'nb_failed_message': nb_failed_message,
+        'nb_no_whatsapp_message': nb_no_whatsapp_message,
+        'nb_pending_message': nb_pending_message,
+        'total_guests': total_guests,
+        'total_pages': total_pages,  # <--- INDISPENSABLE POUR LE FRONT-END !
+        'current_page': current_page,
+        'limit': limit,
+        'skip': skip,
+        'single_number': nb_single,
+        'couple_number': nb_couple
+    })
 VERSION = "v20.0"
 
 URL_MESSAGES = f"https://graph.facebook.com/{VERSION}/{whatsap_phone_Number_ID}/messages" # point d'access meta pour envoyer les message text

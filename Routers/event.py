@@ -1,9 +1,9 @@
 #APIRouter permet juste l'organisation du code au lieu d' avoir tout les routes dans un fichier main oon cree les root separement
 from asyncio.log import logger
 from email.header import Header
-import re
+import re,math
 
-from fastapi import Request,Form,Depends,HTTPException,APIRouter,UploadFile,File,Cookie,status
+from fastapi import Request,Form,Depends,HTTPException,APIRouter,UploadFile,File,Cookie,status,Query
 from fastapi.responses import RedirectResponse,StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -72,17 +72,19 @@ async def getEventList(request:Request,  db:AsyncSession = Depends(connecting),a
         for user_group in user.groups:
             group_id = user_group.id
         if user_role == "admin":
-            get_event =await db.execute(select(Event).options(selectinload(Event.guests)).order_by(desc(Event.created_date)))
+            get_event =await db.execute(select(Event).options(selectinload(Event.guests),selectinload(Event.creator)).order_by(desc(Event.created_date)))
             events = get_event.scalars().all()
-            return templates.TemplateResponse("Event/List/list_event.html",{'request':request,"events":events,'curent_user_role':user_role})
+            return templates.TemplateResponse("Event/List/list_event.html",{'request':request,"events":events,'user':user,'current_user_role':user_role})
     get_event =await db.execute(select(Event).where(Event.group_id == group_id).options(selectinload(Event.guests),selectinload(Event.tickets)).order_by(desc(Event.created_date)))
     events = get_event.scalars().all()
-    return templates.TemplateResponse("Event/List/list_event.html",{'request':request,"events":events,'curent_user_role':user_role})
+    return templates.TemplateResponse("Event/List/list_event.html",{'request':request,"events":events,'current_user_role':user_role})
 
 @Root.get("/event_description/{event_id}",name="main_event")#get the mainEventView
 async def getEventForm(request:Request,event_id :str,
                        page:int = 1,
                        access_token=Cookie(None),
+                       skip: int = Query(0, ge=0, description="Nombre d'éléments à ignorer"),
+                       limit: int = Query(10, ge=1, le=100, description="Nombre d'éléments par page"),
                        db:AsyncSession = Depends(connecting),user = Depends(permission_required("view_event"))):
     current_res = jwt.decode(access_token,secret,algorithms=[algo])
     user_id = current_res.get("user")
@@ -91,15 +93,15 @@ async def getEventForm(request:Request,event_id :str,
     for role in user.roles:
         user_role = role.name
     select_event =(select(Event).where(Event.id==event_id).options(selectinload(Event.guests)))
-    get_guests = await db.execute(select_event)
-    event = get_guests.scalars().first()
+    get_event = await db.execute(select_event)
+    event = get_event.scalars().first()
     total =len(event.guests)
     #-----------------------pagination
     total_ticket = (await db.execute(select(func.count()).select_from(Ticket).where(Ticket.event_id == event_id))).scalar() or 0
-    per_page = 50 #notre d'items par page
+    per_page = 1 #notre d'items par page
     offset = (page - 1) * per_page #decalage
-    total_pages = (total_ticket + per_page - 1) // per_page #le nombre total de page
-    #total__guest_pages = (await db.execute(select(func.count()).select_from(Guest).where(Guest.event_id == event_id))).scalar() or 0
+    total_ticket_pages = (total_ticket + per_page - 1) // per_page #le nombre total de page
+    total__guest_pages = (await db.execute(select(func.count()).select_from(Guest).where(Guest.event_id == event_id))).scalar() or 0
     stmt = (
     select(Ticket)
     .where(Ticket.event_id == event_id)
@@ -108,10 +110,32 @@ async def getEventForm(request:Request,event_id :str,
     .limit(per_page)
     .options(selectinload(Ticket.orders)) # Vérifie si c'est 'order' ou 'orders' dans ton modèle
 )
+    #===============Pagination des guests
+    total_query = select(func.count()).select_from(Guest).where(Guest.event_id == event_id)
+    total_res = await db.execute(total_query)
+    total_guest = total_res.scalar() or 0
+    total_pages = math.ceil(total_guest / limit) if total_guest > 0 else 1  # Calcul du nombre total de pages
+    # 3. Récupérer uniquement la tranche d'invités demandée (avec skip et limit)
+    guests_query = (
+        select(Guest)
+        .where(Guest.event_id == event_id)
+        .offset(skip)
+        .limit(limit)
+    )
+    guests_res = await db.execute(guests_query)
+    guests = guests_res.scalars().all()
+    current_page = (skip // limit) + 1
+    #=============================
     ticket_res = await db.execute(stmt)
     tickets = ticket_res.scalars().all()
     return templates.TemplateResponse("Event/Home/mainEventView.html",{'request':request,
-    "tickets":tickets,"event":event,"total":total,'current_user_role':user_role,'total_pages': total_pages, 'page': page,})
+    "tickets":tickets,"event":event,"total":total,'current_user_role':user_role,'guests':guests,
+    'total_pages': total_pages, 'page': page,
+    "current_page": current_page,
+    "total_pages": total_pages,
+    "total_guests": total_guest,
+    "limit": limit
+    })
 
 @Root.get("/detail/event/{event_id}")#la root pour voir les detail d'un event
 async def eventDetail(request:Request,event_id : str,access_token = Cookie(None),db:AsyncSession = Depends(connecting),user = Depends(permission_required("view_event"))):
@@ -480,13 +504,6 @@ async def editEvent(
         request.session['form_data'] = form_data
         return RedirectResponse(f"/edit_event/{event_id}", status_code=303)
 
-    # 6. Gestion du groupe de l'utilisateur (Non-admin)
-    group_id = editedEventData.group_id
-    groups = None
-    if user_role != "admin":
-        groups_res = await db.execute(select(Group).where(Group.id == group_id))
-        groups = groups_res.scalars().first()
-
     # 7. Gestion de l'image (Cloudinary)
     photo_url = editedEventData.photo_url
     photo_public_id = editedEventData.photo_public_id
@@ -535,8 +552,7 @@ async def editEvent(
     editedEventData.city = city if city else None
 
     # Gestion propre de la relation de groupe
-    if user_role != "admin" and groups:
-        editedEventData.groups = [groups]
+
 
     # 9. Commit sécurisé
     try:
@@ -557,16 +573,16 @@ async def deleteEvent(
     db: AsyncSession = Depends(connecting)
 ):
     # 1. On ne récupère l'événement QUE s'il n'est pas déjà soft-deleté
-    event_query = select(Event).where(Event.id == event_id, Event.is_deleted == False)
+    event_query = select(Event).where(Event.id == event_id)
     res = await db.execute(event_query)
     eventToDelete = res.scalars().first()
     
     if not eventToDelete:
         raise HTTPException(status_code=404, detail="Cet événement n'existe pas ou a déjà été supprimé")
-    
+    raw_type = str(eventToDelete.type) if eventToDelete.type else ""
+    wedding = raw_type.strip().capitalize()
     picture_to_be_deleted = eventToDelete.photo_public_id 
-    is_wedding = eventToDelete.type.strip().lower() == "Mariage"
-    
+    is_wedding = (wedding == "Mariage")
     try:
         if is_wedding:
             # --- HARD DELETE ---

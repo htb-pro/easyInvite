@@ -224,6 +224,58 @@
             letter-spacing: 1px;
         }
 
+    /* TABLE MATES SECTION */
+        .table-mates-card {
+            max-width: 650px;
+            margin: 0 auto;
+            background: white;
+            border: 1px solid #ded7c9;
+            padding: 40px 30px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+        }
+
+        .table-badge {
+            display: inline-block;
+            background: var(--ivory);
+            border: 1px solid var(--gold);
+            color: var(--gold);
+            padding: 8px 20px;
+            font-size: 13px;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            margin-bottom: 25px;
+            font-weight: 600;
+        }
+
+        .mates-list {
+            list-style: none;
+            padding: 0;
+            margin: 20px 0 0 0;
+            text-align: left;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .mates-item {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f0eada;
+            font-size: 14px;
+            color: var(--black);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .mates-item:last-child {
+            border-bottom: none;
+        }
+
+        .mates-item i {
+            color: var(--gold);
+        }
+
         .btn-action-primary, .btn-action-secondary {
             display: block;
             width: 100%;
@@ -602,6 +654,38 @@
         </div>
     </div>
 </section>
+
+<!-- TABLE MATES -->
+{% if guest and guest.place %}
+<section class="section action-section pt-0">
+    <div class="container" data-aos="fade-up">
+        <div class="table-mates-card">
+            <div class="section-label">Votre placement</div>
+            <h3 class="section-title mt-2" style="font-size: 32px;">Compagnons de table</h3>
+            <div class="gold-line"></div>
+
+            <div class="table-badge">
+                <i class="bi bi-people-fill me-2"></i> Table : {{ guest.place }}
+            </div>
+
+            <p class="text-muted small mb-3">Voici les convives qui partageront cette table avec vous :</p>
+
+            {% if table_mates and table_mates|length > 0 %}
+                <ul class="mates-list">
+                    {% for mate in table_mates %}
+                    <li class="mates-item">
+                        <span><i class="bi bi-person me-2"></i> {{ mate.name }}</span>
+                        <span class="badge bg-light text-dark fw-normal" style="font-size: 10px;">Invité(e)</span>
+                    </li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p class="text-muted fst-italic small">Vous êtes pour l'instant seul(e) assigné(e) à cette table ou les autres attributions sont en cours.</p>
+            {% endif %}
+        </div>
+    </div>
+</section>
+{% endif %}
 
 <!-- DETAILS -->
 <section class="section details">

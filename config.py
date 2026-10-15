@@ -12,7 +12,6 @@ load_dotenv()
 
 set_secure_cookie =True #la variable permettant l'usage du csrf_token Fasle en locale et True en ligne ou prod#
 bool_state = True
-
 secret = os.getenv('SECRET')#le secret ou sinature du token
 algo = os.getenv('ALGO')#type d'algorithme
 africa_talking_key = os.getenv('africa_talking_key')#at key

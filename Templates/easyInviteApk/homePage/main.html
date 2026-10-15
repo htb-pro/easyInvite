@@ -89,10 +89,11 @@
 
     /* Navbar */
     .api-header {
-     background: linear-gradient(135deg, #3fa9f5, #1e88e5);
+      background: linear-gradient(135deg, #3fa9f5, #1e88e5);
       color: white;
-      z-index: 2;
+      z-index: 10;
       position: relative;
+      width: 100%;
     }
 
     /* Bottom nav */
@@ -101,8 +102,8 @@
       bottom: 0;
       width: 100%;
       background: linear-gradient(135deg, #3fa9f5, #1e88e5);
-      border-top: 1px solid #ddd;
-      z-index: 2;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      z-index: 10;
     }
 
     /* Responsive spacing */
@@ -118,37 +119,42 @@
   <!-- Overlay sombre -->
   <div class="overlay"></div>
 
-  <div class="content">
-    <!-- Navbar -->
-    <nav class="api-header navbar navbar-expand-lg bg-body-tertiary">
-      <div class="container-fluid">
-        <div class="fw-bold">EasyInvite</div>
-        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
-          <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNavDropdown" style="position: relative;">
-          <ul class="navbar-nav ">
-            <li class="nav-item dropdown">
-              <a class="nav-link dropdown-toggle text-light" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                Liste
-              </a>
-              <ul class="dropdown-menu">
-                <!-- <li><a class="dropdown-item" href="">Invité(s)</a></li> -->
-                <li><a class="dropdown-item" href="{{url_for('event_list')}}">Evenement(s)</a></li>
-                {%if current_user_role == "admin"%}
-                <li><a class="dropdown-item" href="/admin_dashboard">Admin dashboard</a></li>
-                {%endif%}
-                <a href="/logout" class="btn btn-danger ms-2"><i class="bi bi-box-arrow-left"></i> déconnexion</a>
-              </ul>
-            </li>
-          </ul>
-        </div>
+  <!-- Navbar indépendante en haut -->
+  <nav class="api-header navbar navbar-expand-lg">
+    <div class="container-fluid px-4">
+      <a class="navbar-brand fw-bold text-white text-decoration-none" href="#">EasyInvite</a>
+      <button class="navbar-toggler border-0 text-white shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNavDropdown" aria-controls="navbarNavDropdown" aria-expanded="false" aria-label="Toggle navigation">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse justify-content-end" id="navbarNavDropdown">
+        <ul class="navbar-nav align-items-lg-center">
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle text-white fw-medium" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+              Menu
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end shadow border-0">
+              <li><a class="dropdown-item" href="{{url_for('event_list')}}">Evenement(s)</a></li>
+              {% if current_user_role == "admin" %}
+              <li><a class="dropdown-item" href="/admin_dashboard">Admin dashboard</a></li>
+              {% endif %}
+              <li><hr class="dropdown-divider"></li>
+              <li>
+                <a href="/logout" class="dropdown-item text-danger fw-semibold">
+                  <i class="bi bi-box-arrow-left"></i> Déconnexion
+                </a>
+              </li>
+            </ul>
+          </li>
+        </ul>
       </div>
-    </nav>
+    </div>
+  </nav>
+
+  <div class="content">
     <!-- Contenu principal -->
     <div class="container py-4">
       <div class="mb-4 text-center">
-        <h2 class="fw-bold mb-2"><i class="bi bi-person-check text-success"></i> Bienvenue {%if username%}{{username}}{%endif%}</h2>
+        <h2 class="fw-bold mb-2"><i class="bi bi-person-check text-success"></i> Bienvenue {% if username %}{{username}}{% endif %}</h2>
         <p class="text-light small">
           Vous êtes connecté à la plateforme <strong>EasyInvite</strong>
         </p>
@@ -162,7 +168,7 @@
           </p>
           <small class="text-light">
             Utilisez le menu ci-dessus pour commencer.
-          </br>date du jour : {{date.strftime("%d-%B-%Y")}}
+            <br>Date du jour : {{date.strftime("%d-%B-%Y")}}
           </small>
         </div>
       </div>
@@ -207,17 +213,15 @@
   <div class="bottom-nav d-flex justify-content-around py-2 text-center">
     <div class="text-primary invitation_icon">
       <a href="{{url_for('event_form')}}" class="text-decoration-none">
-        📩<br><small class="text-light ">Créer</small>
+        📩<br><small class="text-light">Créer</small>
       </a>
     </div>
     <div class="scan">
-      <a href="{{url_for('scanning')}}"  class="text-decoration-none">
-        ✅<br><small class="text-light ">Vérifier</small>
+      <a href="{{url_for('scanning')}}" class="text-decoration-none">
+        ✅<br><small class="text-light">Vérifier</small>
       </a>
     </div>
   </div>
 
-  <!-- Bootstrap JS -->
-  <!-- <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script> -->
 </body>
 </html>
