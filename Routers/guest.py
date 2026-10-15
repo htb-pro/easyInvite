@@ -66,6 +66,82 @@ def format_to_drc_phone(phone_number: str) -> str: #methode pour formater le num
     # Renvoie le résultat nettoyé, ou le brut si le format est inconnu
     return digits
 
+@Root.get("/events/{event_id}/guests/search", response_class=HTMLResponse)
+async def search_event_guests(
+    request: Request,
+    event_id: str,
+    access_token = Cookie(None),
+    skip: int = Query(0, ge=0, description="Nombre d'éléments à ignorer"),
+    limit: int = Query(10, ge=1, le=100, description="Nombre d'éléments par page"),
+    # Remplacer min_length par un traitement souple :
+    guest_name: Optional[str] = Query(None, max_length=100),
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
+    db: AsyncSession = Depends(connecting),
+    user = Depends(permission_required("view_guest"))
+):
+    """Recherche paginée des invités d'un événement."""
+    current_res = jwt.decode(access_token,secret,algorithms = [algo])
+    user_id = current_res.get("user")
+    if user_id:
+        user_res = await db.execute(select(User).where(User.id ==user_id))
+        user = user_res.scalars().first()
+        for role in user.roles:
+             user_role = role.name
+    # Nettoyage manuel de la chaîne (enlève les espaces superflus)
+    if guest_name:
+        guest_name = guest_name.strip()
+        # Si la chaîne est vide après nettoyage, on la remet à None
+        if not guest_name:
+            guest_name = None
+
+    # 1. Vérification de l'événement
+    event_res = await db.execute(select(Event).where(Event.id == event_id))
+    event = event_res.scalars().first()
+    if not event:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Événement introuvable"
+        )
+
+    # 2. Construction de la requête
+    query = select(Guest).where(Guest.event_id == event_id).offset(skip).limit(limit)
+    
+    # La recherche ne s'exécute que si guest_name contient au moins 1 caractère valide
+    if guest_name:
+        safe_name = guest_name.replace("%", r"\%").replace("_", r"\_")
+        query = query.where(Guest.name.ilike(f"%{safe_name}%"))
+
+    # 3. Pagination
+    offset = (page - 1) * per_page
+    query = query.order_by(Guest.name.asc()).offset(offset).limit(per_page)
+
+    res = await db.execute(query)
+    guests = res.scalars().all()
+
+    #pagination 
+    stmt = select(func.count()).select_from(Guest).where(Guest.event_id == event_id)
+    get_guest_res = await db.execute(stmt)
+    total_guests = get_guest_res.scalar() or 0
+    current_page = (skip // limit) + 1
+    total_pages = math.ceil(total_guests / limit) if total_guests > 0 else 1
+    # 4. Rendu Jinja2
+    return templates.TemplateResponse(
+        "Guest/List/list.html",
+        {
+            "request": request,
+            "guests": guests,
+            "event": event,
+            "event_id": event_id,
+            "search_query": guest_name or "",
+            "current_page": current_page,
+            "total_pages":total_pages,
+            "skip":skip,
+            "limit":limit,
+            "per_page": per_page,
+            'current_user_role':user_role
+        }
+    )
 
 @Root.get("/guest_list/{event_id}", name="guest_list")
 async def get_guest_list(
@@ -630,71 +706,6 @@ async def send_whatsapp_redirect(event_id: str,guest_id: str, db: AsyncSession =
     return RedirectResponse(url=sms_link)
     #---------
 
-@Root.get("/events/{event_id}/guests/search", response_class=HTMLResponse)
-async def search_event_guests(
-    request: Request,
-    event_id: str,
-    access_token = Cookie(None),
-    # Remplacer min_length par un traitement souple :
-    guest_name: Optional[str] = Query(None, max_length=100),
-    page: int = Query(1, ge=1),
-    per_page: int = Query(20, ge=1, le=100),
-    db: AsyncSession = Depends(connecting),
-    user = Depends(permission_required("view_guest"))
-):
-    """Recherche paginée des invités d'un événement."""
-    current_res = jwt.decode(access_token,secret,algorithms = [algo])
-    user_id = current_res.get("user")
-    if user_id:
-        user_res = await db.execute(select(User).where(User.id ==user_id))
-        user = user_res.scalars().first()
-        for role in user.roles:
-             user_role = role.name
-    # Nettoyage manuel de la chaîne (enlève les espaces superflus)
-    if guest_name:
-        guest_name = guest_name.strip()
-        # Si la chaîne est vide après nettoyage, on la remet à None
-        if not guest_name:
-            guest_name = None
-
-    # 1. Vérification de l'événement
-    event_res = await db.execute(select(Event).where(Event.id == event_id))
-    event = event_res.scalars().first()
-    if not event:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
-            detail="Événement introuvable"
-        )
-
-    # 2. Construction de la requête
-    query = select(Guest).where(Guest.event_id == event_id)
-    
-    # La recherche ne s'exécute que si guest_name contient au moins 1 caractère valide
-    if guest_name:
-        safe_name = guest_name.replace("%", r"\%").replace("_", r"\_")
-        query = query.where(Guest.name.ilike(f"%{safe_name}%"))
-
-    # 3. Pagination
-    offset = (page - 1) * per_page
-    query = query.order_by(Guest.name.asc()).offset(offset).limit(per_page)
-
-    res = await db.execute(query)
-    guests = res.scalars().all()
-
-    # 4. Rendu Jinja2
-    return templates.TemplateResponse(
-        "Guest/List/list.html",
-        {
-            "request": request,
-            "guests": guests,
-            "event": event,
-            "event_id": event_id,
-            "search_query": guest_name or "",
-            "current_page": page,
-            "per_page": per_page,
-            'current_user_role':user_role
-        }
-    )
 @Root.get('/guest/{guest_id}/{event_id}/detail')#detail endpoint
 async def guestDetail(request:Request,guest_id:str,event_id:str,user=Depends(permission_required("view_guest")),db:AsyncSession = Depends(connecting)):
     get_guest =select(Guest).where(Guest.id ==guest_id,Guest.event_id == event_id)

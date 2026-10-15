@@ -50,7 +50,8 @@ cloudinary.config(
     secure = True
 )
 @Root.get("/research_event")
-async def searchEvent(request:Request,researched_event:str,db:AsyncSession = Depends(connecting),user = Depends(permission_required("view_event"))):
+async def searchEvent(request:Request,researched_event:str,
+                      db:AsyncSession = Depends(connecting),user = Depends(permission_required("view_event"))):
     get_event =(select(Event).where(Event.name.like(f"%{researched_event}%")).options(selectinload(Event.guests)))
     result = await db.execute(get_event)
     event = result.scalars().all()
