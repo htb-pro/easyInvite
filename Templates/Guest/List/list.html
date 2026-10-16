@@ -52,6 +52,18 @@
             border-color :rgb(255,255,255,0.3);
             color:white;
         }
+            .card {
+    background-color: rgba(15, 35, 60, 0.9); /* Même fond sombre élégant que sur l'accueil */
+    border: 1px solid rgba(255, 255, 255, 0.08); /* Fine bordure subtile */
+    border-radius: 1rem;
+    color: #ffffff;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    /* Ajustement pour que les textes secondaires soient bien lisibles sur fond sombre */
+    .card .text-muted {
+        color: #9fbad6 !important; 
+    }
     </style>
 </head>
 <body>
@@ -60,7 +72,7 @@
     <!-- Header -->
     <!-- Stats compactes -->
     <div class="row g-2 mb-3 ">
-            <div class="card rounded-3 p-2 shadow-sm" style="background-color:rgb(255,255,255,0.2);">
+            <div class="card rounded-3 p-2 shadow-sm">
                 <div class="mb-3" style="position: relative;">
                     <h5 class="fw-bold mb-0 text-light">📋 Invités </h5>
                     <small class="text-light">Événement : {{event.name}}</small>

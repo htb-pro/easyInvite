@@ -887,13 +887,13 @@
     <div class="footer-text mt-3">
         {% if guest and guest.event and guest.event.date %}
             {{ guest.event.date.strftime("%d %B %Y à partir de %H:%M") }}
-        {% else %}
-            09 Octobre 2026
         {% endif %}
     </div>
 
     <div class="footer-brand">
         Invitation digitale · EasyInvite <br>
+        <span class="text-secondary small">Un produit de Novotech</span>
+    
         <p class="mb-2 mt-3"><strong>Besoin d'assistance ?</strong></p>
         <p class="mb-1"><i class="bi bi-telephone me-1"></i> +243 897 401 210 ou +243 982 727 007</p>
         <p class="mb-1"><i class="bi bi-envelope me-1"></i> contact@easyevent-rdc.com</p>

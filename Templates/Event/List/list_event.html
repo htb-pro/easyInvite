@@ -40,11 +40,18 @@
       background-size: 120px 120px;
       z-index: 0;
     }
-    .card
-    {
-        background-color : #3fa9f5;
-        color:white;
-    }
+    .card {
+    background-color: rgba(15, 35, 60, 0.9); /* Même fond sombre élégant que sur l'accueil */
+    border: 1px solid rgba(255, 255, 255, 0.08); /* Fine bordure subtile */
+    border-radius: 1rem;
+    color: #ffffff;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+}
+
+/* Ajustement pour que les textes secondaires soient bien lisibles sur fond sombre */
+.card .text-muted {
+    color: #9fbad6 !important; 
+}
 </style>
 </head>
 <body >
