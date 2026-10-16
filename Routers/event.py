@@ -51,14 +51,28 @@ cloudinary.config(
 )
 @Root.get("/research_event")
 async def searchEvent(request:Request,researched_event:str,
+                      access_token = Cookie(None),
                       db:AsyncSession = Depends(connecting),user = Depends(permission_required("view_event"))):
+    res = jwt.decode(access_token,secret,algorithms=[algo])
+    user_id = res.get("user")
+    user_res = await db.execute(select(User).where(User.id == user_id).options(selectinload(User.roles),selectinload(User.groups)))
+    user = user_res.scalars().first()
+    if user :
+        for role in user.roles:
+            user_role = role.name
+        for user_group in user.groups:
+            group_id = user_group.id
+        if user_role == "admin":
+            get_event =await db.execute(select(Event).where(Event.name.like(f"%{researched_event}%")).options(selectinload(Event.guests),selectinload(Event.creator)).order_by(desc(Event.created_date)))
+            events = get_event.scalars().all()
+            return templates.TemplateResponse("Event/List/list_event.html",{'request':request,"events":events,'current_user_role':user_role,'user':user})
     get_event =(select(Event).where(Event.name.like(f"%{researched_event}%")).options(selectinload(Event.guests)))
     result = await db.execute(get_event)
     event = result.scalars().all()
     if not event :
         eventNotFound = "aucun evenement trouvé a ce nom" #message a afficher si l'evenement n'est pas trouve
-        return templates.TemplateResponse("Event/List/list_event.html",{'request':request,'eventNotFound':eventNotFound,'event':event})
-    return templates.TemplateResponse("Event/List/list_event.html",{'request':request,"events":event})
+        return templates.TemplateResponse("Event/List/list_event.html",{'request':request,'eventNotFound':eventNotFound,'event':event,'current_user_role':user_role,'user':user})
+    return templates.TemplateResponse("Event/List/list_event.html",{'request':request,"events":event,'current_user_role':user_role})
 
 @Root.get("/event_list/",name="event_list")#get the event list 
 async def getEventList(request:Request,  db:AsyncSession = Depends(connecting),access_token = Cookie(None)):
